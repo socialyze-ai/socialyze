@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "temporal-studio-399620",
+  "private_key_id": "e9eb919d1f5927b05f658e474882b434243b584e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCGcDX904tw5TRI\nNUbTzS1GmPTRgPDZTcBqD2fSV3GlNzmGkByxRD2myb5YbNtR6Cn8+XTKLAxAMs88\nK3fPczpQ/yo8e+d4VgAzdiDlM9QXxZkb7IMzsP+zSoGt7iYbicgbbvb9mE7fqhyn\nnIYj3mK5bIVtN2qGEwuGgSNxJrVPTQ/g2RD0nhJosioYd0NHVpzF0/gVX6w7aB0a\niw6Nal6KnADK0PeiCSLXpdm09U6h75ClukJg8ZunXe8rezsmsEHwKM9z/3WTvqRk\ne/GdXeJa/VdRNK5ovJneI8BytgboU+JWtv6nuuwVCyJgnjdPXGxRYtpqca//AhAC\nBddlbx7xAgMBAAECggEAARgVlgBiriz5v3+wsp8RsZu9KR2E3qpCrCpLB9vYOMYj\nblxEYekiaYKfs7EF5oH+iEiqCGfFqfN8tJDm/sKn9H1+UfOXlxoq3ya+NRdQCc+w\nHT/P81VkrO61i11fJOvtyFL46OhUXGVSQ+C8eVTBPKCTNzSs/4FurDrNt5YSaJGL\nnNqYui7BiDBjkA6rhica2IkU941q+hu7kGer1j/93cdiHAbLbaGDuUNCg9wskljn\niy0K3LQ8fg3XtHOwJ5kotZdrMnunVSaya+4NlqRZdszKT6OhUEtAIJ9Ix03ywG4/\nnz2QKbGX0BAXZo4ZnxFOfAHPUhspbu0902ef+jYCgQKBgQC6+n2ZDxYhGKHgR9xa\nXQ2oPzw6cV+9jCtM7Izm2jWMtXMCgGr5u+DKIsNkDmrxoJZQg2AC3XrJv6ex0Y7j\nSwKMB9p4tmjjTIybW7d2WvQvenVuibeewDATu1co/5bebCSmSM38qXRhWZm8INOU\n8TObXbWd32cKCPytx9QU/le2kQKBgQC4EKnb4y/oBwYcoEdmwZ3LD0d2TGK/Rf8H\nQ40ZN+JsI1Nt+nqa14WCZ3iPwI+UdQ97LobeUXl2KR31ycNZbLMPCljzseBKIlGC\n6d5eLLkubOynII3PsFeF+yWUmWM9tecRSv7STa+t9dTGGpelq9TjzwhZKqUcz4/0\nQ7jDg3DSYQKBgDT+sECEfSIuSBs4YuUdwLQyEBEEdz1TECbCWQFJUaoq94j6+tcD\ngCfqiHTAfWE0wcXaJolJWvb5oj8NBTG43eTwiORz1vCtjqCt8ybRiqo2TDhjQi71\ni+rby01se8dY4V5b/j4hjUHWUnN23mE1qAneGo6/dgXrHCrpG1xD5npxAoGBALBh\nf3OvjAurF2c9C87jAGNCe/dXkVS7LXx3dfFRhQ6c92ivGufgWRayMmyGWNApMLGY\nzzKhHmRlWElck27Q4/EouD6mGEjSBAwQMb9K2hUr2cb5Qgtgby57kPKJ3fiXpBoF\nJJTATvXDWaaQevsN4w5+KQDRBbHLEKZAcwAfp3BhAoGAIfpdPNfNDanHpx6F3i5u\nVdoHxI1CPja5CiTVpuFfW/1f7+EbhRt+TnNlAhsEyKqpTkZeiOHcUVwUwf7Ak0uj\nBdIXBHxPYUFWj1LifZhJ92kfqVXC7uXFhQqNGcJxD/afQIDR1Wan1aX09zkw5xKm\nDM681l3BD5ZHVPDZaEj4JiE=\n-----END PRIVATE KEY-----\n",
+  "client_email": "post-photo-uploader@temporal-studio-399620.iam.gserviceaccount.com",
+  "client_id": "117641437569174520579",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/post-photo-uploader%40temporal-studio-399620.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

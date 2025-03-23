@@ -1,0 +1,12 @@
+.loginBox {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    form{
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+}

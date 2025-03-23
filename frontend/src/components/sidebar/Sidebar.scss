@@ -1,0 +1,44 @@
+.sidebar{
+    .sidebar-items{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .sidebar-item{
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 7px;
+            cursor: pointer;
+
+            &:hover:not(.sidebar-item-create){
+                background-color: #fbefe0;
+            }
+        }
+        img {
+            width: 26px;
+            height:26px
+        }
+        span{
+            margin-left: 10px;
+        }
+
+        .sidebar-item-create{
+            background-color: #bfbfbf;
+            padding: 17px;
+            font-size: larger;
+            margin-bottom: 20px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+    }
+    #sidebar-item-active{
+        background-color: #ffdbbb;
+    }
+}
+
+.comingSoon{
+    margin-left: 1.2rem;
+    width: 35px !important;
+    height: 35px !important;
+}

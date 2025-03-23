@@ -1,0 +1,130 @@
+
+.createPostContainer{
+    padding: 20px;
+}
+.createPostHeader{
+    font-size: 35px;
+}
+.createPostChannel{
+    display: flex;
+    align-items: center;
+}
+.createPostChannelList{
+    margin: 20px;
+    display: flex;
+    gap: 10px;
+
+    img{
+        width: 45px;
+        height: 45px;
+        border: #fff 5px solid;
+        border-radius: 25px;
+
+    }
+    .channelBorder{
+        border: #b9b9b9 5px solid;
+    }
+
+}
+
+.createPostContent{
+    border: #B9B9B9 1px solid;
+    border-radius: 3px;
+    padding: 10px;
+
+    textarea{
+        width: 95%;
+        border: none;
+        margin: 10px;
+        resize: none;
+        min-height: 250px;
+    }
+    textarea:focus {
+        border: none;
+        outline: none;
+    }
+}
+
+.createPostPics{
+    display: flex;
+    flex-wrap: wrap;
+    img{
+        max-height: 128px;
+        max-width: 128px;
+        margin: 3px;
+        object-fit: contain;
+    }
+    input[type="file"] {
+        display: none;
+      }
+}
+.createPostPicUploader{
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    justify-content: center; /* Vertically center items */
+    align-items: center; /* Horizontally center items */
+    border: #b9b9b9 3px dashed;
+    border-radius: 9px;
+    margin: 10px;
+    color: #b9b9b9;
+    width: 128px;
+    height: 128px;
+    padding: 20px;
+    gap: 0px;
+
+    &:hover{
+        border: #ffdbbb 3px dashed;;
+    }
+
+    span{
+        font-size: 10px;
+        text-align: center;
+    }
+
+    .createPostPicIcons{
+        display:flex;
+        img{
+            cursor: pointer;
+            height:  20px;
+        }
+    }
+}
+
+.createPostTextEdit{
+    display: flex;
+    gap: 10px;
+    margin: 10px;
+    margin-bottom: 0px;
+    padding-top: 10px;
+    border-top: #B9B9B9 1px solid;
+
+    img{
+        height: 17px;
+        cursor: pointer;
+    }
+}
+.createPostTextEditEmojiPicker{
+    position: absolute;
+    top: 190px;
+    right: 550px;
+}
+
+.bg-color-theme{
+    background-color: #ffdbbb;
+    color: #000;
+    border: none;
+    &:hover{
+        background-color: #ffdbbb; /* Remove hover background color */
+        color: #000; 
+    }
+}
+.bg-color-offtheme{
+    background-color: #b9b9b9;
+    color: #000;
+    border: none;
+
+    &:hover{
+        background-color: #b9b9b9; /* Remove hover background color */
+        color: #000; 
+    }
+}

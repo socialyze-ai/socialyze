@@ -1,0 +1,35 @@
+{
+  "dependencies": {
+    "axios": "^1.5.0",
+    "bcrypt": "^5.1.1",
+    "connect-redis": "^7.1.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "express-session-sequelize": "^2.3.0",
+    "mysql2": "^3.6.0",
+    "passport": "^0.6.0",
+    "passport-facebook": "^3.0.0",
+    "passport-linkedin-oauth2": "^2.0.0",
+    "passport-twitter": "^1.0.4",
+    "querystring": "^0.2.1",
+    "redis": "^4.6.10",
+    "sequelize": "^6.33.0",
+    "sequelize-cli": "^6.6.1",
+    "twit": "^2.2.11"
+  },
+  "name": "simpleeffex-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "scripts": {
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "SimpleEffex",
+  "license": "ISC",
+  "description": ""
+}
