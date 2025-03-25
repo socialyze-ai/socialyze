@@ -1,6 +1,4 @@
 import "./CreatePost.scss";
-import Button from "react-bootstrap/Button";
-import Modal from "react-bootstrap/Modal";
 import { FC, useRef, useState, useEffect } from "react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
@@ -8,11 +6,9 @@ import { Hashtag } from "../../popups/hashtag/Hashtag";
 import Giphy from "../../popups/giphy/Giphy";
 import { Emoji } from "@components/emoji";
 import { Unsplash } from "../../popups/unsplash/Unsplash";
-//import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { v4 } from "uuid";
-//import { storage } from "../../firebase.tsx";
 import { createPost } from "../../api/api.ts";
 import { Post } from "../../types/types.ts";
+import Modal from "@components/modal/Modal.tsx";
 
 interface CreateProps {
   show: boolean;
@@ -153,97 +149,99 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
 
   return (
     <>
-      <Modal show={show} size="lg" onHide={onHide}>
-        <div className="createPostContainer">
-          <span className="createPostHeader"> Create </span>
-          <div className="createPostChannel">
-            <span>Select channel</span>
-            <div className="createPostChannelList">
-              {channelArray.map((item, index) => (
-                <img
-                  src={`/channels/${item}.png`}
-                  alt=""
-                  className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
-                  key={index}
-                  onClick={() => toggleChannelBorder(index)}
-                />
-              ))}
+      {show && (
+        <Modal onClose={onHide}>
+          <div className="createPostContainer">
+            <span className="createPostHeader"> Create </span>
+            <div className="createPostChannel">
+              <span>Select channel</span>
+              <div className="createPostChannelList">
+                {channelArray.map((item, index) => (
+                  <img
+                    src={`/channels/${item}.png`}
+                    alt=""
+                    className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
+                    key={index}
+                    onClick={() => toggleChannelBorder(index)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="createPostContent">
-            <div className="createPostPics">
-              {pictureArray.map((image, index) => (
-                <img key={index} src={image} className="createPostPic" />
-              ))}
-              <div className="createPostPicUploader" onClick={openFileUploader}>
-                <img src="imagePreview.png" />
-                <span>Drag & Drop or select your photo</span>
-                <span>OR</span>
-                <div className="createPostPicIcons">
-                  <img src="gif.png" onClick={toggleGiphyBox} />
-                  <img src="unsplash.png" onClick={toggleUnsplashBox} />
+            <div className="createPostContent">
+              <div className="createPostPics">
+                {pictureArray.map((image, index) => (
+                  <img key={index} src={image} className="createPostPic" />
+                ))}
+                <div className="createPostPicUploader" onClick={openFileUploader}>
+                  <img src="imagePreview.png" />
+                  <span>Drag & Drop or select your photo</span>
+                  <span>OR</span>
+                  <div className="createPostPicIcons">
+                    <img src="gif.png" onClick={toggleGiphyBox} />
+                    <img src="unsplash.png" onClick={toggleUnsplashBox} />
+                  </div>
+                </div>
+                <Giphy
+                  show={isGiphyBoxOpen}
+                  onHide={() => {
+                    setGiphyBoxOpen(false);
+                  }}
+                />
+                {isUnsplashBoxOpen && (
+                  <Unsplash
+                    show={isUnsplashBoxOpen}
+                    onHide={() => {
+                      setUnsplashBoxOpen(false);
+                    }}
+                    handleImageUpload={handleImageUpload}
+                  />
+                )}
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} />
+              </div>
+              <textarea
+                placeholder="Share what's on your mind !!"
+                value={textAreaContent} // Bind the value of the textarea to the state
+                onChange={handleTextAreaChange}
+              ></textarea>
+              <br />
+              <div className="createPostTextEdit">
+                <img src="emoji.png" onClick={toggleEmojiPicker} ref={emojiIconRef} />
+                <img src="hashtag.png" onClick={toggleHashtag} ref={hashtagIconRef} />
+                <img src="ai.png" />
+                <div
+                  ref={emojiPickerRef}
+                  className={`createPostTextEditEmojiPicker ${
+                    isEmojiPickerOpen ? "displayBlock" : "displayNone"
+                  }`}
+                >
+                  <EmojiPicker onEmojiClick={selectEmoji} autoFocusSearch={true} height={400} />
+                </div>
+                <div
+                  ref={hashtagRef}
+                  className={`createPostTextEditHashtag ${
+                    isHashtagOpen ? "displayBlock" : "displayNone"
+                  }`}
+                >
+                  <Hashtag />
                 </div>
               </div>
-              <Giphy
-                show={isGiphyBoxOpen}
-                onHide={() => {
-                  setGiphyBoxOpen(false);
-                }}
-              />
-              {isUnsplashBoxOpen && (
-                <Unsplash
-                  show={isUnsplashBoxOpen}
-                  onHide={() => {
-                    setUnsplashBoxOpen(false);
-                  }}
-                  handleImageUpload={handleImageUpload}
-                />
-              )}
-              <input type="file" ref={fileInputRef} onChange={handleImageUpload} />
             </div>
-            <textarea
-              placeholder="Share what's on your mind !!"
-              value={textAreaContent} // Bind the value of the textarea to the state
-              onChange={handleTextAreaChange}
-            ></textarea>
-            <br />
-            <div className="createPostTextEdit">
-              <img src="emoji.png" onClick={toggleEmojiPicker} ref={emojiIconRef} />
-              <img src="hashtag.png" onClick={toggleHashtag} ref={hashtagIconRef} />
-              <img src="ai.png" />
-              <div
-                ref={emojiPickerRef}
-                className={`createPostTextEditEmojiPicker ${
-                  isEmojiPickerOpen ? "displayBlock" : "displayNone"
-                }`}
-              >
-                <EmojiPicker onEmojiClick={selectEmoji} autoFocusSearch={true} height={400} />
-              </div>
-              <div
-                ref={hashtagRef}
-                className={`createPostTextEditHashtag ${
-                  isHashtagOpen ? "displayBlock" : "displayNone"
-                }`}
-              >
-                <Hashtag />
-              </div>
-            </div>
+            <div className="createPostButtons"></div>
+            <div></div>
           </div>
-          <div className="createPostButtons"></div>
-          <div></div>
-        </div>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide} className="bg-color-offtheme">
-            Save Draft
-          </Button>
-          <Button variant="primary" onClick={onHide} className="bg-color-theme">
-            Schedule Post
-          </Button>
-          <Button variant="primary" onClick={handleCreatePost} className="bg-color-theme">
-            Post now
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          <div>
+            <button onClick={onHide} className="bg-color-offtheme">
+              Save Draft
+            </button>
+            <button onClick={onHide} className="bg-color-theme">
+              Schedule Post
+            </button>
+            <button onClick={handleCreatePost} className="bg-color-theme">
+              Post now
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 };

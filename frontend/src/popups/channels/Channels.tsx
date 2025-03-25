@@ -1,10 +1,11 @@
 import "./Channels.scss";
 import { FC, useEffect, useState } from "react";
-import Modal from "react-bootstrap/Modal";
 
 import axios from "axios";
 import { BACKEND_URL } from "../../config/endpoints";
-import { useUser } from "../../context/UserContext";
+import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "@slices/user.slice";
+import Modal from "@components/modal/Modal";
 
 interface ChannelsProps {
   show: boolean;
@@ -12,7 +13,9 @@ interface ChannelsProps {
 }
 
 const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
-  const { user, updateUser } = useUser();
+  // const { user, updateUser } = useUser();
+  const user = useSelector((state) => state.user);
+  const dispatch = useDispatch();
 
   const facebookHandleLogin = (_response: any) => {
     // Define the URL you want to open in the new window
@@ -57,14 +60,14 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
   useEffect(() => {
     const getChannels = () => {
       axios
-        .get(`${BACKEND_URL}/user/channels`, { withCredentials: true })
+        .get(`${BACKEND_URL}/user/channels`)
         .then((_response) => {
           // Handle the successful response data here
           if (user) {
             //let userTemp = user;
             //userTemp.channels = _response.data;
             const updatedUser = { ...user, channels: _response.data };
-            updateUser(updatedUser);
+            dispatch(setUser(updatedUser));
           }
         })
         .catch((error) => {
@@ -82,55 +85,57 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
 
   return (
     <div>
-      <Modal show={show} size="lg" onHide={onHide}>
-        <div className="channelContainer">
-          <div className="connectedChannelDiv">
-            <label htmlFor="">Connected Channels</label>
-            <div className="connectedChannelsList">
-              {user &&
-                user.channels &&
-                user.channels.map((item, index) => (
-                  <div className="connectedChannel" key={index}>
-                    <img
-                      src={`${item.profilePic}`}
-                      alt="This is an alternative text"
-                      className="connectedChannelProfilePic"
-                      key={index}
-                    />
-                    <img
-                      src={`/channels/${item.channelName}.png`}
-                      alt="/channels/user.png"
-                      className="connectedChannelPic"
-                    />
-                  </div>
-                ))}
+      {show && (
+        <Modal onClose={onHide}>
+          <div className="channelContainer">
+            <div className="connectedChannelDiv">
+              <label htmlFor="">Connected Channels</label>
+              <div className="connectedChannelsList">
+                {user &&
+                  user.channels &&
+                  user.channels.map((item, index) => (
+                    <div className="connectedChannel" key={index}>
+                      <img
+                        src={`${item.profilePic}`}
+                        alt="This is an alternative text"
+                        className="connectedChannelProfilePic"
+                        key={index}
+                      />
+                      <img
+                        src={`/channels/${item.channelName}.png`}
+                        alt="/channels/user.png"
+                        className="connectedChannelPic"
+                      />
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <label htmlFor="">Connect to any Channel</label>
+            <div className="connectChannelList">
+              <div className="connectChannel channelFacebook" onClick={facebookHandleLogin}>
+                <img src="/channels/facebook.png" />
+                <span>Connect to Facebook</span>
+              </div>
+              <div className="connectChannel channelInstagram" onClick={instagramHandleLogin}>
+                <img src="/channels/instagram.png" />
+                <span>Connect to Instagram</span>
+              </div>
+              <div className="connectChannel channelTwitter" onClick={twitterHandleLogin}>
+                <img src="/channels/x.png" />
+                <span>Connect to Twitter</span>
+              </div>
+              <div className="connectChannel channelLinkedIn" onClick={linkedInHandleLogin}>
+                <img src="/channels/linkedin.png" />
+                <span>Connect to LinkedIn</span>
+              </div>
+              <div className="connectChannel">
+                <img src="/channels/coming-soon.png" />
+                <span>More coming soon</span>
+              </div>
             </div>
           </div>
-          <label htmlFor="">Connect to any Channel</label>
-          <div className="connectChannelList">
-            <div className="connectChannel channelFacebook" onClick={facebookHandleLogin}>
-              <img src="/channels/facebook.png" />
-              <span>Connect to Facebook</span>
-            </div>
-            <div className="connectChannel channelInstagram" onClick={instagramHandleLogin}>
-              <img src="/channels/instagram.png" />
-              <span>Connect to Instagram</span>
-            </div>
-            <div className="connectChannel channelTwitter" onClick={twitterHandleLogin}>
-              <img src="/channels/x.png" />
-              <span>Connect to Twitter</span>
-            </div>
-            <div className="connectChannel channelLinkedIn" onClick={linkedInHandleLogin}>
-              <img src="/channels/linkedin.png" />
-              <span>Connect to LinkedIn</span>
-            </div>
-            <div className="connectChannel">
-              <img src="/channels/coming-soon.png" />
-              <span>More coming soon</span>
-            </div>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -6,3 +6,70 @@
 .calendar-column {
     background-color: #f7f7f7;
 }
+
+.calendarContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    font-family: Arial, sans-serif;
+  }
+  
+  .calendarContainerHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f4f4f4;
+    border-bottom: 2px solid #ccc;
+  }
+  
+  .calendarContainerButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin: 0 5px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .calendarContainerButton:hover {
+    background-color: #0056b3;
+  }
+  
+  .calendarContainerDate {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .calendarContainerViewSwitcher {
+    display: flex;
+  }
+  
+  .calendarContainerBody {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .calendarContainerRow {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .calendarContainerTime {
+    width: 50px;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .calendarContainerColumn {
+    flex-grow: 1;
+    height: 30px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+  }

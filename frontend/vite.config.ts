@@ -19,6 +19,7 @@ export default defineConfig({
       "@pages": path.resolve(__dirname, "src/pages"),
       "@popups": path.resolve(__dirname, "src/popups"),
       "@utils": path.resolve(__dirname, "src/utils"),
+      "@slices": path.resolve(__dirname, "src/redux/slices"),
     },
   },
   plugins: [svgr(), react()],

@@ -56,7 +56,7 @@ export const Navbar = () => {
   const handleLogoutButton = () => {
     // Chack if user already loggedin or not
     axios
-      .get(`${BACKEND_URL}/user/logout`, { withCredentials: true })
+      .get(`${BACKEND_URL}/user/logout`)
       .then((response) => {
         // Handle the successful response data here
         window.location.href = "http://simpleeffex.com";

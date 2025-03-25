@@ -1,4 +1,4 @@
-import CalendarComponent from "../../components/calendar";
+import CalendarComponent from "../../components/calendar/calendar";
 import "./Calendar.scss";
 
 const Calendar = () => {

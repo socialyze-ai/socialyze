@@ -1,9 +1,0 @@
-node_modules/
-public/
-dist/
-src/assets
-.eslintrc.cjs
-.prettierrc 
-src/vite-env.d.ts
-package-lock.json
-.commitlintrc.json

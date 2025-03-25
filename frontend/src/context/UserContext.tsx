@@ -49,7 +49,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Chack if user already loggedin or not
     axios
-      .get(`${BACKEND_URL}/user/isLoggedIn`, { withCredentials: true })
+      .get(`${BACKEND_URL}/user/isLoggedIn`)
       .then((_response) => {
         // Handle the successful response data here
         updateUser(_response.data.userDetails);

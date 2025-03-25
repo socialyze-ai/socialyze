@@ -68,8 +68,7 @@ const Login: FC<LoginProps> = ({ show, onHide }) => {
           email,
           password,
           rememberMe,
-        },
-        { withCredentials: true },
+        }
       );
       //const test = await axios.get(`${BACKEND_URL}/user/test`, { withCredentials: true });
       setSuccess(response.data.message);
