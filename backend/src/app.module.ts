@@ -6,6 +6,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ChannelModule } from './modules/channel/channel.module';
+import { ServiceModule } from './modules/service/service.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ChannelModule } from './modules/channel/channel.module';
     UserModule,
     WorkspaceModule,
     ChannelModule,
+    ServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
