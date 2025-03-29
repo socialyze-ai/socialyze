@@ -1,10 +1,10 @@
-import { WEBSITE_URL } from "../../config/endpoints";
+import { WEBSITE_URL } from "../../config/config";
 import "./Footer.scss";
 
 export const Footer = () => {
   return (
     <div className="footer">
-      Copyright ©2023 SimpleEffex |&nbsp;
+      Copyright ©2025 Socialyze |&nbsp;
       <a href={`${WEBSITE_URL}/privacy-policy.html`} target="_blank">
         Privacy
       </a>

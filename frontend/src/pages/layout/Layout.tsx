@@ -4,20 +4,18 @@ import Sidebar from "@components/sidebar/Sidebar";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {
-    return (
-      <div className="main">
-        <Navbar />
-        <div className="mainContainer">
-          <div className="sidebarContainer">
-            <Sidebar />
-          </div>
-          <div className="contentContainer">
-            <Outlet />
-          </div>
+  return (
+    <div className="main">
+      <Navbar />
+      <div className="mainContainer">
+        <Sidebar />
+        <div className="contentContainer">
+          <Outlet />
         </div>
-        <Footer />
       </div>
-    );
-  };
+      <Footer />
+    </div>
+  );
+};
 
-  export default Layout;
+export default Layout;

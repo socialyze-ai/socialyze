@@ -2,10 +2,10 @@ import "./Channels.scss";
 import { FC, useEffect, useState } from "react";
 
 import axios from "axios";
-import { BACKEND_URL } from "../../config/endpoints";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "@slices/user.slice";
 import Modal from "@components/modal/Modal";
+import { BACKEND_URL } from "../../config/config";
 
 interface ChannelsProps {
   show: boolean;

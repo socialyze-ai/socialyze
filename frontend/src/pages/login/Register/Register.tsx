@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { RegisterForm } from "../LoginSteps";
 import axios from "axios";
-import { BACKEND_URL } from "../../../config/endpoints";
 import "./Register.css";
 import { useDispatch } from "react-redux";
 import { setUser } from "@slices/user.slice";
+import { BACKEND_URL } from "../../../config/config";
 
 interface RegisterType {
   onRegister: (registerForm: RegisterForm) => void;

@@ -5,7 +5,6 @@ import Influencer from "@pages/influencer/Influencer";
 import Dashboard from "./pages/dashboard/Dashboard";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./styles/global.scss";
-import { Close } from "@pages/close/Close";
 import Layout from "@pages/layout/Layout";
 import Modal from "@components/modal/Modal";
 import { LoginSteps } from "@pages/login/LoginSteps";
@@ -55,7 +54,6 @@ function App() {
         },
       ],
     },
-    { path: "/close", element: <Close /> },
   ]);
 
   return (

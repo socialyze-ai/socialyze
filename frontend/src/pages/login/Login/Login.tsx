@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import "./Login.css";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { BACKEND_URL } from "../../../config/endpoints";
 import { setUser } from "@slices/user.slice";
+import { BACKEND_URL } from "../../../config/config";
 
 interface LoginType {
   onRegisterClick: () => void;

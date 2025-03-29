@@ -2,29 +2,21 @@ import React, { useRef, useState } from "react";
 import "./OtpVerify.css";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { BACKEND_URL } from "../../../config/endpoints";
 import { setUser } from "@slices/user.slice";
-
-
+import { BACKEND_URL } from "../../../config/config";
 
 interface OtpVerifyType {
   goBackToRegister: () => void;
   onValidateOtp: (otp: string) => void;
 }
 
-export const OtpVerify = ({
-  goBackToRegister,
-  onValidateOtp,
-}: OtpVerifyType) => {
+export const OtpVerify = ({ goBackToRegister, onValidateOtp }: OtpVerifyType) => {
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [otpError, setOtpError] = useState("");
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const dispatch = useDispatch();
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const { value } = e.target;
     if (/^\d*$/.test(value)) {
       const newOtp = [...otp];
@@ -38,10 +30,7 @@ export const OtpVerify = ({
     }
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace") {
       if (!otp[index] && index > 0) {
         inputs.current[index - 1]?.focus();
@@ -63,15 +52,12 @@ export const OtpVerify = ({
     setOtpError("");
     const otpValue = otp.join("");
     try {
-      const response = await axios.post(
-        `${BACKEND_URL}/user/otpVerify`,
-        {
-          otpValue,
-        }
-      );
+      const response = await axios.post(`${BACKEND_URL}/user/otpVerify`, {
+        otpValue,
+      });
       if (response.status >= 200 && response.status < 300) {
         console.log("Here", response.data);
-        dispatch(setUser(response.data))
+        dispatch(setUser(response.data));
         onValidateOtp(otpValue);
       }
     } catch (error: any) {
