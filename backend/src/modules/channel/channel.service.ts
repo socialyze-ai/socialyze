@@ -1,34 +1,77 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Channel } from './channel.model';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ConnectChannelDto } from './dto/connectChannel.dto';
 import { FacebookService } from '../service/facebook.service';
+import { OAuthSession } from 'src/schema/oauthsession.schema';
 
 @Injectable()
 export class ChannelService {
   constructor(
     @InjectModel(Channel.name) private channelModel: Model<Channel>,
+    @InjectModel(OAuthSession.name)
+    private oauthSessionModel: Model<OAuthSession>,
     private readonly facebookService: FacebookService,
   ) {}
 
-  async connect(
-    connectChannelDto: ConnectChannelDto,
-    userId: string,
-  ): Promise<any> {
-    const { handle, authCode } = connectChannelDto;
-    if (handle === 'Facebook') {
-      await this.facebookService.connect(userId, authCode);
+  async getChannels(userId: string): Promise<Channel[]> {
+    try {
+      const channels = await this.channelModel
+        .find({ user: new Types.ObjectId(userId) })
+        .lean();
+      return channels;
+    } catch (error) {
+      console.error('Error fetching channels:', error);
+      throw new Error('Failed to fetch channels');
     }
+  }
+
+  async getAuthUrl(
+    connectChannelDto: ConnectChannelDto,
+    userId: Types.ObjectId,
+  ): Promise<any> {
+    const { handle } = connectChannelDto;
+
+    let authUrl;
+    if (handle === 'facebook') {
+      authUrl = await this.facebookService.getAuthUrl(userId);
+    }
+    return authUrl;
   }
 
   async authenticate(
     connectChannelDto: ConnectChannelDto,
     userId: string,
   ): Promise<any> {
-    const { handle } = connectChannelDto;
-    if (handle === 'Facebook') {
-      await this.facebookService.getAuthUrl();
+    try {
+      const { authCode, state } = connectChannelDto;
+
+      const oauthSession = await this.oauthSessionModel.findOne({
+        user: new Types.ObjectId(userId),
+        state,
+      });
+
+      if (!oauthSession) {
+        throw new Error('Invalid OAuth session');
+      }
+
+      let response;
+      if (oauthSession.handle === 'facebook') {
+        response = await this.facebookService.authenticate(userId, authCode);
+      }
+
+      if (response.success) {
+        await this.oauthSessionModel.updateOne(
+          { _id: oauthSession._id },
+          { $set: { status: 'COMPLETED' } },
+        );
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Facebook connect error:', error);
+      return { success: false, message: error.message };
     }
   }
 }

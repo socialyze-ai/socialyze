@@ -15,13 +15,19 @@ export class ChannelController {
   constructor(private readonly channelService: ChannelService) {}
 
   @UseInterceptors(AuthInterceptor)
-  @Post('connect')
-  async register(
+  @Get()
+  async channels(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.channelService.getChannels(userId);
+  }
+  @UseInterceptors(AuthInterceptor)
+  @Post('getAuthUrl')
+  async getAuthUrl(
     @Body() connectChannelDto: ConnectChannelDto,
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.channelService.connect(connectChannelDto, userId);
+    return this.channelService.getAuthUrl(connectChannelDto, userId);
   }
 
   @UseInterceptors(AuthInterceptor)

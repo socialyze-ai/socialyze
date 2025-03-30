@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Post } from "../types/types";
+import { Post } from "../types/post.type";
 import { BACKEND_URL, POST } from "../config/config";
 
 export const createPost = (dataToSend: Post): Promise<AxiosResponse> => {

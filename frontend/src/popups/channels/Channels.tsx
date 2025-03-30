@@ -5,7 +5,8 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "@slices/user.slice";
 import Modal from "@components/modal/Modal";
-import { BACKEND_URL } from "../../config/config";
+import { BACKEND_URL } from "@config/config";
+import { FRONTEND_URL } from "../../config/config";
 
 interface ChannelsProps {
   show: boolean;
@@ -13,74 +14,57 @@ interface ChannelsProps {
 }
 
 const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
-  // const { user, updateUser } = useUser();
+  const [channels, setChannels] = useState();
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
-  const facebookHandleLogin = (_response: any) => {
-    // Define the URL you want to open in the new window
-    const url = `${BACKEND_URL}/connect/facebook2`;
-    const width = 500; // Width of the new window
-    const height = 500; // Height of the new window
-    const left = (window.innerWidth - width) / 2;
-    const top = (window.innerHeight - height) / 2;
-    window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top}`);
-  };
+  const handleConnect = async (body: { handle: string }) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/channel/getAuthUrl`, body);
+      const { url } = response.data;
 
-  const instagramHandleLogin = (_response: any) => {
-    // Define the URL you want to open in the new window
-    const url = `${BACKEND_URL}/connect/instagram2`;
-    const width = 500; // Width of the new window
-    const height = 500; // Height of the new window
-    const left = (window.innerWidth - width) / 2;
-    const top = (window.innerHeight - height) / 2;
-    window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top}`);
-  };
+      if (!url) {
+        console.error("Failed to retrieve authentication URL.");
+        return;
+      }
 
-  const twitterHandleLogin = (_response: any) => {
-    // Define the URL you want to open in the new window
-    const url = `${BACKEND_URL}/connect/twitter`;
-    const width = 500; // Width of the new window
-    const height = 500; // Height of the new window
-    const left = (window.innerWidth - width) / 2;
-    const top = (window.innerHeight - height) / 2;
-    window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top}`);
-  };
+      // Open authentication popup
+      const authWindow = window.open(url, "_blank", "width=600,height=600");
 
-  const linkedInHandleLogin = (_response: any) => {
-    // Define the URL you want to open in the new window
-    const url = `${BACKEND_URL}/connect/linkedin`;
-    const width = 500; // Width of the new window
-    const height = 500; // Height of the new window
-    const left = (window.innerWidth - width) / 2;
-    const top = (window.innerHeight - height) / 2;
-    window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top}`);
+      if (!authWindow) {
+        console.error("Popup blocked or failed to open.");
+        return;
+      }
+
+      // Listen for messages from the popup window
+      const handleMessage = (repsponse: MessageEvent) => {
+        if (repsponse.origin !== FRONTEND_URL) return;
+        if (repsponse.data?.success) {
+          // Fetch channels
+        }
+      };
+
+      window.addEventListener("message", handleMessage);
+    } catch (error) {
+      console.error("Error while connecting to channel:", error);
+    }
   };
 
   useEffect(() => {
-    const getChannels = () => {
-      axios
-        .get(`${BACKEND_URL}/user/channels`)
-        .then((_response) => {
-          // Handle the successful response data here
-          if (user) {
-            //let userTemp = user;
-            //userTemp.channels = _response.data;
-            const updatedUser = { ...user, channels: _response.data };
-            dispatch(setUser(updatedUser));
-          }
-        })
-        .catch((error) => {
-          // Handle any errors here
-          console.error("API request error:", error);
-        });
-    };
-    getChannels();
-    window.addEventListener("message", getChannels);
+    axios
+      .get(`${BACKEND_URL}/channel`)
+      .then((response) => {
+        // if (user) {
+        //   const updatedUser = { ...user, channels: _response.data };
+        //   dispatch(setUser(updatedUser));
+        // }
 
-    return () => {
-      window.removeEventListener("message", getChannels);
-    };
+        console.log(response.data);
+      })
+      .catch((error) => {
+        // Handle any errors here
+        console.error("API request error:", error);
+      });
   }, []);
 
   return (
@@ -112,19 +96,39 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
             </div>
             <label htmlFor="">Connect to any Channel</label>
             <div className="connectChannelList">
-              <div className="connectChannel channelFacebook" onClick={facebookHandleLogin}>
+              <div
+                className="connectChannel channelFacebook"
+                onClick={() => {
+                  handleConnect({ handle: "facebook" });
+                }}
+              >
                 <img src="/channels/facebook.png" />
                 <span>Connect to Facebook</span>
               </div>
-              <div className="connectChannel channelInstagram" onClick={instagramHandleLogin}>
+              <div
+                className="connectChannel channelInstagram"
+                onClick={() => {
+                  handleConnect({ handle: "instagram" });
+                }}
+              >
                 <img src="/channels/instagram.png" />
                 <span>Connect to Instagram</span>
               </div>
-              <div className="connectChannel channelTwitter" onClick={twitterHandleLogin}>
+              <div
+                className="connectChannel channelTwitter"
+                onClick={() => {
+                  handleConnect({ handle: "x" });
+                }}
+              >
                 <img src="/channels/x.png" />
                 <span>Connect to Twitter</span>
               </div>
-              <div className="connectChannel channelLinkedIn" onClick={linkedInHandleLogin}>
+              <div
+                className="connectChannel channelLinkedIn"
+                onClick={() => {
+                  handleConnect({ handle: "linkedin" });
+                }}
+              >
                 <img src="/channels/linkedin.png" />
                 <span>Connect to LinkedIn</span>
               </div>

@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Channel } from '../channel/channel.model';
 import { User } from '../user/user.model';
 import axios from 'axios';
+import { OAuthSession } from 'src/schema/oauthsession.schema';
 
 @Injectable()
 export class FacebookService {
@@ -18,31 +19,46 @@ export class FacebookService {
 
   constructor(
     @InjectModel(Channel.name) private channelModel: Model<Channel>,
+    @InjectModel(OAuthSession.name)
+    private oauthSessionModel: Model<OAuthSession>,
   ) {}
 
   /**
    * Generate Facebook OAuth URL
    */
-  getAuthUrl() {
+  async getAuthUrl(userId: Types.ObjectId) {
     const state = Math.random().toString(36).substring(7);
-    return {
+    const authUrl = {
       url:
         'https://www.facebook.com/v20.0/dialog/oauth' +
         `?client_id=${process.env.FACEBOOK_APP_ID}` +
-        `&redirect_uri=${encodeURIComponent(process.env.FRONTEND_URL + '/facebook/callback')}` +
+        `&redirect_uri=${encodeURIComponent(process.env.FRONTEND_URL + '/authenticate')}` +
         `&state=${state}` +
-        `&scope=${this.scopes.join(',')}`,
+        `&scope=${this.scopes.join(',')}` +
+        `&display=popupp`,
       state,
     };
+
+    // Save session details in the database
+    await this.oauthSessionModel.create({
+      state,
+      redirectUri: process.env.FRONTEND_URL + '/authenticate',
+      scopes: this.scopes,
+      handle: 'facebook',
+      user: new Types.ObjectId(userId),
+      status: 'PENDING',
+    });
+
+    return authUrl;
   }
 
   /**
    * Handles Facebook OAuth authentication and connects pages
    */
-  async connect(userId: string, authCode: string) {
+  async authenticate(userId: string, authCode: string) {
     try {
       // Step 1: Exchange code for access token
-      const authData = await this.authenticate(authCode);
+      const authData = await this.getAccessToken(authCode);
       if (!authData.accessToken)
         throw new Error('Failed to retrieve access token');
 
@@ -53,11 +69,11 @@ export class FacebookService {
       // Step 3: Save pages to `Channel` collection
       for (const page of pages) {
         await this.channelModel.findOneAndUpdate(
-          { channelId: page.id, user: userId },
+          { channelId: page.id, user: new Types.ObjectId(userId) },
           {
-            user: userId,
-            workspace: new Types.ObjectId(), // Assign workspace (Modify as per logic)
-            handle: 'Facebook',
+            user: new Types.ObjectId(userId),
+            workspace: new Types.ObjectId(),
+            handle: 'facebook',
             accesstoken: page.access_token,
             refreshtoken: authData.refreshToken,
             channelId: page.id,
@@ -79,17 +95,14 @@ export class FacebookService {
     }
   }
 
-  /**
-   * Exchange auth code for access & refresh tokens
-   */
-  async authenticate(code: string) {
+  async getAccessToken(code: string) {
     try {
       const response = await axios.get(
         'https://graph.facebook.com/v20.0/oauth/access_token',
         {
           params: {
             client_id: process.env.FACEBOOK_APP_ID,
-            redirect_uri: process.env.FRONTEND_URL + '/facebook/callback',
+            redirect_uri: process.env.FRONTEND_URL + '/authenticate',
             client_secret: process.env.FACEBOOK_APP_SECRET,
             code,
           },
@@ -100,7 +113,7 @@ export class FacebookService {
 
       return {
         accessToken: response.data.access_token,
-        refreshToken: response.data.access_token, // Facebook does not provide a refresh token
+        refreshToken: response.data.access_token, // Returning the same access_token, since facebook doesn't provide refresh_token
         expiresIn: response.data.expires_in,
       };
     } catch (error) {

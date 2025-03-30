@@ -5,10 +5,17 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Channel, ChannelSchema } from './channel.model';
 import { ServiceModule } from '../service/service.module';
 import { FacebookService } from '../service/facebook.service';
+import {
+  OAuthSession,
+  OAuthSessionSchema,
+} from 'src/schema/oauthsession.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Channel.name, schema: ChannelSchema }]),
+    MongooseModule.forFeature([
+      { name: Channel.name, schema: ChannelSchema },
+      { name: OAuthSession.name, schema: OAuthSessionSchema },
+    ]),
     ServiceModule,
   ],
   controllers: [ChannelController],

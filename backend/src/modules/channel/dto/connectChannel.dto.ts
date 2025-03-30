@@ -1,11 +1,5 @@
 import { IsNotEmpty, IsEnum, IsString } from 'class-validator';
-
-export enum SocialMediaHandle {
-  INSTAGRAM = 'Instagram',
-  FACEBOOK = 'Facebook',
-  LINKEDIN = 'LinkedIn',
-  X = 'X',
-}
+import { SocialMediaHandle } from 'src/types/socialMediaHandle.enum';
 
 export class ConnectChannelDto {
   @IsEnum(SocialMediaHandle, {
@@ -17,4 +11,7 @@ export class ConnectChannelDto {
   @IsString()
   @IsNotEmpty()
   authCode: string;
+
+  @IsString()
+  state: string;
 }

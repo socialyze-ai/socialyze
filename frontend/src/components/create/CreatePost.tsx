@@ -7,7 +7,7 @@ import Giphy from "../../popups/giphy/Giphy";
 import { Emoji } from "@components/emoji";
 import { Unsplash } from "../../popups/unsplash/Unsplash";
 import { createPost } from "../../api/api.ts";
-import { Post } from "../../types/types.ts";
+import { Post } from "../../types/post.type.ts";
 import Modal from "@components/modal/Modal.tsx";
 
 interface CreateProps {

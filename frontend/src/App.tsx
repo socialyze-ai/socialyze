@@ -9,13 +9,13 @@ import Layout from "@pages/layout/Layout";
 import Modal from "@components/modal/Modal";
 import { LoginSteps } from "@pages/login/LoginSteps";
 import { useEffect, useState } from "react";
+import Authenticate from "@pages/authenticate/Authenticate";
 
 function App() {
   const [showLoginModalOpen, setLoginModalOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
-    console.log("token", token, !!token);
     setLoginModalOpen(!token);
   }, []);
 
@@ -28,32 +28,14 @@ function App() {
       path: "/",
       element: <Layout />,
       children: [
-        {
-          path: "/",
-          element: <Dashboard />,
-        },
-        {
-          path: "/dashboard",
-          element: <Dashboard />,
-        },
-        {
-          path: "/calendar",
-          element: <Calendar />,
-        },
-        {
-          path: "/engagement",
-          element: <Engagement />,
-        },
-        {
-          path: "/analytics",
-          element: <Analytics />,
-        },
-        {
-          path: "/influencer",
-          element: <Influencer />,
-        },
+        { index: true, element: <Dashboard /> }, // Default route
+        { path: "dashboard", element: <Dashboard /> },
+        { path: "engagement", element: <Engagement /> },
+        { path: "analytics", element: <Analytics /> },
+        { path: "influencer", element: <Influencer /> },
       ],
     },
+    { path: "/authenticate", element: <Authenticate /> },
   ]);
 
   return (

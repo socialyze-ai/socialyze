@@ -21,6 +21,7 @@ export default defineConfig({
       "@utils": path.resolve(__dirname, "src/utils"),
       "@slices": path.resolve(__dirname, "src/redux/slices"),
       "@styles": path.resolve(__dirname, "src/styles"),
+      "@config": path.resolve(__dirname, "src/config"),
     },
   },
   plugins: [svgr(), react()],

@@ -1,9 +1,10 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
+import { SocialMediaHandle } from 'src/types/socialMediaHandle.enum';
 
 @Schema({ timestamps: true })
 export class Channel {
-  @Prop({ required: true, enum: ['Instagram', 'Facebook', 'LinkedIn', 'X'] })
+  @Prop({ required: true, enum: SocialMediaHandle })
   handle: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -26,6 +27,9 @@ export class Channel {
 
   @Prop()
   channelPicture: string;
+
+  @Prop()
+  expireIn: number;
 }
 
 export const ChannelSchema = SchemaFactory.createForClass(Channel);
