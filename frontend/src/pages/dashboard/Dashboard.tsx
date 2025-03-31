@@ -1,22 +1,13 @@
 import "./Dashboard.scss";
-
-import Channels from "../../popups/channels/Channels";
 import { useState } from "react";
+import AddChannels from "../../popups/addChannels/AddChannels";
+import { Channels } from "@components/channels/Channels";
 
 const Dashboard = () => {
-  const [showChannelsModal, setChannelsModal] = useState(false);
-
   return (
     <>
       <div className="dashboard">
-        Hello
-        <button onClick={() => setChannelsModal(true)}>Channels</button>
-        <Channels
-          show={showChannelsModal}
-          onHide={() => {
-            setChannelsModal(false);
-          }}
-        />
+        <Channels />
       </div>
     </>
   );

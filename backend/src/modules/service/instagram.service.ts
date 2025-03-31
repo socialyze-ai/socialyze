@@ -2,19 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Channel } from '../channel/channel.model';
-import { User } from '../user/user.model';
 import axios from 'axios';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
 
 @Injectable()
-export class FacebookService {
+export class InstagramService {
   scopes = [
+    'instagram_basic',
+    'instagram_manage_insights',
     'pages_show_list',
     'business_management',
-    'pages_manage_posts',
-    'pages_manage_engagement',
-    'pages_read_engagement',
-    'read_insights',
+    'instagram_manage_comments',
+    'instagram_content_publish',
   ];
 
   constructor(
@@ -23,9 +22,6 @@ export class FacebookService {
     private oauthSessionModel: Model<OAuthSession>,
   ) {}
 
-  /**
-   * Generate Facebook OAuth URL
-   */
   async getAuthUrl(userId: Types.ObjectId) {
     const state = Math.random().toString(36).substring(7);
     const authUrl = {
@@ -34,16 +30,16 @@ export class FacebookService {
         `?client_id=${process.env.FACEBOOK_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(process.env.FRONTEND_URL + '/authenticate')}` +
         `&state=${state}` +
-        `&scope=${this.scopes.join(',')}`,
+        `&scope=${this.scopes.join(',')}` +
+        `&response_type=code`,
       state,
     };
 
-    // Save session details in the database
     await this.oauthSessionModel.create({
       state,
       redirectUri: process.env.FRONTEND_URL + '/authenticate',
       scopes: this.scopes,
-      handle: 'facebook',
+      handle: 'instagram',
       user: new Types.ObjectId(userId),
       status: 'PENDING',
     });
@@ -51,45 +47,39 @@ export class FacebookService {
     return authUrl;
   }
 
-  /**
-   * Handles Facebook OAuth authentication and connects pages
-   */
   async authenticate(userId: string, authCode: string) {
     try {
-      // Step 1: Exchange code for access token
       const authData = await this.getAccessToken(authCode);
       if (!authData.accessToken)
         throw new Error('Failed to retrieve access token');
 
-      // Step 2: Fetch pages the user manages
-      const pages = await this.pages(authData.accessToken);
-      if (!pages || pages.length === 0) throw new Error('No pages found');
+      const instagramAccounts = await this.getInstagramAccount(
+        authData.accessToken,
+      );
+      if (!instagramAccounts) throw new Error('No Instagram account linked');
 
-      // Step 3: Save pages to `Channel` collection
-      for (const page of pages) {
+      for (const instagramAccount of instagramAccounts) {
         await this.channelModel.findOneAndUpdate(
-          { channelId: page.id, user: new Types.ObjectId(userId) },
+          { channelId: instagramAccount.id, user: new Types.ObjectId(userId) },
           {
             user: new Types.ObjectId(userId),
             workspace: new Types.ObjectId(),
-            handle: 'facebook',
-            accesstoken: page.access_token,
+            handle: 'instagram',
+            accesstoken: authData.accessToken,
             refreshtoken: authData.refreshToken,
-            channelId: page.id,
-            channelName: page.name,
-            channelPicture: page.picture?.data?.url || '',
+            channelId: instagramAccount.id,
+            channelName: instagramAccount.username,
+            channelPicture: instagramAccount.profile_picture_url || '',
           },
           { upsert: true, new: true },
         );
       }
 
-      console.log('Pages connected successfully');
       return {
         success: true,
-        message: 'Facebook pages connected successfully',
+        message: 'Instagram account connected successfully',
       };
     } catch (error) {
-      console.error('Facebook connect error:', error);
       return { success: false, message: error.message };
     }
   }
@@ -104,48 +94,57 @@ export class FacebookService {
             redirect_uri: process.env.FRONTEND_URL + '/authenticate',
             client_secret: process.env.FACEBOOK_APP_SECRET,
             code,
+            grant_type: 'authorization_code',
           },
         },
       );
 
-      if (!response.data.access_token) throw new Error('Invalid auth code');
-
       return {
         accessToken: response.data.access_token,
-        refreshToken: response.data.access_token, // Returning the same access_token, since facebook doesn't provide refresh_token
+        refreshToken: response.data.access_token,
         expiresIn: response.data.expires_in,
       };
     } catch (error) {
       console.error(
-        'Facebook auth error:',
+        'Instagram auth error:',
         error.response?.data || error.message,
       );
-      throw new Error('Failed to authenticate with Facebook');
+      throw new Error('Failed to authenticate with Instagram');
     }
   }
 
-  /**
-   * Fetch user’s Facebook Pages
-   */
-  async pages(accessToken: string) {
+  async getInstagramAccount(accessToken: string) {
     try {
       const response = await axios.get(
         `https://graph.facebook.com/v20.0/me/accounts`,
         {
           params: {
-            fields: 'id,name,access_token,picture',
+            fields:
+              'id,name,instagram_business_account{username,profile_picture_url}',
             access_token: accessToken,
           },
         },
       );
 
-      return response.data.data || [];
+      const businessAccounts = response.data.data;
+      if (businessAccounts.length === 0) return null;
+
+      const instagramAccounts = businessAccounts
+        .filter((account) => account.instagram_business_account)
+        .map((account) => ({
+          id: account.instagram_business_account.id,
+          username: account.instagram_business_account.username,
+          profile_picture_url:
+            account.instagram_business_account.profile_picture_url,
+        }));
+
+      return instagramAccounts.length > 0 ? instagramAccounts : null;
     } catch (error) {
       console.error(
-        'Error fetching pages:',
+        'Error fetching Instagram account:',
         error.response?.data || error.message,
       );
-      throw new Error('Failed to fetch pages');
+      throw new Error('Failed to fetch Instagram account');
     }
   }
 }

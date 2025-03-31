@@ -1,21 +1,19 @@
-import "./Channels.scss";
-import { FC, useEffect, useState } from "react";
+import "./AddChannels.scss";
+import { FC } from "react";
 
 import axios from "axios";
-import { useDispatch, useSelector } from "react-redux";
-import { setUser } from "@slices/user.slice";
+import { useDispatch } from "react-redux";
 import Modal from "@components/modal/Modal";
 import { BACKEND_URL } from "@config/config";
 import { FRONTEND_URL } from "../../config/config";
+import { addChannels } from "@slices/channels.slice";
 
 interface ChannelsProps {
   show: boolean;
   onHide: () => void;
 }
 
-const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
-  const [channels, setChannels] = useState();
-  const user = useSelector((state) => state.user);
+const AddChannels: FC<ChannelsProps> = ({ show, onHide }) => {
   const dispatch = useDispatch();
 
   const handleConnect = async (body: { handle: string }) => {
@@ -41,6 +39,14 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
         if (repsponse.origin !== FRONTEND_URL) return;
         if (repsponse.data?.success) {
           // Fetch channels
+          axios
+            .get(`${BACKEND_URL}/channel`)
+            .then((response) => {
+              dispatch(addChannels(response.data));
+            })
+            .catch((error) => {
+              console.error("API request error:", error);
+            });
         }
       };
 
@@ -50,50 +56,11 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
     }
   };
 
-  useEffect(() => {
-    axios
-      .get(`${BACKEND_URL}/channel`)
-      .then((response) => {
-        // if (user) {
-        //   const updatedUser = { ...user, channels: _response.data };
-        //   dispatch(setUser(updatedUser));
-        // }
-
-        console.log(response.data);
-      })
-      .catch((error) => {
-        // Handle any errors here
-        console.error("API request error:", error);
-      });
-  }, []);
-
   return (
     <div>
       {show && (
         <Modal onClose={onHide}>
           <div className="channelContainer">
-            <div className="connectedChannelDiv">
-              <label htmlFor="">Connected Channels</label>
-              <div className="connectedChannelsList">
-                {user &&
-                  user.channels &&
-                  user.channels.map((item, index) => (
-                    <div className="connectedChannel" key={index}>
-                      <img
-                        src={`${item.profilePic}`}
-                        alt="This is an alternative text"
-                        className="connectedChannelProfilePic"
-                        key={index}
-                      />
-                      <img
-                        src={`/channels/${item.channelName}.png`}
-                        alt="/channels/user.png"
-                        className="connectedChannelPic"
-                      />
-                    </div>
-                  ))}
-              </div>
-            </div>
             <label htmlFor="">Connect to any Channel</label>
             <div className="connectChannelList">
               <div
@@ -144,4 +111,4 @@ const Channels: FC<ChannelsProps> = ({ show, onHide }) => {
   );
 };
 
-export default Channels;
+export default AddChannels;
