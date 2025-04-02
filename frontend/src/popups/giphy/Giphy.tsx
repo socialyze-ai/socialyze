@@ -1,10 +1,10 @@
-import { Grid } from "@giphy/react-components";
 import { GiphyFetch } from "@giphy/js-fetch-api";
-import Modal from "react-bootstrap/Modal";
+import { Grid } from "@giphy/react-components";
+import { Dialog } from "@radix-ui/themes";
+import { FC, useState } from "react";
+import { DebounceInput } from "react-debounce-input";
 import { GIPHY_API_KEY } from "../../config/config";
 import "./Giphy.scss";
-import { FC, useEffect, useRef, useState } from "react";
-import { DebounceInput } from "react-debounce-input";
 const giphyFetch = new GiphyFetch(GIPHY_API_KEY);
 
 interface GiphyProps {
@@ -13,10 +13,7 @@ interface GiphyProps {
 }
 
 const Giphy: FC<GiphyProps> = ({ show, onHide }) => {
-  const modalRef = useRef(null);
-
   const [searchGif, setSearchGif] = useState("trending");
-
   const fetchGifs = (offset: number) => {
     return giphyFetch.search(searchGif, { offset, limit: 10 });
   };
@@ -24,38 +21,33 @@ const Giphy: FC<GiphyProps> = ({ show, onHide }) => {
   const [width, setWidth] = useState(window.innerWidth);
 
   return (
-    <Modal
-      contentClassName="giphyModal"
-      show={show}
-      size="xl"
-      onHide={onHide}
-      ref={modalRef}
-      centered
-    >
-      <div className="giphyContentWrapper">
-        <div className="giphySearch">
-          <DebounceInput
-            minLength={3}
-            debounceTimeout={1000}
-            onChange={(event) => {
-              setSearchGif(event.target.value);
-              setGifContent(fetchGifs(100));
-            }}
-            placeholder="Seach here"
-          />
+    <Dialog.Root open={show} onOpenChange={onHide}>
+      <Dialog.Content>
+        <div className="giphyContentWrapper">
+          <div className="giphySearch">
+            <DebounceInput
+              minLength={3}
+              debounceTimeout={1000}
+              onChange={(event) => {
+                setSearchGif(event.target.value);
+                setGifContent(fetchGifs(100));
+              }}
+              placeholder="Seach here"
+            />
+          </div>
+          <div className="giphyGrid">
+            <Grid
+              fetchGifs={() => {
+                return gifContent;
+              }}
+              width={width / 2 + 100}
+              columns={3}
+              gutter={6}
+            />
+          </div>
         </div>
-        <div className="giphyGrid">
-          <Grid
-            fetchGifs={() => {
-              return gifContent;
-            }}
-            width={width / 2 + 100}
-            columns={3}
-            gutter={6}
-          />
-        </div>
-      </div>
-    </Modal>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 };
 

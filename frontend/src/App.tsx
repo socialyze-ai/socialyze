@@ -10,6 +10,7 @@ import Modal from "@components/modal/Modal";
 import { LoginSteps } from "@pages/login/LoginSteps";
 import { useEffect, useState } from "react";
 import Authenticate from "@pages/authenticate/Authenticate";
+import { Theme } from "@radix-ui/themes";
 
 function App() {
   const [showLoginModalOpen, setLoginModalOpen] = useState(false);
@@ -40,12 +41,14 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
-      {showLoginModalOpen && (
-        <Modal onClose={handleModalClose}>
-          <LoginSteps onClose={handleModalClose} />
-        </Modal>
-      )}
+      <Theme>
+        <RouterProvider router={router} />
+        {showLoginModalOpen && (
+          <Modal onClose={handleModalClose}>
+            <LoginSteps onClose={handleModalClose} />
+          </Modal>
+        )}
+      </Theme>
     </>
   );
 }

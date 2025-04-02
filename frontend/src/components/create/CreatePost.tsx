@@ -1,14 +1,14 @@
-import "./CreatePost.scss";
-import { FC, useRef, useState, useEffect } from "react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { FC, useEffect, useRef, useState } from "react";
+import "./CreatePost.scss";
 
-import { Hashtag } from "../../popups/hashtag/Hashtag";
-import Giphy from "../../popups/giphy/Giphy";
-import { Emoji } from "@components/emoji";
-import { Unsplash } from "../../popups/unsplash/Unsplash";
+import { Box, Button, Container, Dialog, Flex, Grid } from "@radix-ui/themes";
+import { RxCross2 } from "react-icons/rx";
 import { createPost } from "../../api/api.ts";
+import Giphy from "../../popups/giphy/Giphy";
+import { Hashtag } from "../../popups/hashtag/Hashtag";
+import { Unsplash } from "../../popups/unsplash/Unsplash";
 import { Post } from "../../types/post.type.ts";
-import Modal from "@components/modal/Modal.tsx";
 
 interface CreateProps {
   show: boolean;
@@ -148,25 +148,30 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
   }, []);
 
   return (
-    <>
-      {show && (
-        <Modal onClose={onHide}>
-          <div className="createPostContainer">
-            <span className="createPostHeader"> Create </span>
-            <div className="createPostChannel">
-              <span>Select channel</span>
-              <div className="createPostChannelList">
-                {channelArray.map((item, index) => (
-                  <img
-                    src={`/channels/${item}.png`}
-                    alt=""
-                    className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
-                    key={index}
-                    onClick={() => toggleChannelBorder(index)}
-                  />
-                ))}
-              </div>
+    <Dialog.Root open={show} onOpenChange={onHide}>
+      <Dialog.Content maxWidth={"90vw"}>
+        <Flex justify={"between"}>
+          <Dialog.Title>Create</Dialog.Title>
+          <Dialog.Close>
+            <RxCross2 />
+          </Dialog.Close>
+        </Flex>
+        <Dialog.Description>
+          <div className="createPostChannel">
+            <span>Select channel</span>
+            <div className="createPostChannelList">
+              {channelArray.map((item, index) => (
+                <img
+                  src={`/channels/${item}.png`}
+                  alt=""
+                  className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
+                  key={index}
+                  onClick={() => toggleChannelBorder(index)}
+                />
+              ))}
             </div>
+          </div>
+          <Grid columns={{ initial: "0.6fr 0.4fr" }} gapX={"0.7rem"}>
             <div className="createPostContent">
               <div className="createPostPics">
                 {pictureArray.map((image, index) => (
@@ -226,23 +231,109 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
                 </div>
               </div>
             </div>
-            <div className="createPostButtons"></div>
-            <div></div>
-          </div>
-          <div>
-            <button onClick={onHide} className="bg-color-offtheme">
+            <Box
+              style={{
+                background: "var(--gray-a2)",
+                borderRadius: "var(--radius-3)",
+                padding: "1rem",
+              }}
+            >
+              <Container size="1">
+                {textAreaContent && (
+                  <div
+                    style={{
+                      border: "1px solid #ddd",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      fontFamily: "Arial, sans-serif",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <img
+                        src={`/channels/facebook.png`}
+                        alt=""
+                        className={`icon channelBorder`}
+                        style={{ height: "42px" }}
+                        key={"facebook-dummy"}
+                      />
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600 }}>Align & Shine</div>
+                        <div style={{ fontSize: "12px", color: "#888" }}>Just Now · 🌐</div>
+                      </div>
+
+                      <div style={{ fontSize: "20px", cursor: "pointer" }}>⋯</div>
+                    </div>
+
+                    <div style={{ marginBottom: "10px" }}>{textAreaContent}</div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-around",
+                        borderTop: "1px solid #eee",
+                        paddingTop: "8px",
+                        fontSize: "14px",
+                        color: "#555",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        👍 <span>Like</span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        💬 <span>Comment</span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ↪️ <span>Share</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Container>
+            </Box>
+          </Grid>
+          <Flex gap="3" pt={"1rem"}>
+            <Button onClick={onHide} color="indigo" variant="soft">
               Save Draft
-            </button>
-            <button onClick={onHide} className="bg-color-theme">
+            </Button>
+            <Button onClick={onHide} color="orange" variant="soft">
               Schedule Post
-            </button>
-            <button onClick={handleCreatePost} className="bg-color-theme">
+            </Button>
+            <Button onClick={handleCreatePost} color="cyan" variant="soft">
               Post now
-            </button>
-          </div>
-        </Modal>
-      )}
-    </>
+            </Button>
+          </Flex>
+        </Dialog.Description>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 };
 

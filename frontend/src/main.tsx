@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import axios from "axios";
 import { Provider } from "react-redux";
 import store from "./redux/store.ts";
+import "@radix-ui/themes/styles.css";
 
 axios.interceptors.request.use(
   (request) => {
