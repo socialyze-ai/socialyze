@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose';
 import { ConnectChannelDto } from './dto/connectChannel.dto';
 import { FacebookService } from '../service/facebook.service';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
+import { InstagramService } from '../service/instagram.service';
 
 @Injectable()
 export class ChannelService {
@@ -13,6 +14,7 @@ export class ChannelService {
     @InjectModel(OAuthSession.name)
     private oauthSessionModel: Model<OAuthSession>,
     private readonly facebookService: FacebookService,
+    private readonly instagramService: InstagramService,
   ) {}
 
   async getChannels(userId: string): Promise<Channel[]> {
@@ -36,7 +38,10 @@ export class ChannelService {
     let authUrl;
     if (handle === 'facebook') {
       authUrl = await this.facebookService.getAuthUrl(userId);
+    } else if (handle === 'instagram') {
+      authUrl = await this.instagramService.getAuthUrl(userId);
     }
+
     return authUrl;
   }
 
@@ -59,6 +64,8 @@ export class ChannelService {
       let response;
       if (oauthSession.handle === 'facebook') {
         response = await this.facebookService.authenticate(userId, authCode);
+      } else if (oauthSession.handle === 'instagram') {
+        response = await this.instagramService.authenticate(userId, authCode);
       }
 
       if (response.success) {
