@@ -9,6 +9,7 @@ import Giphy from "../../popups/giphy/Giphy";
 import { Hashtag } from "../../popups/hashtag/Hashtag";
 import { Unsplash } from "../../popups/unsplash/Unsplash";
 import { Post } from "../../types/post.type.ts";
+import { Facebook } from "./preview";
 
 interface CreateProps {
   show: boolean;
@@ -16,7 +17,6 @@ interface CreateProps {
 }
 
 const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
-  //States for Channel
   const channelArray = ["facebook", "instagram", "x"];
   const [channelBorder, setChannelBorder] = useState(channelArray.map(() => true));
   const toggleChannelBorder = (index: any) => {
@@ -25,7 +25,6 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
     setChannelBorder(updatedVisibility);
   };
 
-  // States for pictures
   const [pictureArray, setPictureArray] = useState<string[]>([]);
   const handleImageUpload = (event: any) => {
     console.log(event);
@@ -35,60 +34,41 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
       setPictureArray((prevPictureArray) => [...prevPictureArray, file]);
     } else {
       file = URL.createObjectURL(event.target.files[0]);
-      // const imageRef = ref(storage, `post/${v4()}`);
-      // uploadBytes(imageRef, event.target.files[0]).then((snapshot) => {
-      //   getDownloadURL(snapshot.ref).then((url) => {
-      //     setPictureArray((prevPictureArray) => [...prevPictureArray, url]);
-      //   });
-      // });
     }
-
-    //setPictureArray((prevPictureArray) => [...prevPictureArray, file]);
   };
 
-  //For clicking on PicUploader
   const fileInputRef = useRef<HTMLInputElement>(null);
   const openFileUploader = () => {
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
-  //Giphy
-  const giphyIconRef = useRef(null);
   const [isGiphyBoxOpen, setGiphyBoxOpen] = useState(false);
   const toggleGiphyBox = (event: any) => {
     event.stopPropagation();
     setGiphyBoxOpen(!isGiphyBoxOpen);
   };
 
-  //Unsplash
-  const UnsplashIconRef = useRef(null);
   const [isUnsplashBoxOpen, setUnsplashBoxOpen] = useState(false);
   const toggleUnsplashBox = (event: any) => {
     event.stopPropagation();
     setUnsplashBoxOpen(!isUnsplashBoxOpen);
   };
 
-  //TextArea
   const [textAreaContent, setTextAreaContent] = useState("");
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTextAreaContent(event.target.value);
   };
 
-  //EmojiPicjer
   const emojiIconRef = useRef<HTMLImageElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [selectedEmoji, setSelectedEmoji] = useState<string>("");
   const toggleEmojiPicker = () => {
     setIsEmojiPickerOpen(!isEmojiPickerOpen);
   };
-  const selectEmoji = (emojiData: EmojiClickData, event: MouseEvent) => {
-    setSelectedEmoji(emojiData.unified);
-    const htmlContentToAdd = "Hello, World!";
+  const selectEmoji = (emojiData: EmojiClickData) => {
     setTextAreaContent((prevContent) => prevContent + emojiData.emoji);
   };
 
-  //Hashtag Manager
   const hashtagIconRef = useRef<HTMLImageElement | null>(null);
   const hashtagRef = useRef<HTMLDivElement | null>(null);
   const [isHashtagOpen, setIsHashtagOpen] = useState(false);
@@ -97,7 +77,6 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
     setIsHashtagOpen(!isHashtagOpen);
   };
 
-  //Handle outside click
   const handleOutsideClick = (event: any) => {
     if (
       emojiPickerRef.current &&
@@ -117,7 +96,6 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
     }
   };
 
-  //Create Post
   const handleCreatePost = () => {
     const dataToSend: Post = {
       channelId: channelArray.join("-"),
@@ -128,15 +106,12 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
       caption: textAreaContent,
       images: pictureArray.join("-"),
     };
-    // Make the POST request when the button is clicked
     createPost(dataToSend)
       .then((response) => {
         console.log("POST request successful:", response.data);
-        // Handle the response as needed
       })
       .catch((error) => {
         console.error("POST request error:", error);
-        // Handle the error as needed
       });
   };
 
@@ -149,188 +124,131 @@ const CreatePost: FC<CreateProps> = ({ show, onHide }) => {
 
   return (
     <Dialog.Root open={show} onOpenChange={onHide}>
-      <Dialog.Content maxWidth={"90vw"}>
-        <Flex justify={"between"}>
-          <Dialog.Title>Create</Dialog.Title>
-          <Dialog.Close>
-            <RxCross2 />
-          </Dialog.Close>
-        </Flex>
+      <Dialog.Content
+        maxWidth={"90vw"}
+        style={{
+          backgroundColor: "#00000000",
+          boxShadow: "none",
+          padding: "0",
+        }}
+      >
         <Dialog.Description>
-          <div className="createPostChannel">
-            <span>Select channel</span>
-            <div className="createPostChannelList">
-              {channelArray.map((item, index) => (
-                <img
-                  src={`/channels/${item}.png`}
-                  alt=""
-                  className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
-                  key={index}
-                  onClick={() => toggleChannelBorder(index)}
-                />
-              ))}
-            </div>
-          </div>
-          <Grid columns={{ initial: "0.6fr 0.4fr" }} gapX={"0.7rem"}>
-            <div className="createPostContent">
-              <div className="createPostPics">
-                {pictureArray.map((image, index) => (
-                  <img key={index} src={image} className="createPostPic" />
-                ))}
-                <div className="createPostPicUploader" onClick={openFileUploader}>
-                  <img src="imagePreview.png" />
-                  <span>Drag & Drop or select your photo</span>
-                  <span>OR</span>
-                  <div className="createPostPicIcons">
-                    <img src="gif.png" onClick={toggleGiphyBox} />
-                    <img src="unsplash.png" onClick={toggleUnsplashBox} />
-                  </div>
-                </div>
-                <Giphy
-                  show={isGiphyBoxOpen}
-                  onHide={() => {
-                    setGiphyBoxOpen(false);
-                  }}
-                />
-                {isUnsplashBoxOpen && (
-                  <Unsplash
-                    show={isUnsplashBoxOpen}
-                    onHide={() => {
-                      setUnsplashBoxOpen(false);
-                    }}
-                    handleImageUpload={handleImageUpload}
-                  />
-                )}
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} />
-              </div>
-              <textarea
-                placeholder="Share what's on your mind !!"
-                value={textAreaContent} // Bind the value of the textarea to the state
-                onChange={handleTextAreaChange}
-              ></textarea>
-              <br />
-              <div className="createPostTextEdit">
-                <img src="emoji.png" onClick={toggleEmojiPicker} ref={emojiIconRef} />
-                <img src="hashtag.png" onClick={toggleHashtag} ref={hashtagIconRef} />
-                <img src="ai.png" />
-                <div
-                  ref={emojiPickerRef}
-                  className={`createPostTextEditEmojiPicker ${
-                    isEmojiPickerOpen ? "displayBlock" : "displayNone"
-                  }`}
-                >
-                  <EmojiPicker onEmojiClick={selectEmoji} autoFocusSearch={true} height={400} />
-                </div>
-                <div
-                  ref={hashtagRef}
-                  className={`createPostTextEditHashtag ${
-                    isHashtagOpen ? "displayBlock" : "displayNone"
-                  }`}
-                >
-                  <Hashtag />
-                </div>
-              </div>
-            </div>
-            <Box
+          <Grid
+            columns={{ initial: "0.68fr 0.32fr" }}
+            gapX={"0.7rem"}
+          >
+            <div
               style={{
-                background: "var(--gray-a2)",
+                backgroundColor: "#ffffff",
+                padding: "2rem",
                 borderRadius: "var(--radius-3)",
-                padding: "1rem",
               }}
             >
-              <Container size="1">
-                {textAreaContent && (
-                  <div
-                    style={{
-                      border: "1px solid #ddd",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      fontFamily: "Arial, sans-serif",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: "8px",
-                        gap: "0.5rem",
-                      }}
-                    >
-                      <img
-                        src={`/channels/facebook.png`}
-                        alt=""
-                        className={`icon channelBorder`}
-                        style={{ height: "42px" }}
-                        key={"facebook-dummy"}
-                      />
+              <h2>Create</h2>
+              <div className="createPostChannel">
+                <span>Select channel</span>
 
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600 }}>Align & Shine</div>
-                        <div style={{ fontSize: "12px", color: "#888" }}>Just Now · 🌐</div>
-                      </div>
+                <div className="createPostChannelList">
+                  {channelArray.map((item, index) => (
+                    <img
+                      src={`/channels/${item}.png`}
+                      alt=""
+                      className={`icon ${channelBorder[index] ? "channelBorder" : ""}`}
+                      key={index}
+                      onClick={() => toggleChannelBorder(index)}
+                    />
+                  ))}
+                </div>
+              </div>
 
-                      <div style={{ fontSize: "20px", cursor: "pointer" }}>⋯</div>
-                    </div>
-
-                    <div style={{ marginBottom: "10px" }}>{textAreaContent}</div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-around",
-                        borderTop: "1px solid #eee",
-                        paddingTop: "8px",
-                        fontSize: "14px",
-                        color: "#555",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        👍 <span>Like</span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        💬 <span>Comment</span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ↪️ <span>Share</span>
-                      </div>
+              <div className="createPostContent">
+                <div className="createPostPics">
+                  {pictureArray.map((image, index) => (
+                    <img key={index} src={image} className="createPostPic" />
+                  ))}
+                  <div className="createPostPicUploader" onClick={openFileUploader}>
+                    <img src="imagePreview.png" />
+                    <span>Drag & Drop or select your photo</span>
+                    <span>OR</span>
+                    <div className="createPostPicIcons">
+                      <img src="gif.png" onClick={toggleGiphyBox} />
+                      <img src="unsplash.png" onClick={toggleUnsplashBox} />
                     </div>
                   </div>
-                )}
+                  <Giphy
+                    show={isGiphyBoxOpen}
+                    onHide={() => {
+                      setGiphyBoxOpen(false);
+                    }}
+                  />
+                  {isUnsplashBoxOpen && (
+                    <Unsplash
+                      show={isUnsplashBoxOpen}
+                      onHide={() => {
+                        setUnsplashBoxOpen(false);
+                      }}
+                      handleImageUpload={handleImageUpload}
+                    />
+                  )}
+                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} />
+                </div>
+                <textarea
+                  placeholder="Share what's on your mind !!"
+                  value={textAreaContent}
+                  onChange={handleTextAreaChange}
+                ></textarea>
+                <br />
+                <div className="createPostTextEdit">
+                  <img src="emoji.png" onClick={toggleEmojiPicker} ref={emojiIconRef} />
+                  <img src="hashtag.png" onClick={toggleHashtag} ref={hashtagIconRef} />
+                  <img src="ai.png" />
+                  <div
+                    ref={emojiPickerRef}
+                    className={`createPostTextEditEmojiPicker ${
+                      isEmojiPickerOpen ? "displayBlock" : "displayNone"
+                    }`}
+                  >
+                    <EmojiPicker onEmojiClick={selectEmoji} autoFocusSearch={true} height={400} />
+                  </div>
+                  <div
+                    ref={hashtagRef}
+                    className={`createPostTextEditHashtag ${
+                      isHashtagOpen ? "displayBlock" : "displayNone"
+                    }`}
+                  >
+                    <Hashtag />
+                  </div>
+                </div>
+              </div>
+
+              <Flex gap="3" pt={"1rem"}>
+                <Button onClick={onHide} color="indigo" variant="soft">
+                  Save Draft
+                </Button>
+                <Button onClick={onHide} color="orange" variant="soft">
+                  Schedule Post
+                </Button>
+                <Button onClick={handleCreatePost} color="cyan" variant="soft">
+                  Post now
+                </Button>
+              </Flex>
+            </div>
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "var(--radius-3)",
+                padding: "2rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2rem"
+              }}
+            >
+              <h1 style={{fontSize: "1.5rem"}}>Facebook Preview</h1>
+              <Container size="1">
+                {textAreaContent && <Facebook content={textAreaContent} />}
               </Container>
-            </Box>
+            </div>
           </Grid>
-          <Flex gap="3" pt={"1rem"}>
-            <Button onClick={onHide} color="indigo" variant="soft">
-              Save Draft
-            </Button>
-            <Button onClick={onHide} color="orange" variant="soft">
-              Schedule Post
-            </Button>
-            <Button onClick={handleCreatePost} color="cyan" variant="soft">
-              Post now
-            </Button>
-          </Flex>
         </Dialog.Description>
       </Dialog.Content>
     </Dialog.Root>
