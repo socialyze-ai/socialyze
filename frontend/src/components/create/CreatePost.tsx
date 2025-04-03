@@ -1,9 +1,7 @@
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { FC, useEffect, useRef, useState } from "react";
 import "./CreatePost.scss";
-
-import { Box, Button, Container, Dialog, Flex, Grid } from "@radix-ui/themes";
-import { RxCross2 } from "react-icons/rx";
+import { Button, Container, Dialog, Flex, Grid } from "@radix-ui/themes";
 import { createPost } from "../../api/api.ts";
 import Giphy from "../../popups/giphy/Giphy";
 import { Hashtag } from "../../popups/hashtag/Hashtag";
