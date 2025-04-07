@@ -10,6 +10,7 @@ import {
   OAuthSessionSchema,
 } from 'src/schema/oauthsession.schema';
 import { InstagramService } from '../service/instagram.service';
+import { XService } from '../service/x.service';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { InstagramService } from '../service/instagram.service';
     ServiceModule,
   ],
   controllers: [ChannelController],
-  providers: [ChannelService, FacebookService, InstagramService],
+  providers: [ChannelService, FacebookService, InstagramService, XService],
 })
 export class ChannelModule {}

@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ChannelModule } from './modules/channel/channel.module';
 import { ServiceModule } from './modules/service/service.module';
+import { HashtagManagerModule } from './modules/hashtagManager/hashtagManager.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ServiceModule } from './modules/service/service.module';
     WorkspaceModule,
     ChannelModule,
     ServiceModule,
+    HashtagManagerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

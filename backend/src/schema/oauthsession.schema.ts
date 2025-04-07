@@ -6,6 +6,9 @@ export class OAuthSession {
   @Prop({ required: true })
   state: string;
 
+  @Prop()
+  secret: string;
+
   @Prop({ required: true })
   redirectUri: string;
 

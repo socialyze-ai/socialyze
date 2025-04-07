@@ -6,6 +6,7 @@ import { ConnectChannelDto } from './dto/connectChannel.dto';
 import { FacebookService } from '../service/facebook.service';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
 import { InstagramService } from '../service/instagram.service';
+import { XService } from '../service/x.service';
 
 @Injectable()
 export class ChannelService {
@@ -15,6 +16,7 @@ export class ChannelService {
     private oauthSessionModel: Model<OAuthSession>,
     private readonly facebookService: FacebookService,
     private readonly instagramService: InstagramService,
+    private readonly xService: XService,
   ) {}
 
   async getChannels(userId: string): Promise<Channel[]> {
@@ -40,6 +42,8 @@ export class ChannelService {
       authUrl = await this.facebookService.getAuthUrl(userId);
     } else if (handle === 'instagram') {
       authUrl = await this.instagramService.getAuthUrl(userId);
+    } else if (handle === 'x') {
+      authUrl = await this.xService.getAuthUrl(userId);
     }
 
     return authUrl;
@@ -50,8 +54,9 @@ export class ChannelService {
     userId: string,
   ): Promise<any> {
     try {
-      const { authCode, state } = connectChannelDto;
+      let { authCode, state } = connectChannelDto;
 
+      console.log(userId, state);
       const oauthSession = await this.oauthSessionModel.findOne({
         user: new Types.ObjectId(userId),
         state,
@@ -66,6 +71,9 @@ export class ChannelService {
         response = await this.facebookService.authenticate(userId, authCode);
       } else if (oauthSession.handle === 'instagram') {
         response = await this.instagramService.authenticate(userId, authCode);
+      } else if (oauthSession.handle === 'x') {
+        authCode = authCode + ':' + oauthSession.secret;
+        response = await this.xService.authenticate(userId, authCode);
       }
 
       if (response.success) {

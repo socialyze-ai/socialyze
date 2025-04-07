@@ -8,8 +8,16 @@ const useOAuthHandler = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const authCode = searchParams.get("code");
-    const state = searchParams.get("state");
+    let authCode = searchParams.get("code");
+    let state = searchParams.get("state");
+
+    let oauth_token = searchParams.get("oauth_token");
+    let oauth_verifier = searchParams.get("oauth_verifier");
+
+    if (oauth_token && oauth_verifier) {
+      state = oauth_token;
+      authCode = `${oauth_token}:${oauth_verifier}`;
+    }
 
     if (authCode) {
       axios
