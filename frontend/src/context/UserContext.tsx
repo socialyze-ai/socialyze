@@ -1,6 +1,12 @@
+import { BACKEND_URL } from "@/config/config";
 import axios from "axios";
-import { ReactNode, createContext, useContext, useState, useEffect } from "react";
-import { BACKEND_URL } from "../config/endpoints";
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
 
 export type Channels = {
   channelId: string;
@@ -29,7 +35,9 @@ type UserContextType = {
   updateUser: (userData: User) => void;
 };
 
-export const UserContext = createContext<UserContextType | undefined>(undefined);
+export const UserContext = createContext<UserContextType | undefined>(
+  undefined
+);
 
 export const useUser = () => {
   const user = useContext(UserContext);
@@ -39,7 +47,9 @@ export const useUser = () => {
   return user;
 };
 
-export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
 
   const updateUser = (user: User) => {
@@ -60,5 +70,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
   }, []);
 
-  return <UserContext.Provider value={{ user, updateUser }}>{children}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={{ user, updateUser }}>
+      {children}
+    </UserContext.Provider>
+  );
 };
