@@ -1,0 +1,25 @@
+name: 🚀 Deploy to Staging
+
+on:
+  push:
+    branches:
+      - next
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Connect and deploy via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/socialyze
+          git pull origin next
+          cd backend
+          npm install
+          npm run build
+          pm2 restart socialyze-backend
