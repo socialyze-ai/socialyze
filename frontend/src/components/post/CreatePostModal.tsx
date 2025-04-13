@@ -7,14 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Twitter,
-  X,
-  Youtube,
-} from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter, X, Youtube } from "lucide-react";
 import { usePosts } from "@/context/PostsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +33,7 @@ import {
   initializeChannelContent,
   syncContentAcrossChannels,
   setContent,
+  setScheduleModalOpen,
 } from "@/redux/slices/postCreation.slice";
 import { Media } from "./MediaUploader";
 import ImageEditor from "./editor/ImageEditor";
@@ -51,10 +45,7 @@ interface CreatePostModalProps {
   onClose: () => void;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
   const { channels, addPost } = usePosts();
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
@@ -81,15 +72,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   const handleContentChange = (channelId: string, content: string) => {
     // Use the new synchronization action instead of the single channel update
-    dispatch(
-      syncContentAcrossChannels({ sourceChannelId: channelId, content })
-    );
+    dispatch(syncContentAcrossChannels({ sourceChannelId: channelId, content }));
   };
 
-  const handlePostTypeChange = (
-    channelId: string,
-    type: "post" | "reel" | "story"
-  ) => {
+  const handlePostTypeChange = (channelId: string, type: "post" | "reel" | "story") => {
     dispatch(setPostTypeForChannel({ channelId, postType: type }));
   };
 
@@ -104,16 +90,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
 
     const hasContent = channels.some(
-      (channelId) =>
-        contentByChannel[channelId]?.trim() !== "" ||
-        postCreation.hashtags.length > 0
+      (channelId) => contentByChannel[channelId]?.trim() !== "" || postCreation.hashtags.length > 0,
     );
 
     if (!hasContent && postCreation.mediaUrls.length === 0) {
       toast({
         title: "Content required",
-        description:
-          "Please enter some content, hashtags, or add an image for your post.",
+        description: "Please enter some content, hashtags, or add an image for your post.",
         variant: "destructive",
       });
       return;
@@ -133,16 +116,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
 
     const hasContent = selectedChannels.some(
-      (channelId) =>
-        contentByChannel[channelId]?.trim() !== "" ||
-        postCreation.hashtags.length > 0
+      (channelId) => contentByChannel[channelId]?.trim() !== "" || postCreation.hashtags.length > 0,
     );
 
     if (!hasContent && postCreation.mediaUrls.length === 0) {
       toast({
         title: "Content required",
-        description:
-          "Please enter some content, hashtags, or add an image for your post.",
+        description: "Please enter some content, hashtags, or add an image for your post.",
         variant: "destructive",
       });
       return;
@@ -152,8 +132,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   const handleDraftSave = () => {
-    const channelsToUse =
-      selectedChannels.length > 0 ? selectedChannels : [channels[0].id];
+    const channelsToUse = selectedChannels.length > 0 ? selectedChannels : [channels[0].id];
 
     submitPost(channelsToUse, "draft");
   };
@@ -161,7 +140,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const submitPost = (
     channelIds: string[],
     status: "sent" | "scheduled" | "draft",
-    scheduledAt?: Date
+    scheduledAt?: Date,
   ) => {
     channelIds.forEach((channelId) => {
       const content = contentByChannel[channelId] || "";
@@ -177,19 +156,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     });
 
     const statusText =
-      status === "sent"
-        ? "sent"
-        : status === "scheduled"
-        ? "scheduled"
-        : "saved as draft";
+      status === "sent" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
 
     toast({
       title:
-        status === "sent"
-          ? "Post sent"
-          : status === "scheduled"
-          ? "Post scheduled"
-          : "Draft saved",
+        status === "sent" ? "Post sent" : status === "scheduled" ? "Post scheduled" : "Draft saved",
       description: `Your post has been ${statusText}.`,
     });
 
@@ -217,13 +188,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEditedMedia = (
-    editedMediaUrl: string,
-    selectedImage: Media
-  ) => {
+  const handleSaveEditedMedia = (editedMediaUrl: string, selectedImage: Media) => {
     const editedMediaId = selectedImage?.id;
     const updatedMediaUrls = postCreation.mediaUrls.map((media) =>
-      media.id === editedMediaId ? { ...media, url: editedMediaUrl } : media
+      media.id === editedMediaId ? { ...media, url: editedMediaUrl } : media,
     );
     dispatch(setMediaUrls(updatedMediaUrls));
     setIsEditDialogOpen(false);
@@ -253,9 +221,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <div
             className={cn(
               "max-h-[90vh] overflow-y-scroll bg-white p-5 rounded h-full",
-              selectedChannels.length !== 0 && activeChannel
-                ? "flex-[60%] max-w-[60%]"
-                : "flex-1"
+              selectedChannels.length !== 0 && activeChannel ? "flex-[60%] max-w-[60%]" : "flex-1",
             )}
           >
             <DialogHeader>
@@ -302,20 +268,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                           key={channelId}
                           channel={channel}
                           content={contentByChannel[channelId] || ""}
-                          onContentChange={(content) =>
-                            handleContentChange(channelId, content)
-                          }
+                          onContentChange={(content) => handleContentChange(channelId, content)}
                           mediaUrls={postCreation.mediaUrls}
-                          postType={
-                            postCreation.postTypeByChannel[channelId] || "post"
-                          }
-                          onPostTypeChange={(type) =>
-                            handlePostTypeChange(channelId, type)
-                          }
+                          postType={postCreation.postTypeByChannel[channelId] || "post"}
+                          onPostTypeChange={(type) => handlePostTypeChange(channelId, type)}
                           activeChannel={activeChannel || ""}
-                          onChannelSelect={(channelId) =>
-                            dispatch(setActiveChannel(channelId))
-                          }
+                          onChannelSelect={(channelId) => dispatch(setActiveChannel(channelId))}
                         />
                       );
                     })
@@ -324,22 +282,24 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
                 <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 mt-4 justify-between">
                   <div className="space-x-2">
-                    {/* <Button variant="outline" onClick={handleDraftSave}>
-                    Save as Draft
-                  </Button>
+                    <Button variant="outline" onClick={handleDraftSave}>
+                      Save as Draft
+                    </Button>
+                    {/* 
                   <Button variant="outline" onClick={handleOpenAdvanced}>
                     Advanced Options
                   </Button> */}
                   </div>
 
                   <div className="space-x-2">
-                    {/* <Button
-                    variant="outline"
-                    onClick={() => setIsScheduleModalOpen(true)}
-                  >
-                    Schedule
-                  </Button> */}
+                    <Button variant="outline" onClick={() => dispatch(setScheduleModalOpen(false))}>
+                      Schedule
+                    </Button>
                   </div>
+
+                  <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
+                    Post Now
+                  </Button>
                 </div>
               </>
             ) : (
@@ -356,9 +316,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                     });
                   }}
                   hashtags={postCreation.hashtags}
-                  onHashtagsChange={(hashtags) =>
-                    dispatch(setHashtags(hashtags))
-                  }
+                  onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
                   onMediaUrlsChange={(urls) => dispatch(setMediaUrls(urls))}
                 />
               </div>
@@ -366,15 +324,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
             {selectedChannels.length !== 0 && activeChannel && (
               <div className="flex justify-between">
-                <Button onClick={() => setIsCustomContent((prev) => !prev)}>
-                  Custom Content
-                </Button>
-                <Button
-                  onClick={handlePostNow}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Connect Channels to Post
-                </Button>
+                <Button onClick={() => setIsCustomContent((prev) => !prev)}>Custom Content</Button>
+
+                <div className="flex gap-2">
+                  <Button onClick={() => dispatch(setScheduleModalOpen(true))} variant="outline">
+                    Schedule
+                  </Button>
+                  <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
+                    Post Now
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -392,8 +351,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                     const channel = getChannelById(channelId);
                     return channel ? (
                       <option key={channel.id} value={channel.id}>
-                        {channel.type.charAt(0).toUpperCase() +
-                          channel.type.slice(1)}
+                        {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
                       </option>
                     ) : null;
                   })}
@@ -405,9 +363,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <>
                     {getSocialIcon(getChannelById(activeChannel)!.type, 16)}
                     <span className="ml-2">
-                      {getChannelById(activeChannel)!
-                        .type.charAt(0)
-                        .toUpperCase() +
+                      {getChannelById(activeChannel)!.type.charAt(0).toUpperCase() +
                         getChannelById(activeChannel)!.type.slice(1)}{" "}
                       Preview
                     </span>
@@ -415,10 +371,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 )}
               </div>
 
-              <div
-                className="overflow-auto"
-                style={{ maxHeight: "calc(90vh - 100px)" }}
-              >
+              <div className="overflow-auto" style={{ maxHeight: "calc(90vh - 100px)" }}>
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={contentByChannel[activeChannel] || ""}
@@ -437,12 +390,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
       <ScheduleModal
         isOpen={postCreation.isScheduleModalOpen}
-        onClose={() =>
-          dispatch({
-            type: "postCreation/setScheduleModalOpen",
-            payload: false,
-          })
-        }
+        onClose={() => dispatch(setScheduleModalOpen(false))}
         selectedDate={postCreation.scheduledDate || new Date()}
         onSchedule={handleSchedule}
         content=""

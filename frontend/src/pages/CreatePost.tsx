@@ -4,11 +4,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePosts } from "@/context/PostsContext";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -59,10 +55,7 @@ const CreatePost = () => {
   };
 
   const handleSubmit = (isDraft: boolean = false) => {
-    if (
-      postCreation.content.trim() === "" &&
-      postCreation.hashtags.length === 0
-    ) {
+    if (postCreation.content.trim() === "" && postCreation.hashtags.length === 0) {
       toast({
         title: "Content required",
         description: "Please enter some content for your post.",
@@ -80,9 +73,7 @@ const CreatePost = () => {
       return;
     }
 
-    const scheduledAt = postCreation.isScheduled
-      ? combineDateTime()
-      : undefined;
+    const scheduledAt = postCreation.isScheduled ? combineDateTime() : undefined;
 
     if (postCreation.isScheduled && !scheduledAt) {
       toast({
@@ -93,29 +84,18 @@ const CreatePost = () => {
       return;
     }
 
-    const finalContent = addHashtagsToContent(
-      postCreation.content,
-      postCreation.hashtags
-    );
+    const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
 
     addPost({
       content: finalContent,
       channels: postCreation.selectedChannels,
       scheduledAt,
       mediaUrls: postCreation.mediaUrls.map((media) => media.url),
-      status: isDraft
-        ? "draft"
-        : postCreation.isScheduled
-        ? "scheduled"
-        : "sent",
+      status: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "sent",
     });
 
     toast({
-      title: isDraft
-        ? "Draft saved"
-        : postCreation.isScheduled
-        ? "Post scheduled"
-        : "Post sent",
+      title: isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
       description: isDraft
         ? "Your draft has been saved."
         : postCreation.isScheduled
@@ -132,10 +112,7 @@ const CreatePost = () => {
   };
 
   const handleScheduleFromModal = (scheduledAt: Date, channelIds: string[]) => {
-    const finalContent = addHashtagsToContent(
-      postCreation.content,
-      postCreation.hashtags
-    );
+    const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
 
     addPost({
       content: finalContent,
@@ -147,20 +124,14 @@ const CreatePost = () => {
 
     toast({
       title: "Post scheduled",
-      description: `Your post has been scheduled for ${format(
-        scheduledAt,
-        "PPP p"
-      )}.`,
+      description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
     });
 
     navigate("/dashboard");
     dispatch(resetPostCreation());
   };
 
-  const finalContent = addHashtagsToContent(
-    postCreation.content,
-    postCreation.hashtags
-  );
+  const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
 
   return (
     <MainLayout title="Create Post">
@@ -200,16 +171,14 @@ const CreatePost = () => {
           />
 
           {/* Scheduler */}
-          {/* <Card className="mb-6">
+          <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium">Schedule</h3>
                 <Checkbox
                   id="schedule-toggle"
                   checked={postCreation.isScheduled}
-                  onCheckedChange={(checked) =>
-                    dispatch(setIsScheduled(checked as boolean))
-                  }
+                  onCheckedChange={(checked) => dispatch(setIsScheduled(checked as boolean))}
                 />
               </div>
 
@@ -223,8 +192,7 @@ const CreatePost = () => {
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal mt-1",
-                            !postCreation.scheduledDate &&
-                              "text-muted-foreground"
+                            !postCreation.scheduledDate && "text-muted-foreground",
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -258,9 +226,9 @@ const CreatePost = () => {
                 </div>
               )}
             </CardContent>
-          </Card> */}
+          </Card>
 
-          <div className="flex flex-col space-y-3">
+          <div className="flex justify-end gap-5">
             {/* <Button
               variant="outline"
               onClick={() => dispatch(setScheduleModalOpen(true))}
@@ -270,14 +238,15 @@ const CreatePost = () => {
               <span>Open Calendar</span>
             </Button> */}
 
+            <Button variant="outline" onClick={() => handleSubmit(true)}>
+              Save as Draft
+            </Button>
+
             {postCreation.isScheduled ? (
               <Button onClick={() => handleSubmit(false)}>Schedule Post</Button>
             ) : (
               <Button onClick={() => handleSubmit(false)}>Post Now</Button>
             )}
-            {/* <Button variant="outline" onClick={() => handleSubmit(true)}>
-              Save as Draft
-            </Button> */}
           </div>
         </div>
       </div>
@@ -287,10 +256,7 @@ const CreatePost = () => {
         onClose={() => dispatch(setScheduleModalOpen(false))}
         selectedDate={postCreation.scheduledDate || new Date()}
         onSchedule={handleScheduleFromModal}
-        content={addHashtagsToContent(
-          postCreation.content,
-          postCreation.hashtags
-        )}
+        content={addHashtagsToContent(postCreation.content, postCreation.hashtags)}
       />
     </MainLayout>
   );

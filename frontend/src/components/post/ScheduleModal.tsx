@@ -1,15 +1,24 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { Label } from '@/components/ui/label';
-import { usePosts } from '@/context/PostsContext';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Clock } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Label } from "@/components/ui/label";
+import { usePosts } from "@/context/PostsContext";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Clock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Card, CardContent } from "../ui/card";
+import { getSocialIcon } from "./ChannelSelector";
+import SelectedChannels from "./SelectedChannels";
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -19,9 +28,15 @@ interface ScheduleModalProps {
   content: string;
 }
 
-const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selectedDate, onSchedule, content }) => {
+const ScheduleModal: React.FC<ScheduleModalProps> = ({
+  isOpen,
+  onClose,
+  selectedDate,
+  onSchedule,
+  content,
+}) => {
   const { channels } = usePosts();
-  const [time, setTime] = useState('12:00');
+  const [time, setTime] = useState("12:00");
   const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
 
@@ -30,44 +45,35 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
   };
 
   const handleChannelToggle = (channelId: string) => {
-    setSelectedChannels(prev => 
-      prev.includes(channelId)
-        ? prev.filter(id => id !== channelId)
-        : [...prev, channelId]
+    setSelectedChannels((prev) =>
+      prev.includes(channelId) ? prev.filter((id) => id !== channelId) : [...prev, channelId],
     );
   };
 
   const handleSchedule = () => {
     if (!date || selectedChannels.length === 0) return;
-    
-    const [hours, minutes] = time.split(':').map(Number);
+
+    const [hours, minutes] = time.split(":").map(Number);
     const scheduledDate = new Date(date);
     scheduledDate.setHours(hours, minutes);
-    
+
     onSchedule(scheduledDate, selectedChannels);
     onClose();
   };
 
   // Preview of the first few characters of content
-  const contentPreview = content.length > 100 
-    ? `${content.substring(0, 100)}...` 
-    : content;
+  const contentPreview = content.length > 100 ? `${content.substring(0, 100)}...` : content;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Schedule Post</DialogTitle>
-          <DialogDescription>
-            Choose when and where to publish your post.
-          </DialogDescription>
+          <DialogDescription>Choose when and where to publish your post.</DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-6 py-4">
-          <div className="grid gap-2">
-            <Label>Content Preview</Label>
-            <div className="p-3 bg-muted rounded-md text-sm">{contentPreview}</div>
-          </div>
+          <SelectedChannels />
 
           <div className="grid gap-2">
             <Label htmlFor="date">Date and Time</Label>
@@ -78,7 +84,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
+                      !date && "text-muted-foreground",
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -98,10 +104,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
               </Popover>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <input
@@ -119,7 +122,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
           <div className="grid gap-2">
             <Label>Social Channels</Label>
             <div className="grid gap-3">
-              {channels.map(channel => (
+              {channels.map((channel) => (
                 <div key={channel.id} className="flex items-center space-x-3">
                   <Checkbox
                     id={`channel-${channel.id}`}
@@ -131,7 +134,11 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
                     className="flex items-center space-x-3 cursor-pointer"
                   >
                     <div className="h-8 w-8 rounded-full overflow-hidden bg-muted">
-                      <img src={channel.profileImage} alt={channel.name} className="h-full w-full object-cover" />
+                      <img
+                        src={channel.profileImage}
+                        alt={channel.name}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <div>
                       <p>{channel.name}</p>
@@ -147,11 +154,10 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, selected
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={handleSchedule}
-            disabled={!date || selectedChannels.length === 0}
-          >
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSchedule} disabled={!date || selectedChannels.length === 0}>
             Schedule Post
           </Button>
         </DialogFooter>

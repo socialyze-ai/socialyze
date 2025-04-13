@@ -15,6 +15,24 @@ interface ChannelSelectorProps {
   content?: string;
 }
 
+// Get social media icon by type
+export const getSocialIcon = (type: string) => {
+  switch (type) {
+    case "facebook":
+      return <Facebook className="text-[#1877F2]" />;
+    case "twitter":
+      return <Twitter className="text-[#1DA1F2]" />;
+    case "instagram":
+      return <Instagram className="text-[#E4405F]" />;
+    case "linkedin":
+      return <Linkedin className="text-[#0A66C2]" />;
+    // case "tiktok":
+    //   return <TiktokIcon />;
+    default:
+      return <Twitter className="text-[#1DA1F2]" />;
+  }
+};
+
 const ChannelSelector: React.FC<ChannelSelectorProps> = ({
   channels,
   selectedChannels,
@@ -24,24 +42,6 @@ const ChannelSelector: React.FC<ChannelSelectorProps> = ({
 }) => {
   const { mediaUrls } = useSelector(selectPostCreation);
 
-  // Get social media icon by type
-  const getSocialIcon = (type: string) => {
-    switch (type) {
-      case "facebook":
-        return <Facebook className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter className="text-[#1DA1F2]" />;
-      case "instagram":
-        return <Instagram className="text-[#E4405F]" />;
-      case "linkedin":
-        return <Linkedin className="text-[#0A66C2]" />;
-      // case "tiktok":
-      //   return <TiktokIcon />;
-      default:
-        return <Twitter className="text-[#1DA1F2]" />;
-    }
-  };
-
   return (
     <Card className={className}>
       <CardContent className="pt-6">
@@ -50,9 +50,7 @@ const ChannelSelector: React.FC<ChannelSelectorProps> = ({
             <div
               key={channel.id}
               className={`h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center cursor-pointer m-2 ${
-                selectedChannels.includes(channel.id)
-                  ? "ring-2 ring-primary"
-                  : ""
+                selectedChannels.includes(channel.id) ? "ring-2 ring-primary" : ""
               }`}
               onClick={() => onChannelToggle(channel.id)}
             >
