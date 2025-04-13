@@ -3,6 +3,7 @@ import userReducer from "./slices/user.slice";
 import channelsReducer from "./slices/channels.slice";
 import imageEditorReducer from "./slices/imageEditor.slice";
 import postCreationReducer from "./slices/postCreation.slice";
+import postsReducer from "./slices/posts.slice";
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     channels: channelsReducer,
     imageEditor: imageEditorReducer,
     postCreation: postCreationReducer,
+    posts: postsReducer,
   },
 });
 

@@ -7,7 +7,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Facebook, Instagram, Linkedin, Twitter, X, Youtube } from "lucide-react";
+import {
+  CalendarCheck2,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Save,
+  Twitter,
+  X,
+  Youtube,
+} from "lucide-react";
 import { usePosts } from "@/context/PostsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -280,15 +289,15 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   )}
                 </div>
 
-                <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 mt-4 justify-between">
+                {/* <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 mt-4 justify-between">
                   <div className="space-x-2">
                     <Button variant="outline" onClick={handleDraftSave}>
                       Save as Draft
                     </Button>
-                    {/* 
-                  <Button variant="outline" onClick={handleOpenAdvanced}>
-                    Advanced Options
-                  </Button> */}
+
+                    <Button variant="outline" onClick={handleOpenAdvanced}>
+                      Advanced Options
+                    </Button>
                   </div>
 
                   <div className="space-x-2">
@@ -300,7 +309,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
                     Post Now
                   </Button>
-                </div>
+                </div> */}
               </>
             ) : (
               <div className="lg:col-span-7 mb-3">
@@ -327,11 +336,20 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 <Button onClick={() => setIsCustomContent((prev) => !prev)}>Custom Content</Button>
 
                 <div className="flex gap-2">
-                  <Button onClick={() => dispatch(setScheduleModalOpen(true))} variant="outline">
-                    Schedule
+                  <Button onClick={handleDraftSave} variant="outline" size="icon">
+                    <Save />
                   </Button>
+
+                  <Button
+                    onClick={() => dispatch(setScheduleModalOpen(true))}
+                    variant="outline"
+                    size="icon"
+                  >
+                    <CalendarCheck2 />
+                  </Button>
+
                   <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
-                    Post Now
+                    Post
                   </Button>
                 </div>
               </div>
