@@ -1,35 +1,49 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import svgr from "vite-plugin-svgr";
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  esbuild: {
-    drop: process.env.MODE === "production" ? ["console", "debugger"] : [],
-  },
-  define: {
-    global: {},
-  },
+export default defineConfig(({}) => ({
+  plugins: [react()].filter(Boolean),
   resolve: {
     alias: {
-      "@components": path.resolve(__dirname, "src/components"),
-      "@hooks": path.resolve(__dirname, "src/hooks"),
-      "@assets": path.resolve(__dirname, "src/assets"),
-      "@pages": path.resolve(__dirname, "src/pages"),
-      "@popups": path.resolve(__dirname, "src/popups"),
-      "@utils": path.resolve(__dirname, "src/utils"),
-      "@slices": path.resolve(__dirname, "src/redux/slices"),
-      "@styles": path.resolve(__dirname, "src/styles"),
-      "@config": path.resolve(__dirname, "src/config"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-  plugins: [svgr(), react()],
-  // server: {
-  //   https: {
-  //     key: './certs/cert.key',
-  //     cert: './certs/cert.crt',
-  //   },
-  //   host: '127.0.0.1'
-  // },
-});
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Core React chunk
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-router-dom/")
+          ) {
+            return "vendor";
+          }
+
+          // UI framework chunk
+          if (
+            id.includes("node_modules/@radix-ui/") ||
+            id.includes("node_modules/lucide-react/") ||
+            id.includes("node_modules/class-variance-authority/") ||
+            id.includes("node_modules/clsx/") ||
+            id.includes("node_modules/tailwind-merge/")
+          ) {
+            return "ui";
+          }
+
+          // Form components chunk
+          if (
+            id.includes("node_modules/react-hook-form/") ||
+            id.includes("node_modules/zod/") ||
+            id.includes("node_modules/@hookform/resolvers/")
+          ) {
+            return "components";
+          }
+        },
+      },
+    },
+  },
+}));
