@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import LinkEmbed from "./LinkEmbed";
 import EmojiPicker from "./EmojiPicker";
@@ -9,6 +8,7 @@ import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 import HashtagModal from "./HashtagModal";
 import { cn } from "@/lib/utils";
+import AIAssistantTextarea from "./AIAssistantTextarea";
 
 interface PostComposerProps {
   isPostModal?: boolean;
@@ -29,44 +29,29 @@ const PostComposer: React.FC<PostComposerProps> = ({
   onMediaUrlsChange,
   className,
 }) => {
-  const [embeddedLink, setEmbeddedLink] = useState<
+  const [embeddedLink, setEmbeddedLink] = React.useState<
     { url: string; title: string } | undefined
   >(undefined);
-  const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(
-    null
-  );
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const { mediaUrls } = useSelector(selectPostCreation);
 
+  // Handle inserting content
   const handleInsertEmoji = (emoji: string) => {
     onContentChange(content + emoji);
-    textareaRef?.focus();
   };
 
   const handleMention = (username: string) => {
     onContentChange(`${content}@${username} `);
-    textareaRef?.focus();
   };
-
-  const suggestedHashtags = [
-    "marketing",
-    "socialmedia",
-    "contentcreator",
-    "smm",
-  ];
 
   return (
     <Card className={className}>
       <CardContent className={cn(isPostModal ? "p-3" : "pt-6")}>
-        <Textarea
-          placeholder="What would you like to share?"
-          className={cn(
-            "min-h-[150px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-            isPostModal ? "text-base" : "text-lg"
-          )}
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          ref={setTextareaRef}
+        <AIAssistantTextarea
+          content={content}
+          onContentChange={onContentChange}
+          isPostModal={isPostModal}
         />
 
         {mediaUrls.length > 0 && (
