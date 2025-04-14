@@ -1,31 +1,32 @@
-import React, { useState } from "react";
-import {
-  Wand2,
-  X,
-  ChevronLeft,
-  RotateCcw,
-  Copy,
-  Plus,
-  Heart,
-  Save,
-  History,
-  BookOpen,
-  Bookmark,
-  Check,
-  Undo,
-  Redo,
-} from "lucide-react";
+import React from "react";
+import { Wand2, X, ChevronLeft, RotateCcw, Copy, Heart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
-import { setIsAIAssistantOpen } from "@/redux/slices/postCreation.slice";
+import { useDispatch, useSelector } from "react-redux";
+import { setContent, setIsAIAssistantOpen } from "@/redux/slices/postCreation.slice";
+import {
+  selectAIAssistant,
+  selectCurrentStage,
+  selectPrompt,
+  selectSelectedTone,
+  selectSuggestions,
+  selectSelectedSuggestion,
+  selectIsFavorite,
+  selectExamplePrompts,
+  setCurrentStage,
+  setPrompt,
+  clearPrompt,
+  setSelectedTone,
+  setSelectedSuggestion,
+  toggleFavorite,
+  reset,
+} from "@/redux/slices/aiAssistant.slice";
+import { RootState } from "@/redux/store";
 
 const AIAssistantPanel = () => {
   return <AIAssistantEditor />;
@@ -34,19 +35,18 @@ const AIAssistantPanel = () => {
 export default AIAssistantPanel;
 
 const AIAssistantEditor = () => {
-  const [currentStage, setCurrentStage] = useState(1);
-  const [prompt, setPrompt] = useState("");
-  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [selectedTone, setSelectedTone] = useState("balanced");
-  const [isFavorite, setIsFavorite] = useState(false);
-
   const dispatch = useDispatch();
 
-  const examplePrompts = [
-    "Write something on marketing",
-    "Write something on travel",
-    "Write something on technology",
-  ];
+  const { content } = useSelector((state: RootState) => state.postCreation);
+
+  // Get state from Redux instead of local state
+  const currentStage = useSelector(selectCurrentStage);
+  const prompt = useSelector(selectPrompt);
+  const selectedTone = useSelector(selectSelectedTone);
+  const suggestions = useSelector(selectSuggestions);
+  const selectedSuggestion = useSelector(selectSelectedSuggestion);
+  const isFavorite = useSelector(selectIsFavorite);
+  const examplePrompts = useSelector(selectExamplePrompts);
 
   const tones = [
     { id: "casual", label: "Casual", icon: "✦" },
@@ -54,32 +54,24 @@ const AIAssistantEditor = () => {
     { id: "formal", label: "Formal", icon: "✧" },
   ];
 
-  const suggestions = [
-    "Unlock your brand's potential with cutting-edge marketing tactics and imaginative strategies! Explore customized solutions that can dramatically boost your brand's growth and visibility. For example, personalized campaigns and data-driven insights have been shown to elevate engagement by over 35%, thus ensuring a more profound connection with your audience. #MarketingMagic #BrandSuccess",
-    "Transform your marketing approach with data-driven strategies and customer-centric campaigns. Our research shows that personalized content increases engagement by 35% and conversion rates by 20%. Ready to elevate your brand's performance?",
-    "Looking to amplify your brand's impact? Our marketing solutions combine analytical precision with creative innovation, delivering measurable results. Industry leaders have seen 30-40% improvement in customer retention using our approach.",
-  ];
-
   const handleClear = () => {
-    setPrompt("");
+    dispatch(clearPrompt());
   };
 
   const handleNext = () => {
     if (currentStage < 3) {
-      setCurrentStage(currentStage + 1);
+      dispatch(setCurrentStage(currentStage + 1));
     }
   };
 
   const handleBack = () => {
     if (currentStage > 1) {
-      setCurrentStage(currentStage - 1);
+      dispatch(setCurrentStage(currentStage - 1));
     }
   };
 
   const handleClose = () => {
-    // Would normally close the panel
-    setCurrentStage(1);
-    setPrompt("");
+    dispatch(reset());
     dispatch(setIsAIAssistantOpen(false));
   };
 
@@ -89,6 +81,14 @@ const AIAssistantEditor = () => {
 
   const getWordCount = (text) => {
     return text.trim().split(/\s+/).length;
+  };
+
+  const handleReplace = () => {
+    dispatch(setContent(suggestions[selectedSuggestion]));
+  };
+
+  const handleInsert = () => {
+    dispatch(setContent(content + "\n" + suggestions[selectedSuggestion]));
   };
 
   const renderStage1 = () => (
@@ -109,7 +109,7 @@ const AIAssistantEditor = () => {
         <div className="relative">
           <Input
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => dispatch(setPrompt(e.target.value))}
             placeholder="Write something..."
             className="w-full pr-8"
           />
@@ -132,7 +132,7 @@ const AIAssistantEditor = () => {
                 key={index}
                 variant="secondary"
                 className="flex w-fit items-center gap-1 pl-2 pr-1 py-1 bg-gray-100 hover:bg-gray-200 cursor-pointer"
-                onClick={() => setPrompt(examplePrompt)}
+                onClick={() => dispatch(setPrompt(examplePrompt))}
               >
                 {examplePrompt}
                 <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
@@ -153,7 +153,7 @@ const AIAssistantEditor = () => {
                 className={`cursor-pointer ${
                   selectedTone === tone.id ? "bg-blue-600" : "bg-white"
                 }`}
-                onClick={() => setSelectedTone(tone.id)}
+                onClick={() => dispatch(setSelectedTone(tone.id))}
               >
                 {tone.icon} {tone.label}
               </Badge>
@@ -206,7 +206,7 @@ const AIAssistantEditor = () => {
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            onClick={() => setIsFavorite(!isFavorite)}
+            onClick={() => dispatch(toggleFavorite())}
           >
             <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
           </Button>
@@ -242,7 +242,7 @@ const AIAssistantEditor = () => {
                   className="bg-blue-600 hover:bg-blue-700"
                   size="sm"
                   onClick={() => {
-                    setSelectedSuggestion(index);
+                    dispatch(setSelectedSuggestion(index));
                     handleNext();
                   }}
                 >
@@ -393,10 +393,10 @@ const AIAssistantEditor = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleReplace}>
               <span className="text-xs">Replace</span>
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
+            <Button className="bg-blue-600 hover:bg-blue-700" size="sm" onClick={handleInsert}>
               <span className="text-xs">Insert</span>
             </Button>
           </div>
