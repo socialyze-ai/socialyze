@@ -230,11 +230,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
           className={cn(
-            "sm:max-w-[900px] w-[90vw] md:w-[70vw] max-h-[90vh] flex flex-col md:flex-row gap-4 flex-grow bg-transparent border-none p-0",
+            "max-h-[90vh] flex gap-4 bg-transparent border-none p-0",
+            postCreation.isAIAssistantOpen
+              ? "max-w-[90dvw]"
+              : selectedChannels.length !== 0 && activeChannel
+              ? "max-w-[60dvw]"
+              : "flex-1",
           )}
         >
           {postCreation.isAIAssistantOpen && (
-            <div className="flex-[40%] max-w-[40%] max-h-[90vh] overflow-y-auto">
+            <div className="max-w-[30%] h-full overflow-y-auto">
               <AIAssistantPanel />
             </div>
           )}
@@ -242,7 +247,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           <div
             className={cn(
               "max-h-[90vh] overflow-y-scroll bg-white p-5 rounded h-full",
-              selectedChannels.length !== 0 && activeChannel ? "flex-[60%] max-w-[60%]" : "flex-1",
+              postCreation.isAIAssistantOpen
+                ? "w-[40%]"
+                : selectedChannels.length !== 0 && activeChannel
+                ? "w-[60%]"
+                : "flex-1",
             )}
           >
             <DialogHeader>
@@ -300,28 +309,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                     })
                   )}
                 </div>
-
-                {/* <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 mt-4 justify-between">
-                  <div className="space-x-2">
-                    <Button variant="outline" onClick={handleDraftSave}>
-                      Save as Draft
-                    </Button>
-
-                    <Button variant="outline" onClick={handleOpenAdvanced}>
-                      Advanced Options
-                    </Button>
-                  </div>
-
-                  <div className="space-x-2">
-                    <Button variant="outline" onClick={() => dispatch(setScheduleModalOpen(false))}>
-                      Schedule
-                    </Button>
-                  </div>
-
-                  <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
-                    Post Now
-                  </Button>
-                </div> */}
               </>
             ) : (
               <div className="lg:col-span-7 mb-3">
@@ -370,7 +357,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
           {/* Preview Section */}
           {selectedChannels.length !== 0 && activeChannel && (
-            <div className="flex-[40%] max-w-[40%] border-l pl-4 hidden md:block bg-white p-5 rounded h-full max-h-[90vh]">
+            <div
+              className={cn(
+                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full",
+                postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
+              )}
+            >
               <div className="flex justify-between mb-2 w-full">
                 <select
                   value={activeChannel}
@@ -405,10 +397,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={contentByChannel[activeChannel] || ""}
-                    // content={addHashtagsToContent(
-                    //   contentByChannel[activeChannel] || "",
-                    //   postCreation.hashtags
-                    // )}
                     channel={getChannelById(activeChannel)!}
                   />
                 )}
