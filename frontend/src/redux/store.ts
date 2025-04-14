@@ -5,6 +5,8 @@ import imageEditorReducer from "./slices/imageEditor.slice";
 import postCreationReducer from "./slices/postCreation.slice";
 import postsReducer from "./slices/posts.slice";
 import aiAssistantReducer from "./slices/aiAssistant.slice";
+import tagManagerReducer from "./slices/tagManager.slice";
+
 const store = configureStore({
   reducer: {
     user: userReducer,
@@ -13,6 +15,7 @@ const store = configureStore({
     postCreation: postCreationReducer,
     posts: postsReducer,
     aiAssistant: aiAssistantReducer,
+    tagManager: tagManagerReducer,
   },
 });
 

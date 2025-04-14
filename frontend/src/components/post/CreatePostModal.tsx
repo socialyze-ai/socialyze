@@ -50,6 +50,7 @@ import ImageEditor from "./editor/ImageEditor";
 import PostComposer from "./PostComposer";
 import { cn } from "@/lib/utils";
 import AIAssistantPanel from "./aiAssistant/AIAssistantPanel";
+import TagSelector from "./TagSelector";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -264,10 +265,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             )}
           >
             <DialogHeader>
-              <DialogTitle>Create Post</DialogTitle>
-              <DialogDescription>
-                Create and schedule posts for your social media channels
-              </DialogDescription>
+              <div className="flex w-full flex-col gap-2">
+                <div className="flex w-full justify-between items-center">
+                  <DialogTitle>Create Post</DialogTitle>
+
+                  <TagSelector />
+                </div>
+                <DialogDescription>
+                  Create and schedule posts for your social media channels
+                </DialogDescription>
+              </div>
             </DialogHeader>
 
             <div className="flex justify-between items-center my-4">
