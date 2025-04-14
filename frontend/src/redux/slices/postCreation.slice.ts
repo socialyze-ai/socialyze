@@ -43,6 +43,7 @@ export interface PostCreationState {
 
   // Modal states
   isScheduleModalOpen: boolean;
+  isAIAssistantOpen: boolean;
 }
 
 const initialState: PostCreationState = {
@@ -57,6 +58,7 @@ const initialState: PostCreationState = {
   scheduledTime: "12:00",
   isScheduleModalOpen: false,
   hashtagGroups: [],
+  isAIAssistantOpen: false,
 };
 
 const postCreationSlice = createSlice({
@@ -76,10 +78,7 @@ const postCreationSlice = createSlice({
     setHashtags: (state, action: PayloadAction<string[]>) => {
       state.hashtags = action.payload;
       // Update content with new hashtags
-      const updatedContent = addHashtagsToContent(
-        state.content,
-        state.hashtags
-      );
+      const updatedContent = addHashtagsToContent(state.content, state.hashtags);
       state.content = updatedContent;
 
       // Update content for all selected channels
@@ -92,10 +91,7 @@ const postCreationSlice = createSlice({
       if (!state.hashtags.includes(action.payload)) {
         state.hashtags.push(action.payload);
         // Update content with the new hashtag
-        const updatedContent = addHashtagsToContent(
-          state.content,
-          state.hashtags
-        );
+        const updatedContent = addHashtagsToContent(state.content, state.hashtags);
         state.content = updatedContent;
 
         // Update content for all selected channels
@@ -108,10 +104,7 @@ const postCreationSlice = createSlice({
     removeHashtag: (state, action: PayloadAction<number>) => {
       state.hashtags.splice(action.payload, 1);
       // Update content after removing the hashtag
-      const updatedContent = addHashtagsToContent(
-        state.content,
-        state.hashtags
-      );
+      const updatedContent = addHashtagsToContent(state.content, state.hashtags);
       state.content = updatedContent;
 
       // Update content for all selected channels
@@ -131,16 +124,12 @@ const postCreationSlice = createSlice({
 
       if (state.selectedChannels.includes(channelId)) {
         // Channel is being removed
-        state.selectedChannels = state.selectedChannels.filter(
-          (id) => id !== channelId
-        );
+        state.selectedChannels = state.selectedChannels.filter((id) => id !== channelId);
 
         // Update active channel if needed
         if (state.activeChannel === channelId) {
           state.activeChannel =
-            state.selectedChannels.length > 0
-              ? state.selectedChannels[0]
-              : null;
+            state.selectedChannels.length > 0 ? state.selectedChannels[0] : null;
         }
       } else {
         // Channel is being added
@@ -172,7 +161,7 @@ const postCreationSlice = createSlice({
     // Channel-specific content
     setContentForChannel: (
       state,
-      action: PayloadAction<{ channelId: string; content: string }>
+      action: PayloadAction<{ channelId: string; content: string }>,
     ) => {
       const { channelId, content } = action.payload;
       state.contentByChannel[channelId] = content;
@@ -180,7 +169,7 @@ const postCreationSlice = createSlice({
 
     setPostTypeForChannel: (
       state,
-      action: PayloadAction<{ channelId: string; postType: PostType }>
+      action: PayloadAction<{ channelId: string; postType: PostType }>,
     ) => {
       const { channelId, postType } = action.payload;
       state.postTypeByChannel[channelId] = postType;
@@ -204,6 +193,10 @@ const postCreationSlice = createSlice({
       state.isScheduleModalOpen = action.payload;
     },
 
+    setIsAIAssistantOpen: (state, action: PayloadAction<boolean>) => {
+      state.isAIAssistantOpen = action.payload;
+    },
+
     // Reset state
     resetPostCreation: (state) => {
       Object.assign(state, initialState);
@@ -212,12 +205,12 @@ const postCreationSlice = createSlice({
     // Hashtag group management
     addHashtagGroupsFromApi: (
       state,
-      action: PayloadAction<{ _id: string; name: string; hashtags: string[] }[]>
+      action: PayloadAction<{ _id: string; name: string; hashtags: string[] }[]>,
     ) => {
       const groups = action.payload;
       groups.forEach((newGroup) => {
         const existingGroupIndex = state.hashtagGroups.findIndex(
-          (group) => group._id === newGroup._id
+          (group) => group._id === newGroup._id,
         );
 
         if (existingGroupIndex !== -1) {
@@ -233,12 +226,10 @@ const postCreationSlice = createSlice({
     // Hashtag group management
     addHashtagGroup: (
       state,
-      action: PayloadAction<{ _id: string; name: string; hashtags: string[] }>
+      action: PayloadAction<{ _id: string; name: string; hashtags: string[] }>,
     ) => {
       const { _id, name, hashtags } = action.payload;
-      const existingGroupIndex = state.hashtagGroups.findIndex(
-        (group) => group._id === _id
-      );
+      const existingGroupIndex = state.hashtagGroups.findIndex((group) => group._id === _id);
 
       if (existingGroupIndex !== -1) {
         // Replace the existing group with the new one
@@ -251,9 +242,7 @@ const postCreationSlice = createSlice({
 
     removeHashtagGroup: (state, action: PayloadAction<string>) => {
       const groupId = action.payload;
-      state.hashtagGroups = state.hashtagGroups.filter(
-        (group) => group._id !== groupId
-      );
+      state.hashtagGroups = state.hashtagGroups.filter((group) => group._id !== groupId);
     },
 
     insertHashtagsFromGroup: (state, action: PayloadAction<string>) => {
@@ -281,8 +270,7 @@ const postCreationSlice = createSlice({
       // If there's already content in other channels, use it as default for new channels
       const existingContent =
         state.content ||
-        (state.selectedChannels.length > 0 &&
-          state.contentByChannel[state.selectedChannels[0]]) ||
+        (state.selectedChannels.length > 0 && state.contentByChannel[state.selectedChannels[0]]) ||
         "";
 
       channelIds.forEach((channelId) => {
@@ -300,7 +288,7 @@ const postCreationSlice = createSlice({
     // Add this new reducer to the slice
     syncContentAcrossChannels: (
       state,
-      action: PayloadAction<{ sourceChannelId: string; content: string }>
+      action: PayloadAction<{ sourceChannelId: string; content: string }>,
     ) => {
       const { sourceChannelId, content } = action.payload;
 
@@ -322,18 +310,12 @@ const postCreationSlice = createSlice({
 
 // Selectors
 export const selectPostCreation = (state: RootState) => state.postCreation;
-export const selectSelectedChannels = (state: RootState) =>
-  state.postCreation.selectedChannels;
-export const selectActiveChannel = (state: RootState) =>
-  state.postCreation.activeChannel;
-export const selectContentByChannel = (state: RootState) =>
-  state.postCreation.contentByChannel;
-export const selectPostTypeByChannel = (state: RootState) =>
-  state.postCreation.postTypeByChannel;
-export const selectIsScheduled = (state: RootState) =>
-  state.postCreation.isScheduled;
-export const selectHashtagGroups = (state: RootState) =>
-  state.postCreation.hashtagGroups;
+export const selectSelectedChannels = (state: RootState) => state.postCreation.selectedChannels;
+export const selectActiveChannel = (state: RootState) => state.postCreation.activeChannel;
+export const selectContentByChannel = (state: RootState) => state.postCreation.contentByChannel;
+export const selectPostTypeByChannel = (state: RootState) => state.postCreation.postTypeByChannel;
+export const selectIsScheduled = (state: RootState) => state.postCreation.isScheduled;
+export const selectHashtagGroups = (state: RootState) => state.postCreation.hashtagGroups;
 
 export const {
   setContent,
@@ -350,6 +332,7 @@ export const {
   setScheduledDate,
   setScheduledTime,
   setScheduleModalOpen,
+  setIsAIAssistantOpen,
   resetPostCreation,
   initializeChannelContent,
   addHashtagGroupsFromApi,

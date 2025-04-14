@@ -4,11 +4,13 @@ import LinkEmbed from "./LinkEmbed";
 import EmojiPicker from "./EmojiPicker";
 import Mentions from "./Mentions";
 import MediaUploader, { Media } from "./MediaUploader";
-import { useSelector } from "react-redux";
-import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { useDispatch, useSelector } from "react-redux";
+import { selectPostCreation, setIsAIAssistantOpen } from "@/redux/slices/postCreation.slice";
 import HashtagModal from "./HashtagModal";
 import { cn } from "@/lib/utils";
-import AIAssistantTextarea from "./AIAssistantTextarea";
+import { Button } from "../ui/button";
+import { Wand2 } from "lucide-react";
+import AIAssistantTextarea from "./aiAssistant/AIAssistantTextarea";
 
 interface PostComposerProps {
   isPostModal?: boolean;
@@ -34,7 +36,8 @@ const PostComposer: React.FC<PostComposerProps> = ({
   >(undefined);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { mediaUrls } = useSelector(selectPostCreation);
+  const dispatch = useDispatch();
+  const { mediaUrls, isAIAssistantOpen } = useSelector(selectPostCreation);
 
   // Handle inserting content
   const handleInsertEmoji = (emoji: string) => {
@@ -80,6 +83,18 @@ const PostComposer: React.FC<PostComposerProps> = ({
               onLinkAdd={(url, title) => setEmbeddedLink({ url, title })}
             />
           )} */}
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => dispatch(setIsAIAssistantOpen(!isAIAssistantOpen))}
+            className={cn(
+              isAIAssistantOpen && "bg-blue-600 text-white hover:bg-blue-400 hover:text-white",
+            )}
+          >
+            <Wand2 className="h-4 w-4" />
+          </Button>
+
           <EmojiPicker onEmojiSelect={handleInsertEmoji} />
           <Mentions onMention={handleMention} />
         </div>

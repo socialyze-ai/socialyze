@@ -14,6 +14,7 @@ import {
   Linkedin,
   Save,
   Twitter,
+  Wand2,
   X,
   Youtube,
 } from "lucide-react";
@@ -48,6 +49,7 @@ import { Media } from "./MediaUploader";
 import ImageEditor from "./editor/ImageEditor";
 import PostComposer from "./PostComposer";
 import { cn } from "@/lib/utils";
+import AIAssistantPanel from "./aiAssistant/AIAssistantPanel";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -226,7 +228,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[900px] w-[90vw] md:w-[70vw] max-h-[90vh] flex flex-col md:flex-row gap-4 flex-grow bg-transparent border-none p-0">
+        <DialogContent
+          className={cn(
+            "sm:max-w-[900px] w-[90vw] md:w-[70vw] max-h-[90vh] flex flex-col md:flex-row gap-4 flex-grow bg-transparent border-none p-0",
+          )}
+        >
+          {postCreation.isAIAssistantOpen && (
+            <div className="flex-[40%] max-w-[40%] max-h-[90vh] overflow-y-auto">
+              <AIAssistantPanel />
+            </div>
+          )}
+
           <div
             className={cn(
               "max-h-[90vh] overflow-y-scroll bg-white p-5 rounded h-full",

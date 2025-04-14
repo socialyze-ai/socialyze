@@ -31,7 +31,9 @@ import {
   resetPostCreation,
   setContentForChannel,
   setMediaUrls,
+  setIsAIAssistantOpen,
 } from "@/redux/slices/postCreation.slice";
+import AIAssistantPanel from "@/components/post/aiAssistant/AIAssistantPanel";
 
 const CreatePost = () => {
   const { channels, addPost } = usePosts();
@@ -137,7 +139,7 @@ const CreatePost = () => {
     <MainLayout title="Create Post">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left column - Post composer */}
-        <div className="lg:col-span-7">
+        <div className="flex flex-col gap-5 lg:col-span-7 h-[85dvh] overflow-y-scroll pb-32">
           <PostComposer
             content={postCreation.content}
             onContentChange={(content) => {
@@ -152,6 +154,8 @@ const CreatePost = () => {
             onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
             onMediaUrlsChange={(urls) => dispatch(setMediaUrls(urls))}
           />
+
+          {postCreation.isAIAssistantOpen && <AIAssistantPanel />}
         </div>
 
         {/* Right   column - Preview and controls */}
