@@ -20,6 +20,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   className,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaContainerRef = useRef<HTMLDivElement | null>(null);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiAssistantPosition, setAIAssistantPosition] = useState({ top: 0, left: 0 });
   const [selectedText, setSelectedText] = useState("");
@@ -44,7 +45,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       const currentColumn = lines[lines.length - 1].length;
 
       // Calculate approximate pixel position
-      // This is a simplification - exact positioning would need more complex calculations
       const lineHeight = 20; // Estimated line height
       const charWidth = 8; // Estimated character width
 
@@ -59,7 +59,23 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
       // Show AI assistant if mouse is within 30px of cursor
       if (distance < 30) {
-        setAIAssistantPosition({ top: mouseY - rect.top, left: mouseX - rect.left });
+        // Position the AI assistant below the cursor, not at mouse position
+        const assistantTop = currentLine * lineHeight + lineHeight; // Position below the current line
+        const assistantLeft = currentColumn * charWidth;
+
+        // Calculate the textarea's boundaries
+        const textareaRect = textarea.getBoundingClientRect();
+        const maxTop = textareaRect.height - 80; // Assuming assistant height is about 80px
+        const maxLeft = textareaRect.width - 150; // Assuming assistant width is about 150px
+
+        // Ensure the assistant stays within textarea boundaries
+        const boundedTop = Math.min(Math.max(0, assistantTop), maxTop);
+        const boundedLeft = Math.min(Math.max(0, assistantLeft), maxLeft);
+
+        setAIAssistantPosition({
+          top: boundedTop,
+          left: boundedLeft,
+        });
         setShowAIAssistant(true);
       } else {
         setShowAIAssistant(false);
@@ -79,9 +95,21 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         const rect = range.getBoundingClientRect();
         const textareaRect = textareaRef.current.getBoundingClientRect();
 
+        // Calculate position ensuring it stays within textarea boundaries
+        const selectionTop = rect.bottom - textareaRect.top;
+        const selectionLeft = rect.left - textareaRect.left + rect.width / 2;
+
+        // Calculate maximum positions to keep within boundaries
+        const maxTop = textareaRect.height - 40; // Assuming button height is about 40px
+        const maxLeft = textareaRect.width - 100; // Assuming button width is about 100px
+
+        // Ensure the button stays within textarea boundaries
+        const boundedTop = Math.min(Math.max(0, selectionTop), maxTop);
+        const boundedLeft = Math.min(Math.max(0, selectionLeft), maxLeft);
+
         setSelectionPosition({
-          top: rect.bottom - textareaRect.top,
-          left: rect.left - textareaRect.left + rect.width / 2,
+          top: boundedTop,
+          left: boundedLeft,
         });
 
         setShowRefineOption(true);
@@ -90,6 +118,33 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         setShowRefineOption(false);
         setShowRefineBelow(false);
       }
+    }
+  };
+
+  // Handle right-click to show AI options
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default context menu
+
+    if (textareaRef.current) {
+      const textareaRect = textareaRef.current.getBoundingClientRect();
+
+      // Calculate relative position within textarea
+      const clickX = e.clientX - textareaRect.left;
+      const clickY = e.clientY - textareaRect.top;
+
+      // Ensure position stays within boundaries
+      const maxTop = textareaRect.height - 80; // Assuming popup height is about 80px
+      const maxLeft = textareaRect.width - 150; // Assuming popup width is about 150px
+
+      const boundedTop = Math.min(Math.max(0, clickY), maxTop);
+      const boundedLeft = Math.min(Math.max(0, clickX), maxLeft);
+
+      setAIAssistantPosition({
+        top: boundedTop,
+        left: boundedLeft,
+      });
+
+      setShowAIAssistant(true);
     }
   };
 
@@ -123,9 +178,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   // When clicking outside textarea, hide the refine button
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (textareaRef.current && !textareaRef.current.contains(event.target as Node)) {
+      if (
+        textareaContainerRef.current &&
+        !textareaContainerRef.current.contains(event.target as Node)
+      ) {
         setShowRefineBelow(false);
         setShowRefineOption(false);
+        setShowAIAssistant(false);
       }
     };
 
@@ -140,7 +199,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={textareaContainerRef}>
       <Textarea
         placeholder={placeholder}
         className={cn(
@@ -154,55 +213,42 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         onMouseMove={handleTextareaMouseMove}
         onMouseUp={handleTextSelection}
         onKeyUp={handleTextSelection}
+        onContextMenu={handleContextMenu}
       />
 
-      {/* AI Assistant popup that appears on hover near cursor */}
-      {!showRefineOption && showAIAssistant && !isTyping && (
-        <div
-          className="absolute z-10 bg-white rounded-md shadow-md flex flex-col"
-          style={{
-            top: `${aiAssistantPosition.top}px`,
-            left: `${aiAssistantPosition.left}px`,
-          }}
-        >
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => console.log("Complete with AI")}
-            className="text-sm"
+      {/* Relative container for popups to ensure they stay within textarea */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* AI Assistant popup that appears on hover near cursor */}
+        {!showRefineOption && showAIAssistant && !isTyping && (
+          <div
+            className="absolute z-10 bg-white rounded-md shadow-md flex flex-col pointer-events-auto"
+            style={{
+              top: `${aiAssistantPosition.top}px`,
+              left: `${aiAssistantPosition.left}px`,
+            }}
           >
-            <Wand2 className="h-4 w-4 mr-0.5" />
-            <span className="text-xs">Complete Sentence</span>
-          </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => console.log("Complete with AI")}
+              className="text-sm"
+            >
+              <Wand2 className="h-4 w-4 mr-0.5" />
+              <span className="text-xs">Complete Sentence</span>
+            </Button>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => console.log("Generate Hashtags")}
-            className="text-sm"
-          >
-            <Hash className="h-4 w-4 mr-0.5" />
-            <span className="text-xs">Generate Hashtags</span>
-          </Button>
-        </div>
-      )}
-
-      {/* Refine with AI option when text is selected - floating near selection */}
-      {showRefineOption && (
-        <div
-          className="absolute z-10 bg-white rounded-md shadow-md p-1"
-          style={{
-            top: `${selectionPosition.top}px`,
-            left: `${selectionPosition.left}px`,
-            // transform: "translateX(-50%)",
-          }}
-        >
-          <Button size="sm" variant="secondary" onClick={handleRefineWithAI}>
-            <Wand2 className="h-4 w-4 mr-1" />
-            Refine with AI
-          </Button>
-        </div>
-      )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => console.log("Generate Hashtags")}
+              className="text-sm"
+            >
+              <Hash className="h-4 w-4 mr-0.5" />
+              <span className="text-xs">Generate Hashtags</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Refine with AI button below textarea when text is selected */}
       {showRefineBelow && (
