@@ -231,7 +231,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         <DialogContent
           className={cn(
             "max-h-[90vh] flex gap-4 bg-transparent border-none p-0",
-            postCreation.isAIAssistantOpen
+            postCreation.isAIAssistantOpen && selectedChannels.length === 0
+              ? "max-w-[60dvw]"
+              : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
               ? "max-w-[90dvw]"
               : selectedChannels.length !== 0 && activeChannel
               ? "max-w-[60dvw]"
@@ -239,15 +241,22 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           )}
         >
           {postCreation.isAIAssistantOpen && (
-            <div className="max-w-[30%] h-full overflow-y-auto">
+            <div
+              className={cn(
+                "h-full overflow-y-auto max-h-[90vh]",
+                selectedChannels.length === 0 && !activeChannel ? "w-[40%]" : "w-[30%]",
+              )}
+            >
               <AIAssistantPanel />
             </div>
           )}
 
           <div
             className={cn(
-              "max-h-[90vh] overflow-y-scroll bg-white p-5 rounded h-full",
-              postCreation.isAIAssistantOpen
+              "overflow-y-scroll bg-white p-5 rounded h-full max-h-[90vh]",
+              postCreation.isAIAssistantOpen && selectedChannels.length === 0
+                ? "w-[60%]"
+                : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
                 ? "w-[40%]"
                 : selectedChannels.length !== 0 && activeChannel
                 ? "w-[60%]"
@@ -359,7 +368,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           {selectedChannels.length !== 0 && activeChannel && (
             <div
               className={cn(
-                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full",
+                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full max-h-[90vh] overflow-y-scroll",
                 postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
@@ -393,7 +402,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 )}
               </div>
 
-              <div className="overflow-auto" style={{ maxHeight: "calc(90vh - 100px)" }}>
+              <div className="h-full">
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={contentByChannel[activeChannel] || ""}

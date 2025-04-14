@@ -137,9 +137,9 @@ const CreatePost = () => {
 
   return (
     <MainLayout title="Create Post">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll lg:overflow-hidden">
         {/* Left column - Post composer */}
-        <div className="flex flex-col gap-5 lg:col-span-7 h-[85dvh] overflow-y-scroll pb-32">
+        <div className="flex flex-col gap-5 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
           <PostComposer
             content={postCreation.content}
             onContentChange={(content) => {
@@ -159,7 +159,7 @@ const CreatePost = () => {
         </div>
 
         {/* Right   column - Preview and controls */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll flex flex-col gap-3">
           <ChannelSelector
             channels={channels}
             selectedChannels={postCreation.selectedChannels}
@@ -187,7 +187,7 @@ const CreatePost = () => {
               </div>
 
               {postCreation.isScheduled && (
-                <div className="space-y-4 mt-4">
+                <div className="mt-4">
                   <div>
                     <Label>Date</Label>
                     <Popover>
