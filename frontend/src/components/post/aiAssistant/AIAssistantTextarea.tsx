@@ -145,7 +145,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         placeholder={placeholder}
         className={cn(
           "min-h-[150px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-          isPostModal ? "text-base" : "text-lg",
+          isPostModal ? "text-sm" : "text-base",
           className,
         )}
         value={content}
@@ -159,7 +159,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       {/* AI Assistant popup that appears on hover near cursor */}
       {!showRefineOption && showAIAssistant && !isTyping && (
         <div
-          className="absolute z-10 bg-white rounded-md shadow-md p-2 flex gap-2"
+          className="absolute z-10 bg-white rounded-md shadow-md flex flex-col"
           style={{
             top: `${aiAssistantPosition.top}px`,
             left: `${aiAssistantPosition.left}px`,
@@ -172,7 +172,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             className="text-sm"
           >
             <Wand2 className="h-4 w-4 mr-0.5" />
-            Complete Sentence
+            <span className="text-xs">Complete Sentence</span>
           </Button>
 
           <Button
@@ -182,7 +182,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             className="text-sm"
           >
             <Hash className="h-4 w-4 mr-0.5" />
-            Generate Hashtags
+            <span className="text-xs">Generate Hashtags</span>
           </Button>
         </div>
       )}

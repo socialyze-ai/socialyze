@@ -5,21 +5,24 @@ import { getSocialIcon } from "./ChannelSelector";
 import { usePosts } from "@/context/PostsContext";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { cn } from "@/lib/utils";
 
-const SelectedChannels = () => {
+const SelectedChannels = ({ isDashboard = false }: { isDashboard?: boolean }) => {
   const { channels } = usePosts();
   const { selectedChannels } = useSelector(selectPostCreation);
 
-  const selectedPostChannels = useMemo(
-    () => channels.filter((channel) => selectedChannels.includes(channel.id)),
-    [channels, selectedChannels],
-  );
+  const selectedPostChannels = isDashboard
+    ? channels
+    : useMemo(
+        () => channels.filter((channel) => selectedChannels.includes(channel.id)),
+        [channels, selectedChannels],
+      );
 
   console.log("selectedChannels", selectedChannels);
 
   return (
     <div className="grid gap-2">
-      <Label>Channels</Label>
+      {!isDashboard && <Label>Channels</Label>}
 
       <Card className="bg-transparent">
         <CardContent className="p-1.5">
@@ -27,9 +30,10 @@ const SelectedChannels = () => {
             {selectedPostChannels.map((channel) => (
               <div
                 key={channel.id}
-                className={
-                  "h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center"
-                }
+                className={cn(
+                  "h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center",
+                  isDashboard && "h-12 w-12",
+                )}
               >
                 {getSocialIcon(channel.type)}
               </div>
