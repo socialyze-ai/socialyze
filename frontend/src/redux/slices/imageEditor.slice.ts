@@ -4,10 +4,14 @@ import { RootState } from "../store";
 import { useSelector } from "react-redux";
 
 // Add the missing fields for crop position
-interface ExtendedImageEditorState extends ImageEditorState {
+export interface ExtendedImageEditorState extends ImageEditorState {
   cropX: number;
   cropY: number;
   selectedRatio: string;
+  originalImageUrl?: string; // Store the original image URL
+  croppedImageUrl?: string; // Store the cropped image URL
+  croppedWidth?: number; // Store the cropped image width
+  croppedHeight?: number; // Store the cropped image height
 }
 
 // Default editor state to use for new images
@@ -35,6 +39,10 @@ export const defaultEditorState: ExtendedImageEditorState = {
   cropX: 0,
   cropY: 0,
   selectedRatio: "Free",
+  originalImageUrl: undefined,
+  croppedImageUrl: undefined,
+  croppedWidth: undefined,
+  croppedHeight: undefined,
 };
 
 // Store editor settings for each image by imageId
@@ -205,6 +213,13 @@ const imageEditorSlice = createSlice({
 
       state.imageSettings[state.currentImageId].state.selectedRatio = action.payload;
     },
+
+    // Add a new action to store the original image URL
+    setOriginalImageUrl: (state, action: PayloadAction<string>) => {
+      if (!state.currentImageId) return;
+
+      state.imageSettings[state.currentImageId].state.originalImageUrl = action.payload;
+    },
   },
 });
 
@@ -254,6 +269,7 @@ export const {
   resetEditor,
   resetCropMode,
   setSelectedRatio,
+  setOriginalImageUrl,
 } = imageEditorSlice.actions;
 
 export default imageEditorSlice.reducer;

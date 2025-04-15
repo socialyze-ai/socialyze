@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Undo, Redo, X, Check } from "lucide-react";
@@ -21,6 +21,8 @@ import {
   getCurrentHistory,
   getCurrentOriginalImageData,
   defaultEditorState,
+  setOriginalImageUrl,
+  ExtendedImageEditorState,
 } from "@/redux/slices/imageEditor.slice";
 import { ImageEditorState } from "./types";
 import { Media } from "../MediaUploader";
@@ -39,6 +41,13 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
   // Redux hooks
   const dispatch = useDispatch();
 
+  // For preview mode - we'll keep a local copy of the state for previewing edits
+  // This will only be synchronized with Redux when the user clicks "Save Changes"
+  const [previewState, setPreviewState] = useState<ExtendedImageEditorState | null>(null);
+
+  // Flag to track if edits have been made but not saved
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // Set current image ID when component mounts
   useEffect(() => {
     if (selectedImage?.id) {
@@ -47,35 +56,57 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
   }, [selectedImage, dispatch]);
 
   // Get the state for the current image
-  const state = useSelector(getCurrentEditorState);
+  const reduxState = useSelector(getCurrentEditorState);
   const history = useSelector(getCurrentHistory);
   const originalImageData = useSelector(getCurrentOriginalImageData);
+
+  // The actual state we use for rendering - either preview state (if exists) or Redux state
+  const state = previewState || reduxState;
 
   // Get all history data for all images
   const { imageSettings } = useSelector((state: RootState) => state.imageEditor);
 
-  // Log all history data for all images
-  console.log("All images history data:", imageSettings);
+  // Initialize preview state from Redux state
+  useEffect(() => {
+    if (reduxState && !previewState) {
+      setPreviewState(reduxState);
+    }
+  }, [reduxState, previewState]);
 
   // Load the image on mount
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = "Anonymous";
+
+    // Determine which image URL to use - prioritize cropped image URL if exists
+    // otherwise fall back to original or selected image URL
+    const imageUrl =
+      reduxState.croppedImageUrl || reduxState.originalImageUrl || selectedImage?.url;
+
+    // Store the original image URL when first editing an image
+    if (!reduxState.originalImageUrl) {
+      dispatch(setOriginalImageUrl(selectedImage?.url));
+    }
+
     img.onload = () => {
       imageRef.current = img;
 
-      // Set initial canvas dimensions
+      // Set initial canvas dimensions - respect cropped dimensions if they exist
       if (canvasRef.current) {
         canvasRef.current.width = img.width;
         canvasRef.current.height = img.height;
       }
 
-      // Draw initial image
+      // Draw initial image with any existing edit settings
+      // This will apply stored edit settings but start with original image
       drawImage();
 
-      // Initialize history with default state and canvas data
-      // to ensure new images always start with default settings
-      if (canvasRef.current) {
+      // Check if the image has history entries already
+      const hasHistory = history.states.length > 0;
+
+      // Only initialize history with default state if it's a new image (no history)
+      // For previously edited images, we keep existing settings but don't add new history
+      if (canvasRef.current && !hasHistory) {
         const initialCanvasData = canvasRef.current.toDataURL("image/png");
         dispatch(
           initializeHistory({
@@ -83,16 +114,35 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
             canvasData: initialCanvasData,
           }),
         );
+
+        // Also initialize preview state with default values
+        setPreviewState(defaultEditorState);
+      } else if (canvasRef.current && hasHistory) {
+        // For previously edited images, we start with a fresh history point using
+        // the existing settings but based on the original image
+        const initialCanvasData = canvasRef.current.toDataURL("image/png");
+
+        // Only store a new history point if we're reopening an image
+        if (history.canvasData.length === 0) {
+          dispatch(saveToHistory(initialCanvasData));
+        }
       }
     };
-    img.src = selectedImage?.url;
+    img.src = imageUrl;
 
     return () => {
       if (imageRef.current) {
         imageRef.current.onload = null;
       }
     };
-  }, [selectedImage, dispatch]);
+  }, [selectedImage, dispatch, history, reduxState.originalImageUrl, reduxState.croppedImageUrl]);
+
+  // Update preview when edits are made
+  useEffect(() => {
+    if (previewState) {
+      drawImage();
+    }
+  }, [previewState]);
 
   const drawImage = (showCropOverlay = false) => {
     if (!canvasRef.current || !imageRef.current) return;
@@ -365,91 +415,182 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
     img.src = dataURL;
   };
 
+  // Modified to update preview state instead of Redux state directly
   const handleStateChange = (newState: Partial<ImageEditorState>) => {
-    dispatch(updateEditorState(newState));
+    // Update preview state
+    setPreviewState((prevState) => ({
+      ...(prevState || reduxState),
+      ...newState,
+    }));
+
+    // Mark that we have unsaved changes
+    setHasUnsavedChanges(true);
 
     // Using setTimeout to ensure this runs after the state has been updated
     setTimeout(() => {
       drawImage();
-
-      // Save to history for certain operations
-      if (
-        newState.rotation !== undefined ||
-        newState.flipHorizontal !== undefined ||
-        newState.flipVertical !== undefined ||
-        newState.brightness !== undefined ||
-        newState.contrast !== undefined ||
-        newState.saturation !== undefined ||
-        newState.blur !== undefined ||
-        newState.sharpen !== undefined ||
-        newState.grayscale !== undefined ||
-        newState.invert !== undefined ||
-        newState.enhance !== undefined
-      ) {
-        addCurrentStateToHistory();
-      }
     }, 0);
   };
 
-  const handleCrop = () => {
-    if (!canvasRef.current || !imageRef.current) return;
+  const createCroppedImage = (
+    imageSrc: string,
+    pixelCrop: { x: number; y: number; width: number; height: number },
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.crossOrigin = "Anonymous";
+      image.src = imageSrc;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      image.onload = () => {
+        // Create a canvas for the cropped image
+        const canvas = document.createElement("canvas");
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
 
-    // Create a temporary canvas for the cropped image
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
 
-    // Get crop dimensions from state
-    const x = Math.min(state.cropStartX, state.cropEndX);
-    const y = Math.min(state.cropStartY, state.cropEndY);
-    const width = Math.abs(state.cropEndX - state.cropStartX);
-    const height = Math.abs(state.cropEndY - state.cropStartY);
+        // Draw the cropped portion
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height,
+        );
 
-    // Skip if crop area is too small
-    if (width < 10 || height < 10) {
-      dispatch(resetCropMode());
+        // Return the data URL of the cropped image
+        resolve(canvas.toDataURL("image/png"));
+      };
+
+      image.onerror = () => {
+        reject(new Error("Failed to load image for cropping"));
+      };
+    });
+  };
+
+  const handleCrop = async () => {
+    // We need to have crop dimensions
+    if (
+      state.cropStartX === undefined ||
+      state.cropStartY === undefined ||
+      state.cropEndX === undefined ||
+      state.cropEndY === undefined
+    ) {
+      toast({
+        title: "Crop error",
+        description: "Please select a crop area first.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Set dimensions for the temp canvas
-    tempCanvas.width = width;
-    tempCanvas.height = height;
+    try {
+      // Get crop dimensions from state
+      const pixelCrop = {
+        x: Math.min(state.cropStartX, state.cropEndX),
+        y: Math.min(state.cropStartY, state.cropEndY),
+        width: Math.abs(state.cropEndX - state.cropStartX),
+        height: Math.abs(state.cropEndY - state.cropStartY),
+      };
 
-    // Draw the cropped portion onto the temp canvas
-    tempCtx.drawImage(canvas, x, y, width, height, 0, 0, width, height);
+      // Skip if crop area is too small
+      if (pixelCrop.width < 10 || pixelCrop.height < 10) {
+        handleCancelCrop();
+        return;
+      }
 
-    // Create a new image from the temp canvas
-    const newImage = new Image();
-    newImage.onload = () => {
-      // Resize the main canvas
-      canvas.width = width;
-      canvas.height = height;
+      // Use the utility function to create the cropped image
+      // We use the original image URL to ensure full quality
+      const croppedImageUrl = await createCroppedImage(
+        reduxState.originalImageUrl || selectedImage.url,
+        pixelCrop,
+      );
 
-      // Draw the cropped image
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(newImage, 0, 0);
+      // Load the cropped image
+      const newImage = new Image();
+      newImage.crossOrigin = "Anonymous";
 
-      // Update image reference
-      imageRef.current = newImage;
+      newImage.onload = () => {
+        if (!canvasRef.current) return;
 
-      // Reset crop mode
-      dispatch(resetCropMode());
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-      // Save to history
-      addCurrentStateToHistory();
-    };
+        // Update canvas dimensions
+        canvas.width = newImage.width;
+        canvas.height = newImage.height;
 
-    newImage.src = tempCanvas.toDataURL("image/png");
+        // Draw the cropped image
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(newImage, 0, 0);
+
+        // Update image reference for current session
+        imageRef.current = newImage;
+
+        // Update preview state - STORE THE CROPPED DIMENSIONS!
+        setPreviewState((prevState) => ({
+          ...(prevState || reduxState),
+          cropMode: false,
+          isCropping: false,
+          // Store the new dimensions so we know this image was cropped
+          croppedWidth: newImage.width,
+          croppedHeight: newImage.height,
+          // Store the cropped image URL to use when re-opening the editor
+          croppedImageUrl: croppedImageUrl,
+        }));
+
+        // Mark as having unsaved changes
+        setHasUnsavedChanges(true);
+      };
+
+      newImage.src = croppedImageUrl;
+    } catch (error) {
+      console.error("Error cropping image:", error);
+      toast({
+        title: "Crop error",
+        description: "An error occurred while cropping the image.",
+        variant: "destructive",
+      });
+    }
   };
 
+  // This is called when the user clicks "Save Changes"
   const handleSave = () => {
     if (!canvasRef.current) return;
 
     try {
+      // First, apply all preview state changes to Redux
+      if (previewState && hasUnsavedChanges) {
+        // Update Redux state
+        dispatch(updateEditorState(previewState as ExtendedImageEditorState));
+
+        // Add to history
+        const dataURL = canvasRef.current.toDataURL("image/png");
+        dispatch(saveToHistory(dataURL));
+
+        // If we cropped the image, also save the cropped URL
+        if ((previewState as ExtendedImageEditorState).croppedImageUrl) {
+          dispatch(
+            updateEditorState({
+              originalImageUrl: (previewState as ExtendedImageEditorState).croppedImageUrl,
+            }),
+          );
+        }
+
+        // Reset unsaved changes flag
+        setHasUnsavedChanges(false);
+      }
+
+      // Then save the edited image
       const dataURL = canvasRef.current.toDataURL("image/png");
       onSave(dataURL, selectedImage);
       toast({
@@ -465,47 +606,62 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
     }
   };
 
-  const resetAdjustments = () => {
-    dispatch(resetEditor());
+  // Cancel all unsaved changes and restore from Redux state
+  const handleCancelEdits = () => {
+    if (hasUnsavedChanges) {
+      // Reset preview state to match Redux state
+      setPreviewState(reduxState);
+      setHasUnsavedChanges(false);
 
-    setTimeout(() => {
-      drawImage();
-      addCurrentStateToHistory();
-    }, 0);
+      // Redraw with the original state
+      setTimeout(() => drawImage(), 0);
+    }
+
+    // Exit the editor
+    onCancel();
+  };
+
+  const resetAdjustments = () => {
+    // Update preview state with reset values
+    setPreviewState((prevState) => ({
+      ...(prevState || reduxState),
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      rotation: 0,
+      zoom: 100,
+      flipHorizontal: false,
+      flipVertical: false,
+      blur: 0,
+      sharpen: 0,
+      grayscale: 0,
+      invert: 0,
+      enhance: 0,
+    }));
+
+    setHasUnsavedChanges(true);
+
+    setTimeout(() => drawImage(), 0);
   };
 
   const handleCancelCrop = () => {
-    dispatch(resetCropMode());
+    setPreviewState((prevState) => ({
+      ...(prevState || reduxState),
+      cropMode: false,
+      cropStartX: 0,
+      cropStartY: 0,
+      cropEndX: 0,
+      cropEndY: 0,
+      cropAspectRatio: undefined,
+    }));
   };
 
   return (
     <div className="flex flex-col space-y-4 w-full max-w-3xl mx-auto">
-      {/* ---- Undo & Redo (Check logic)---- */}
-      {/*   <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Edit Image</h3>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleUndo}
-            disabled={history.index <= 0}
-          >
-            <Undo className="h-4 w-4 mr-1" />
-            Undo
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRedo}
-            disabled={history.index >= history.states.length - 1}
-          >
-            <Redo className="h-4 w-4 mr-1" />
-            Redo
-          </Button>
-        </div>
-      </div> */}
       <div className="flex justify-center items-center">
-        <h3 className="text-lg font-semibold">Edit Image</h3>
+        <h3 className="text-lg font-semibold">
+          Edit Image {hasUnsavedChanges && "(Unsaved Changes)"}
+        </h3>
       </div>
 
       <EditorToolbar
@@ -532,11 +688,11 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
       </div>
 
       <div className="flex justify-end space-x-2 pt-4 border-t">
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" onClick={handleCancelEdits}>
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button onClick={handleSave}>
+        <Button onClick={handleSave} disabled={!hasUnsavedChanges}>
           <Check className="h-4 w-4 mr-1" />
           Save Changes
         </Button>
