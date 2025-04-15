@@ -8,7 +8,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDispatch, useSelector } from "react-redux";
-import { setContent, setIsAIAssistantOpen } from "@/redux/slices/postCreation.slice";
+import {
+  setContent,
+  setIsAIAssistantOpen,
+  setContentForChannel,
+  selectActiveChannel,
+} from "@/redux/slices/postCreation.slice";
 import {
   selectAIAssistant,
   selectCurrentStage,
@@ -38,6 +43,8 @@ const AIAssistantEditor = () => {
   const dispatch = useDispatch();
 
   const { content } = useSelector((state: RootState) => state.postCreation);
+  const { contentByChannel } = useSelector((state: RootState) => state.postCreation);
+  const activeChannel = useSelector(selectActiveChannel);
 
   // Get state from Redux instead of local state
   const currentStage = useSelector(selectCurrentStage);
@@ -84,11 +91,30 @@ const AIAssistantEditor = () => {
   };
 
   const handleReplace = () => {
-    dispatch(setContent(suggestions[selectedSuggestion]));
+    if (activeChannel) {
+      dispatch(
+        setContentForChannel({
+          channelId: activeChannel,
+          content: suggestions[selectedSuggestion],
+        }),
+      );
+    } else {
+      dispatch(setContent(suggestions[selectedSuggestion]));
+    }
   };
 
   const handleInsert = () => {
-    dispatch(setContent(content + "\n" + suggestions[selectedSuggestion]));
+    if (activeChannel) {
+      const channelContent = contentByChannel[activeChannel] || "";
+      dispatch(
+        setContentForChannel({
+          channelId: activeChannel,
+          content: channelContent + "\n" + suggestions[selectedSuggestion],
+        }),
+      );
+    } else {
+      dispatch(setContent(content + "\n" + suggestions[selectedSuggestion]));
+    }
   };
 
   const renderStage1 = () => (
