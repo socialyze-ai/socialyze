@@ -13,7 +13,7 @@ export type SocialChannel = {
   channelId?: string;
 };
 
-export type PostStatus = "draft" | "scheduled" | "sent" | "failed";
+export type PostStatus = "draft" | "schedule" | "postnow" | "failed";
 
 export type Post = {
   id: string;
@@ -69,7 +69,7 @@ const initialPosts: Post[] = [
     content: "This is my first scheduled post! #excited",
     channels: ["1", "2"],
     scheduledAt: new Date(Date.now() + 86400000), // Tomorrow
-    status: "scheduled",
+    status: "schedule",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -78,7 +78,7 @@ const initialPosts: Post[] = [
     content: "Just published a new article on our blog. Check it out!",
     mediaUrls: ["https://images.unsplash.com/photo-1519389950473-47ba0277781c"],
     channels: ["1", "3", "4"],
-    status: "sent",
+    status: "postnow",
     createdAt: new Date(Date.now() - 86400000), // Yesterday
     updatedAt: new Date(Date.now() - 86400000),
   },

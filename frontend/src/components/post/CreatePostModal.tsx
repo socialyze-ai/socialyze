@@ -74,6 +74,7 @@ import { TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
+import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -92,6 +93,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const isCustomContent = useSelector(selectIsCustomContent);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const selectedTags = useSelector(selectSelectedTags);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
@@ -185,7 +188,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       return;
     }
 
-    submitPost(channels, "scheduled", scheduledAt);
+    submitPost(channels, "schedule", scheduledAt);
   };
 
   const handlePostNow = () => {
@@ -216,7 +219,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       return;
     }
 
-    submitPost(selectedChannels, "sent");
+    submitPost(selectedChannels, "postnow");
   };
 
   const handleDraftSave = () => {
@@ -227,13 +230,27 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
   const submitPost = (
     channelIds: string[],
-    status: "sent" | "scheduled" | "draft",
+    status: "postnow" | "schedule" | "draft",
     scheduledAt?: Date,
   ) => {
+    const finalData = [];
+
     channelIds.forEach((channelId) => {
       const content = contentByChannel[channelId] || "";
       const finalContent = addHashtagsToContent(content, postCreation.hashtags);
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+
+      const postData = {
+        channelId: channelId,
+        text: finalContent,
+        scheduledTime: scheduledAt,
+        label: selectedTags.map((tag) => tag.id),
+        media: mediaUrls,
+        postType: status, // "postnow" | "schedule" | "draft"
+        postStatus: "queued",
+      };
+
+      finalData.push(postData);
 
       addPost({
         content: finalContent,
@@ -244,12 +261,18 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       });
     });
 
+    console.log("finalData", finalData);
+
     const statusText =
-      status === "sent" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
+      status === "postnow" ? "sent" : status === "schedule" ? "scheduled" : "saved as draft";
 
     toast({
       title:
-        status === "sent" ? "Post sent" : status === "scheduled" ? "Post scheduled" : "Draft saved",
+        status === "postnow"
+          ? "Post sent"
+          : status === "schedule"
+          ? "Post scheduled"
+          : "Draft saved",
       description: `Your post has been ${statusText}.`,
     });
 

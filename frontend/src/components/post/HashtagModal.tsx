@@ -10,14 +10,13 @@ import {
   insertHashtagsFromGroup,
   selectPostCreation,
   addHashtagGroupsFromApi,
+  selectContentByChannel,
+  selectActiveChannel,
+  selectIsCustomContent,
+  setContentForChannel,
+  setContent,
 } from "@/redux/slices/postCreation.slice";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetHashtagManagers,
@@ -38,6 +37,10 @@ const HashtagModal = () => {
   const [workspaceId, setWorkspaceId] = useState<string>("");
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
+
+  const contentByChannel = useSelector(selectContentByChannel);
+  const activeChannel = useSelector(selectActiveChannel);
+  const isCustomContent = useSelector(selectIsCustomContent);
 
   // Fetch hashtag managers from API
   const {
@@ -75,8 +78,8 @@ const HashtagModal = () => {
             _id: manager._id,
             name: manager.name,
             hashtags: manager.hashtags,
-          }))
-        )
+          })),
+        ),
       );
 
       if (hashtagManagers.length > 0 && hashtagManagers[0].workspace) {
@@ -114,7 +117,7 @@ const HashtagModal = () => {
                   _id: data._id,
                   name: data.name,
                   hashtags: data.hashtags,
-                })
+                }),
               );
               resetForm();
               toast({
@@ -129,7 +132,7 @@ const HashtagModal = () => {
                 variant: "destructive",
               });
             },
-          }
+          },
         );
       } else {
         createHashtagManager(payload, {
@@ -139,7 +142,7 @@ const HashtagModal = () => {
                 _id: data._id,
                 name: data.name,
                 hashtags: data.hashtags,
-              })
+              }),
             );
             resetForm();
             toast({
@@ -196,9 +199,7 @@ const HashtagModal = () => {
   };
 
   const handleInsertHashtags = (groupId: string) => {
-    const groupToInsert = hashtagManagers?.find(
-      (group) => group._id === groupId
-    );
+    const groupToInsert = hashtagManagers?.find((group) => group._id === groupId);
 
     if (groupToInsert) {
       const existsInRedux = hashtagGroups.some((g) => g._id === groupId);
@@ -208,7 +209,23 @@ const HashtagModal = () => {
             _id: groupToInsert._id,
             name: groupToInsert.name,
             hashtags: groupToInsert.hashtags,
-          })
+          }),
+        );
+      }
+
+      if (isCustomContent) {
+        const channelContent = contentByChannel[activeChannel] || "";
+        dispatch(
+          setContentForChannel({
+            channelId: activeChannel,
+            content:
+              channelContent + "\n" + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" "),
+          }),
+        );
+      } else {
+        const content = contentByChannel[activeChannel] || "";
+        dispatch(
+          setContent(content + "\n" + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" ")),
         );
       }
     }
@@ -219,7 +236,7 @@ const HashtagModal = () => {
   const displayGroups = hashtagManagers || hashtagGroups;
 
   const filteredGroups = displayGroups.filter((group) =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase())
+    group.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const renderContent = () => {
@@ -239,9 +256,7 @@ const HashtagModal = () => {
             </Button>
             <Button
               variant="outline"
-              disabled={
-                isCreateHashtagManagerPending || isUpdateHashtagManagerPending
-              }
+              disabled={isCreateHashtagManagerPending || isUpdateHashtagManagerPending}
               onClick={handleSaveGroup}
             >
               {isCreateHashtagManagerPending || isUpdateHashtagManagerPending
@@ -330,10 +345,7 @@ const HashtagModal = () => {
                     <CardContent className="flex justify-between p-3">
                       <div className="flex flex-wrap gap-1">
                         {group.hashtags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="bg-muted rounded-md px-2 py-0.5 text-sm"
-                          >
+                          <span key={idx} className="bg-muted rounded-md px-2 py-0.5 text-sm">
                             #{tag}
                           </span>
                         ))}
@@ -369,11 +381,7 @@ const HashtagModal = () => {
   return (
     <ModalWrapper
       title={
-        isFormVisible
-          ? editingGroupId
-            ? "Edit Group"
-            : "Create New Group"
-          : "Hashtag Manager"
+        isFormVisible ? (editingGroupId ? "Edit Group" : "Create New Group") : "Hashtag Manager"
       }
       description={
         isFormVisible
