@@ -41,6 +41,7 @@ export interface PostCreationState {
   postTypeByChannel: PostTypeByChannel;
   mediaByChannel: MediaByChannel;
   isContentSynced: boolean;
+  isCustomContent: boolean;
 
   // Scheduling info
   isScheduled: boolean;
@@ -62,6 +63,7 @@ const initialState: PostCreationState = {
   postTypeByChannel: {},
   mediaByChannel: {},
   isContentSynced: true,
+  isCustomContent: false,
   isScheduled: false,
   scheduledTime: "12:00",
   isScheduleModalOpen: false,
@@ -254,6 +256,7 @@ const postCreationSlice = createSlice({
     // Sync/Unsync content
     setContentSyncState: (state, action: PayloadAction<boolean>) => {
       state.isContentSynced = action.payload;
+      state.isCustomContent = !action.payload;
 
       if (action.payload && state.selectedChannels.length > 0) {
         // If syncing content and there are selected channels
@@ -451,6 +454,7 @@ export const selectPostTypeByChannel = (state: RootState) => state.postCreation.
 export const selectIsScheduled = (state: RootState) => state.postCreation.isScheduled;
 export const selectHashtagGroups = (state: RootState) => state.postCreation.hashtagGroups;
 export const selectIsContentSynced = (state: RootState) => state.postCreation.isContentSynced;
+export const selectIsCustomContent = (state: RootState) => state.postCreation.isCustomContent;
 
 export const {
   setContent,

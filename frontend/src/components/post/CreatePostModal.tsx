@@ -48,6 +48,7 @@ import {
   selectContentByChannel,
   selectMediaByChannel,
   selectIsContentSynced,
+  selectIsCustomContent,
   setContentForChannel,
   setMediaForChannel,
   setMediaUrls,
@@ -87,11 +88,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const contentByChannel = useSelector(selectContentByChannel);
   const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
+  const isCustomContent = useSelector(selectIsCustomContent);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCustomContent, setIsCustomContent] = useState(!isContentSynced);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [isSyncAlertOpen, setIsSyncAlertOpen] = useState(false);
 
@@ -101,11 +102,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       dispatch(initializeChannelContent(channels.map((channel) => channel.id)));
     }
   }, [channels, dispatch]);
-
-  // Update isCustomContent when isContentSynced changes
-  useEffect(() => {
-    setIsCustomContent(!isContentSynced);
-  }, [isContentSynced]);
 
   const handleChannelToggle = (channelId: string) => {
     dispatch(toggleChannelSelection(channelId));
@@ -379,22 +375,37 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             </DialogHeader>
 
             <div className="flex justify-between items-center my-4">
-              <div className="flex gap-2 flex-wrap">
-                {channels.map((channel) => (
-                  <button
-                    key={channel.id}
-                    className={`rounded-full p-1.5 ${
-                      selectedChannels.includes(channel.id)
-                        ? "ring-2 ring-primary"
-                        : "opacity-60 hover:opacity-100"
-                    }`}
-                    onClick={() => handleChannelToggle(channel.id)}
-                  >
-                    <div className="rounded-full overflow-hidden border border-gray-200 w-10 h-10 flex items-center justify-center bg-white">
-                      {getSocialIcon(channel.type)}
-                    </div>
-                  </button>
-                ))}
+              <div className="flex gap-3 flex-wrap">
+                {channels.map((channel) => {
+                  console.log("selectedChannels", channel);
+
+                  return (
+                    <button
+                      key={channel.id}
+                      className={`relative rounded-full p-1.5 ${
+                        selectedChannels.includes(channel.id)
+                          ? // ? "ring-2 ring-primary"
+                            "shadow shadow-blue-500"
+                          : "opacity-60 hover:opacity-100"
+                      }`}
+                      onClick={() => handleChannelToggle(channel.id)}
+                    >
+                      <img
+                        src={channel.profileImage}
+                        alt={channel.name}
+                        className="w-10 h-10 rounded-full"
+                      />
+                      <div
+                        className={cn(
+                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 flex items-center justify-center bg-white z-50",
+                          selectedChannels.includes(channel.id) && "shadow-blue-500",
+                        )}
+                      >
+                        {getSocialIcon(channel.type, 16)}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

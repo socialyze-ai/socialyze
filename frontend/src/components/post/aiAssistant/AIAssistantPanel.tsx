@@ -13,6 +13,7 @@ import {
   setIsAIAssistantOpen,
   setContentForChannel,
   selectActiveChannel,
+  selectIsCustomContent,
 } from "@/redux/slices/postCreation.slice";
 import {
   selectAIAssistant,
@@ -45,6 +46,7 @@ const AIAssistantEditor = () => {
   const { content } = useSelector((state: RootState) => state.postCreation);
   const { contentByChannel } = useSelector((state: RootState) => state.postCreation);
   const activeChannel = useSelector(selectActiveChannel);
+  const isCustomContent = useSelector(selectIsCustomContent);
 
   // Get state from Redux instead of local state
   const currentStage = useSelector(selectCurrentStage);
@@ -91,7 +93,7 @@ const AIAssistantEditor = () => {
   };
 
   const handleReplace = () => {
-    if (activeChannel) {
+    if (isCustomContent) {
       dispatch(
         setContentForChannel({
           channelId: activeChannel,
@@ -104,7 +106,7 @@ const AIAssistantEditor = () => {
   };
 
   const handleInsert = () => {
-    if (activeChannel) {
+    if (isCustomContent) {
       const channelContent = contentByChannel[activeChannel] || "";
       dispatch(
         setContentForChannel({

@@ -187,7 +187,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
         <img
           src={channel.profileImage}
           alt={channel.name}
-          className="w-12 h-12 rounded-full mr-3"
+          className="w-10 h-10  rounded-full mr-3"
         />
         <div className="w-full">
           <div className="flex items-center">
@@ -264,7 +264,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
           <img
             src={channel.profileImage}
             alt={channel.name}
-            className="w-8 h-8 rounded-full mr-2"
+            className="w-10 h-10 rounded-full mr-2"
           />
           <span className="font-medium text-sm">
             {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
@@ -326,7 +326,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
             <img
               src={channel.profileImage}
               alt={channel.name}
-              className="w-12 h-12 rounded-full mr-3"
+              className="w-10 h-10  rounded-full mr-3"
             />
             <div>
               <div className="font-medium">{channel.name}</div>
