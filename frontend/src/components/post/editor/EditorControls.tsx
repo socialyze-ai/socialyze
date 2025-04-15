@@ -14,27 +14,20 @@ interface EditorControlsProps {
   onReset: () => void;
 }
 
-const EditorControls: React.FC<EditorControlsProps> = ({
-  state,
-  onStateChange,
-  onReset,
-}) => {
+const EditorControls: React.FC<EditorControlsProps> = ({ state, onStateChange, onReset }) => {
   const dispatch = useDispatch();
 
-  const handleSliderChange =
-    (property: keyof ImageEditorState) => (value: number[]) => {
-      // We use onStateChange which will handle saving to history
-      onStateChange({ [property]: value[0] });
-    };
+  const handleSliderChange = (property: keyof ImageEditorState) => (value: number[]) => {
+    // We use onStateChange which will handle saving to history
+    onStateChange({ [property]: value[0] });
+  };
 
   return (
     <div className="w-full lg:w-1/3">
       <Tabs
         defaultValue="adjust"
         value={state.activeTab}
-        onValueChange={(tab: "adjust" | "effects" | "filters") =>
-          onStateChange({ activeTab: tab })
-        }
+        onValueChange={(tab: "adjust" | "effects" | "filters") => onStateChange({ activeTab: tab })}
       >
         <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="adjust">
@@ -245,27 +238,13 @@ interface SliderControlProps {
   onChange: (value: number[]) => void;
 }
 
-const SliderControl: React.FC<SliderControlProps> = ({
-  label,
-  id,
-  value,
-  min,
-  max,
-  onChange,
-}) => (
+const SliderControl: React.FC<SliderControlProps> = ({ label, id, value, min, max, onChange }) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center">
       <Label htmlFor={id}>{label}</Label>
       <span className="text-sm text-gray-500">{value}%</span>
     </div>
-    <Slider
-      id={id}
-      min={min}
-      max={max}
-      step={1}
-      value={[value]}
-      onValueChange={onChange}
-    />
+    <Slider id={id} min={min} max={max} step={1} value={[value]} onValueChange={onChange} />
   </div>
 );
 
@@ -276,20 +255,9 @@ interface PresetButtonProps {
   onClick: () => void;
 }
 
-const PresetButton: React.FC<PresetButtonProps> = ({
-  label,
-  color,
-  icon,
-  onClick,
-}) => (
-  <Button
-    variant="outline"
-    className="flex flex-col items-center p-2 h-auto"
-    onClick={onClick}
-  >
-    <div
-      className={`w-12 h-12 ${color} rounded-md mb-1 flex items-center justify-center`}
-    >
+const PresetButton: React.FC<PresetButtonProps> = ({ label, color, icon, onClick }) => (
+  <Button variant="outline" className="flex flex-col items-center p-2 h-auto" onClick={onClick}>
+    <div className={`w-12 h-12 ${color} rounded-md mb-1 flex items-center justify-center`}>
       {icon || null}
     </div>
     <span className="text-xs">{label}</span>

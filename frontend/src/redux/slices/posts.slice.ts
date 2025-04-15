@@ -7,6 +7,8 @@ export type SocialChannel = {
   // | "pinterest"
   // | "tiktok";
   name: string;
+  username?: string;
+  description?: string;
   profileImage: string;
   connected: boolean;
 };

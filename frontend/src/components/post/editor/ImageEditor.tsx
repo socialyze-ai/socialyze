@@ -16,6 +16,11 @@ import {
   resetEditor,
   resetCropMode,
   initializeHistory,
+  setCurrentImage,
+  getCurrentEditorState,
+  getCurrentHistory,
+  getCurrentOriginalImageData,
+  defaultEditorState,
 } from "@/redux/slices/imageEditor.slice";
 import { ImageEditorState } from "./types";
 import { Media } from "../MediaUploader";
@@ -26,20 +31,31 @@ interface ImageEditorProps {
   onCancel: () => void;
 }
 
-const ImageEditor: React.FC<ImageEditorProps> = ({
-  selectedImage,
-  onSave,
-  onCancel,
-}) => {
+const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCancel }) => {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   // Redux hooks
   const dispatch = useDispatch();
-  const { state, history, originalImageData } = useSelector(
-    (state: RootState) => state.imageEditor
-  );
+
+  // Set current image ID when component mounts
+  useEffect(() => {
+    if (selectedImage?.id) {
+      dispatch(setCurrentImage(selectedImage.id));
+    }
+  }, [selectedImage, dispatch]);
+
+  // Get the state for the current image
+  const state = useSelector(getCurrentEditorState);
+  const history = useSelector(getCurrentHistory);
+  const originalImageData = useSelector(getCurrentOriginalImageData);
+
+  // Get all history data for all images
+  const { imageSettings } = useSelector((state: RootState) => state.imageEditor);
+
+  // Log all history data for all images
+  console.log("All images history data:", imageSettings);
 
   // Load the image on mount
   useEffect(() => {
@@ -57,14 +73,15 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
       // Draw initial image
       drawImage();
 
-      // Initialize history with initial state and canvas data
+      // Initialize history with default state and canvas data
+      // to ensure new images always start with default settings
       if (canvasRef.current) {
         const initialCanvasData = canvasRef.current.toDataURL("image/png");
         dispatch(
           initializeHistory({
-            state: state,
+            state: defaultEditorState,
             canvasData: initialCanvasData,
-          })
+          }),
         );
       }
     };
@@ -136,11 +153,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     }
   };
 
-  const applyImageFilters = (
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ) => {
+  const applyImageFilters = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
@@ -162,8 +175,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
       b = b * brightnessValue;
 
       // Apply contrast
-      const contrastFactor =
-        (259 * (state.contrast + 255)) / (255 * (259 - state.contrast));
+      const contrastFactor = (259 * (state.contrast + 255)) / (255 * (259 - state.contrast));
       r = contrastFactor * (r - 128) + 128;
       g = contrastFactor * (g - 128) + 128;
       b = contrastFactor * (b - 128) + 128;
@@ -215,11 +227,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     ctx.putImageData(imageData, 0, 0);
   };
 
-  const applyBlurSharpen = (
-    data: Uint8ClampedArray,
-    width: number,
-    height: number
-  ) => {
+  const applyBlurSharpen = (data: Uint8ClampedArray, width: number, height: number) => {
     const tempData = new Uint8ClampedArray(data);
 
     for (let y = 1; y < height - 1; y++) {
@@ -243,8 +251,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
               tempData[idx + width * 4 + 4], // bottom right
             ];
 
-            const avgValue =
-              neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+            const avgValue = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
             data[idx] = data[idx] * (1 - blurFactor) + avgValue * blurFactor;
           }
 
@@ -260,8 +267,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
               tempData[idx + width * 4], // bottom
             ];
 
-            const avgValue =
-              neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+            const avgValue = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
             const sharpened = center + (center - avgValue) * sharpenFactor;
             data[idx] = Math.max(0, Math.min(255, sharpened));
           }
@@ -270,11 +276,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     }
   };
 
-  const drawCropOverlay = (
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ) => {
+  const drawCropOverlay = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.beginPath();

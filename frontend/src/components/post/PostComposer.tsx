@@ -20,7 +20,9 @@ interface PostComposerProps {
   hashtags: string[];
   onHashtagsChange: (hashtags: string[]) => void;
   onMediaUrlsChange: (urls: Media[]) => void;
+  channelMedia?: Media[];
   className?: string;
+  channelId?: string;
 }
 
 const PostComposer: React.FC<PostComposerProps> = ({
@@ -30,7 +32,9 @@ const PostComposer: React.FC<PostComposerProps> = ({
   hashtags,
   onHashtagsChange,
   onMediaUrlsChange,
+  channelMedia,
   className,
+  channelId,
 }) => {
   const [embeddedLink, setEmbeddedLink] = React.useState<
     { url: string; title: string } | undefined
@@ -39,6 +43,9 @@ const PostComposer: React.FC<PostComposerProps> = ({
 
   const dispatch = useDispatch();
   const { mediaUrls, isAIAssistantOpen } = useSelector(selectPostCreation);
+
+  // Use channelMedia if provided, otherwise use global mediaUrls
+  const mediaToUse = channelMedia || mediaUrls;
 
   // Handle inserting content
   const handleInsertEmoji = (emoji: string) => {
@@ -58,9 +65,13 @@ const PostComposer: React.FC<PostComposerProps> = ({
           isPostModal={isPostModal}
         />
 
-        {mediaUrls.length > 0 && (
+        {mediaToUse.length > 0 && (
           <div className="mt-4">
-            <MediaUploader />
+            <MediaUploader
+              mediaUrls={mediaToUse}
+              onMediaChange={onMediaUrlsChange}
+              channelId={channelId}
+            />
           </div>
         )}
 
@@ -75,7 +86,9 @@ const PostComposer: React.FC<PostComposerProps> = ({
         )} */}
 
         <div className="flex items-center mt-4 space-x-2 border-t pt-4">
-          {mediaUrls.length === 0 && <MediaUploader />}
+          {mediaToUse.length === 0 && (
+            <MediaUploader onMediaChange={onMediaUrlsChange} channelId={channelId} />
+          )}
 
           <HashtagModal />
 

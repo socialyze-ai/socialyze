@@ -19,14 +19,10 @@ const UnsplashMediaModalContent = ({
   const [searchKeyword, setSearchKeyword] = useState("trending");
   const { data: unsplashData } = useGetUnsplashMedia(searchKeyword, page);
 
-  const { mediaUrls } = useSelector(selectPostCreation);
-
   useEffect(() => {
     if (unsplashData && unsplashData.data.results) {
       setImages((prevImages) => [...prevImages, ...unsplashData.data.results]);
     }
-
-    setSelectedMediaContent(mediaUrls);
   }, [unsplashData]);
 
   const loadMoreImages = () => {
@@ -34,20 +30,24 @@ const UnsplashMediaModalContent = ({
   };
 
   const toggleImageSelection = (imageUrl: string) => {
-    const isSelected = selectedMediaContent.some(
-      (media) => media.url === imageUrl
-    );
-    const updatedMediaUrls = isSelected
-      ? selectedMediaContent.filter((media) => media.url !== imageUrl)
-      : [
-          ...selectedMediaContent,
-          {
-            id: uuidv4(),
-            url: imageUrl,
-            type: "image" as const,
-          },
-        ];
-    setSelectedMediaContent(updatedMediaUrls);
+    // Check if the image is already selected
+    const isSelected = selectedMediaContent.some((media) => media.url === imageUrl);
+
+    // If already selected, remove it; otherwise, add it to the existing array
+    if (isSelected) {
+      // Remove the selected image
+      setSelectedMediaContent(selectedMediaContent.filter((media) => media.url !== imageUrl));
+    } else {
+      // Add the new image to existing selection
+      setSelectedMediaContent([
+        ...selectedMediaContent,
+        {
+          id: uuidv4(),
+          url: imageUrl,
+          type: "image" as const,
+        },
+      ]);
+    }
   };
 
   return (
@@ -63,9 +63,7 @@ const UnsplashMediaModalContent = ({
       <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
         <div className="grid grid-cols-3 gap-2">
           {images.map((image: any) => {
-            const isSelected = selectedMediaContent.some(
-              (media) => media.url === image.urls.small
-            );
+            const isSelected = selectedMediaContent.some((media) => media.url === image.urls.small);
 
             return (
               <img
@@ -74,7 +72,7 @@ const UnsplashMediaModalContent = ({
                 alt={image.alt_description}
                 className={cn(
                   "cursor-pointer rounded-md",
-                  isSelected && "border-4 border-blue-500"
+                  isSelected && "border-4 border-blue-500",
                 )}
                 onClick={() => toggleImageSelection(image.urls.small)}
               />

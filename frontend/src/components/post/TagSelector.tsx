@@ -141,7 +141,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ initialTags, onTagsChange }) 
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-fit p-0" align="start">
+        <PopoverContent className="w-fit p-0" align="end">
           <div className="p-2">
             <Input
               ref={inputRef}
