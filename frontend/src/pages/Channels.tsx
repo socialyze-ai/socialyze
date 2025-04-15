@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { usePosts, SocialChannel } from "@/context/PostsContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,11 +24,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BACKEND_URL } from "@/config/config";
-import { useGetChannel } from "@/api/apiHooks/useChannel";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
-import { addChannels } from "@/redux/slices/channels.slice";
-import { useDispatch } from "react-redux";
+
 const Channels = () => {
   const { channels, addChannel, updateChannel, deleteChannel } = usePosts();
   const { toast } = useToast();
@@ -40,17 +37,7 @@ const Channels = () => {
     connected: true,
   });
 
-  const dispatch = useDispatch();
   const { mutate: handleChannelAuth } = useChannelAuth();
-  const { data: channelsData, isLoading } = useGetChannel();
-
-  console.log("channelsData", channelsData);
-
-  useEffect(() => {
-    if (channelsData) {
-      dispatch(addChannels(channelsData.data));
-    }
-  }, [channelsData]);
 
   const handleChannelAuthMutation = (handle: string) => {
     handleChannelAuth(

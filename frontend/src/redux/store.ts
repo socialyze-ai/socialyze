@@ -17,15 +17,15 @@ const store = configureStore({
     aiAssistant: aiAssistantReducer,
     tagManager: tagManagerReducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore these action types
-        ignoredActions: ["postCreation/setScheduledDate", "posts/addPost", "posts/updatePost"],
-        // Ignore these field paths in the state
-        ignoredPaths: ["posts.posts", "postCreation.scheduledDate"],
-      },
-    }),
+  // middleware: (getDefaultMiddleware) =>
+  //   getDefaultMiddleware({
+  //     serializableCheck: {
+  //       // Ignore these action types
+  //       ignoredActions: ["postCreation/setScheduledDate", "posts/addPost", "posts/updatePost"],
+  //       // Ignore these field paths in the state
+  //       ignoredPaths: ["posts.posts", "postCreation.scheduledDate"],
+  //     },
+  //   }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
