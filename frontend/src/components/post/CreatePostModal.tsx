@@ -73,6 +73,7 @@ import { TooltipContent } from "@radix-ui/react-tooltip";
 import { TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -422,113 +423,53 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                       if (!channel) return null;
 
                       return (
-                        <div
-                          key={channelId}
-                          className={`border rounded-md p-3 mb-2 transition-all ${
-                            channelId === activeChannel
-                              ? "ring-2 ring-blue-500"
-                              : "hover:border-gray-400"
-                          }`}
-                          onClick={() => dispatch(setActiveChannel(channelId))}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center">
-                              <span className="mr-2">{getSocialIcon(channel.type, 16)}</span>
-                              <span className="capitalize font-medium">
-                                {channel.type} {channel.name ? `- ${channel.name}` : ""}
-                              </span>
-                              {channelId === activeChannel && (
-                                <Badge className="ml-2 bg-blue-500">Active</Badge>
-                              )}
-                            </div>
-
-                            <div className="flex gap-2">
-                              {/* Post type selector */}
-                              {(channel.type === "instagram" || channel.type === "facebook") && (
+                        <Accordion type="single" key={channelId}>
+                          <AccordionItem value={channelId}>
+                            <AccordionTrigger
+                              className={`border rounded-md p-1.5 px-2 transition-all ${
+                                channelId === activeChannel
+                                  ? "ring-1 ring-blue-500"
+                                  : "hover:border-gray-400"
+                              }`}
+                              onClick={() => dispatch(setActiveChannel(channelId))}
+                            >
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center">
-                                  <select
-                                    className="text-xs border rounded p-1"
-                                    value={postCreation.postTypeByChannel[channelId] || "post"}
-                                    onChange={(e) =>
-                                      handlePostTypeChange(
-                                        channelId,
-                                        e.target.value as "post" | "reel" | "story",
-                                      )
-                                    }
-                                  >
-                                    <option value="post">Post</option>
-                                    <option value="story">Story</option>
-                                    <option value="reel">Reel</option>
-                                  </select>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <Info size={16} className="ml-1 text-gray-500" />
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        Select the type of {channel.type} post
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <span className="mr-2">{getSocialIcon(channel.type, 16)}</span>
+                                  <span className="font-medium">
+                                    {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}{" "}
+                                    {channel.username ? `- ${channel.username}` : ""}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-                          </div>
 
-                          {/* Using PostComposer instead of ChannelPostInput */}
-                          <div className="w-full">
-                            {/* Show media from this channel if any */}
-                            {/* {mediaByChannel[channelId] && mediaByChannel[channelId].length > 0 && (
-                              <div className="mb-3">
-                                <div className="flex flex-wrap gap-2">
-                                  {mediaByChannel[channelId].map((media) => (
-                                    <div key={media.id} className="relative">
-                                      {media.type === "video" ? (
-                                        <video
-                                          src={media.url}
-                                          className="h-20 w-20 rounded object-cover"
-                                          controls
-                                        />
-                                      ) : (
-                                        <img
-                                          src={media.url}
-                                          alt=""
-                                          className="h-20 w-20 rounded object-cover"
-                                        />
-                                      )}
-                                      <button
-                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const updatedMedia = mediaByChannel[channelId].filter(
-                                            (m) => m.id !== media.id,
-                                          );
-                                          handleMediaChange(channelId, updatedMedia);
-                                        }}
-                                      >
-                                        <X size={12} />
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                                {channelId === activeChannel && (
+                                  <Badge className="mx-2 bg-blue-500">Active</Badge>
+                                )}
                               </div>
-                            )} */}
-
-                            <PostComposer
-                              isPostModal
-                              content={contentByChannel[channelId] || ""}
-                              onContentChange={(content) => handleContentChange(channelId, content)}
-                              hashtags={postCreation.hashtags}
-                              onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
-                              channelMedia={mediaByChannel[channelId]}
-                              onMediaUrlsChange={(media) => {
-                                handleMediaChange(channelId, media);
-                              }}
-                              className="shadow-none border-none p-0"
-                              channelId={channelId}
-                            />
-                          </div>
-                        </div>
+                            </AccordionTrigger>
+                            {channelId === activeChannel && (
+                              <AccordionContent>
+                                <div className="w-full">
+                                  <PostComposer
+                                    isPostModal
+                                    content={contentByChannel[channelId] || ""}
+                                    onContentChange={(content) =>
+                                      handleContentChange(channelId, content)
+                                    }
+                                    hashtags={postCreation.hashtags}
+                                    onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
+                                    channelMedia={mediaByChannel[channelId]}
+                                    onMediaUrlsChange={(media) => {
+                                      handleMediaChange(channelId, media);
+                                    }}
+                                    className="shadow-none border-none p-0"
+                                    channelId={channelId}
+                                  />
+                                </div>
+                              </AccordionContent>
+                            )}
+                          </AccordionItem>
+                        </Accordion>
                       );
                     })
                   )}
