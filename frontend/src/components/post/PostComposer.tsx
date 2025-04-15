@@ -112,8 +112,6 @@ const PostComposer: React.FC<PostComposerProps> = ({
           <EmojiPicker onEmojiSelect={handleInsertEmoji} />
 
           <Mentions onMention={handleMention} />
-
-          {!isPostModal && <TagSelector />}
         </div>
       </CardContent>
     </Card>

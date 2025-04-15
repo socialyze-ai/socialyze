@@ -6,6 +6,7 @@ import { SocialChannel } from "@/context/PostsContext";
 import { addHashtagsToContent } from "@/utils/formatContent";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { cn } from "@/lib/utils";
 
 interface PostPreviewPanelProps {
   content: string;
@@ -13,6 +14,7 @@ interface PostPreviewPanelProps {
   selectedChannels: string[];
   channels: SocialChannel[];
   className?: string;
+  isPage?: boolean;
 }
 
 const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
@@ -21,11 +23,12 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
   selectedChannels,
   channels,
   className,
+  isPage = false,
 }) => {
   const { mediaUrls } = useSelector(selectPostCreation);
-  const [currentPreviewTab, setCurrentPreviewTab] = useState<
-    string | undefined
-  >(selectedChannels.length > 0 ? selectedChannels[0] : undefined);
+  const [currentPreviewTab, setCurrentPreviewTab] = useState<string | undefined>(
+    selectedChannels.length > 0 ? selectedChannels[0] : undefined,
+  );
 
   // Update current tab when selected channels change
   React.useEffect(() => {
@@ -46,9 +49,7 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
     return (
       <Card className={className}>
         <CardContent className="pt-6 flex items-center justify-center h-full">
-          <p className="text-muted-foreground">
-            Select a channel to preview your post
-          </p>
+          <p className="text-muted-foreground">Select a channel to preview your post</p>
         </CardContent>
       </Card>
     );
@@ -56,33 +57,31 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
 
   return (
     <Card className={className}>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between ">
-          <h3 className="font-medium mb-4 w-2/6">Preview</h3>
-          <select
-            value={currentPreviewTab}
-            onChange={(e) => setCurrentPreviewTab(e.target.value)}
-            className="mb-4 min-w-fit max-w-4/6 border border-gray-300 rounded-md p-2"
-          >
-            {selectedChannels.map((channelId) => {
-              const channel = channels.find((c) => c.id === channelId);
-              return channel ? (
-                <option key={channel.id} value={channel.id}>
-                  {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
-                </option>
-              ) : null;
-            })}
-          </select>
-        </div>
+      <CardContent className={cn(isPage ? "p-2" : "pt-6")}>
+        {!isPage && (
+          <div className="flex items-center justify-between ">
+            <h3 className="font-medium mb-4 w-2/6">Preview</h3>
+            <select
+              value={currentPreviewTab}
+              onChange={(e) => setCurrentPreviewTab(e.target.value)}
+              className="mb-4 min-w-fit max-w-4/6 border border-gray-300 rounded-md p-2"
+            >
+              {selectedChannels.map((channelId) => {
+                const channel = channels.find((c) => c.id === channelId);
+                return channel ? (
+                  <option key={channel.id} value={channel.id}>
+                    {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
+                  </option>
+                ) : null;
+              })}
+            </select>
+          </div>
+        )}
 
         {selectedChannels.map((channelId) => {
           const channel = channels.find((c) => c.id === channelId);
           return channel && currentPreviewTab === channel.id ? (
-            <PostPreview
-              key={channel.id}
-              content={getPreviewContent()}
-              channel={channel}
-            />
+            <PostPreview key={channel.id} content={getPreviewContent()} channel={channel} />
           ) : null;
         })}
       </CardContent>

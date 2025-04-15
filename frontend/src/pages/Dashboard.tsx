@@ -36,9 +36,9 @@ const Dashboard = () => {
     }
   }, [channelsData, dispatch]);
 
-  const scheduledPosts = posts?.filter((post) => post?.status === "scheduled") || [];
+  const scheduledPosts = posts?.filter((post) => post?.status === "schedule") || [];
   const draftPosts = posts?.filter((post) => post?.status === "draft") || [];
-  const sentPosts = posts?.filter((post) => post?.status === "sent") || [];
+  const sentPosts = posts?.filter((post) => post?.status === "postnow") || [];
 
   const stats = [
     {
@@ -94,7 +94,7 @@ const Dashboard = () => {
               <Tabs defaultValue="scheduled">
                 <TabsList className="mb-4">
                   <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                  <TabsTrigger value="sent">Sent</TabsTrigger>
+                  <TabsTrigger value="postnow">Post Now</TabsTrigger>
                   <TabsTrigger value="draft">Drafts</TabsTrigger>
                 </TabsList>
                 <TabsContent value="scheduled">
@@ -144,7 +144,7 @@ const Dashboard = () => {
                     </div>
                   )}
                 </TabsContent>
-                <TabsContent value="sent">
+                <TabsContent value="postnow">
                   {sentPosts.length > 0 ? (
                     <div className="space-y-4">
                       {sentPosts.slice(0, 5).map((post) => (

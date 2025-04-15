@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePosts } from "@/context/PostsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Info, Unlink, MoveRight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,18 +32,112 @@ import {
   setContentForChannel,
   setMediaUrls,
   setIsAIAssistantOpen,
+  selectSelectedChannels,
+  selectActiveChannel,
+  selectContentByChannel,
+  selectMediaByChannel,
+  selectIsContentSynced,
+  selectIsCustomContent,
+  setContentSyncState,
+  syncContentAcrossChannels,
+  setMediaForChannel,
+  syncMediaAcrossChannels,
+  initializeChannelContent,
 } from "@/redux/slices/postCreation.slice";
 import AIAssistantPanel from "@/components/post/aiAssistant/AIAssistantPanel";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Media } from "@/components/post/MediaUploader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import TagSelector from "@/components/post/TagSelector";
+import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
+import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 
 const CreatePost = () => {
   const { channels, addPost } = usePosts();
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
+  const selectedChannels = useSelector(selectSelectedChannels);
+  const activeChannel = useSelector(selectActiveChannel);
+  const contentByChannel = useSelector(selectContentByChannel);
+  const mediaByChannel = useSelector(selectMediaByChannel);
+  const isContentSynced = useSelector(selectIsContentSynced);
+  const isCustomContent = useSelector(selectIsCustomContent);
+  const selectedTags = useSelector(selectSelectedTags);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
+
+  // Initialize content by channel when component mounts
+  useEffect(() => {
+    if (channels.length > 0) {
+      dispatch(initializeChannelContent(channels.map((channel) => channel.id)));
+    }
+  }, [channels, dispatch]);
 
   const handleChannelToggle = (channelId: string) => {
     dispatch(toggleChannelSelection(channelId));
+  };
+
+  const handleContentChange = (channelId: string, content: string) => {
+    if (isContentSynced) {
+      // Use the synchronization action for synced mode
+      dispatch(syncContentAcrossChannels({ sourceChannelId: channelId, content }));
+    } else {
+      // Just update the specific channel in unsynced mode
+      dispatch(setContentForChannel({ channelId, content }));
+    }
+  };
+
+  const handleMediaChange = (channelId: string, media: Media[]) => {
+    // Always update the specific channel's media
+    dispatch(setMediaForChannel({ channelId, media }));
+
+    // If in synced mode, update the global media state
+    if (isContentSynced) {
+      dispatch(
+        syncMediaAcrossChannels({
+          sourceChannelId: channelId,
+          media,
+        }),
+      );
+    }
+    // In unsynced mode, if this is the active channel, also update the display state
+    else if (channelId === activeChannel) {
+      // Update the mediaUrls state for display purposes only
+      // This doesn't propagate to other channels in unsynced mode
+      dispatch(setMediaUrls(media));
+    }
+  };
+
+  const handleToggleContentSync = () => {
+    if (isCustomContent) {
+      // User wants to sync content (currently unsynced)
+      setIsSyncAlertOpen(true);
+    } else {
+      // User wants to unsync content (currently synced)
+      dispatch(setContentSyncState(false));
+    }
+  };
+
+  const handleConfirmSync = () => {
+    dispatch(setContentSyncState(true));
+    setIsSyncAlertOpen(false);
   };
 
   const combineDateTime = () => {
@@ -57,16 +151,7 @@ const CreatePost = () => {
   };
 
   const handleSubmit = (isDraft: boolean = false) => {
-    if (postCreation.content.trim() === "" && postCreation.hashtags.length === 0) {
-      toast({
-        title: "Content required",
-        description: "Please enter some content for your post.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (postCreation.selectedChannels.length === 0) {
+    if (selectedChannels.length === 0) {
       toast({
         title: "Channel selection required",
         description: "Please select at least one channel for your post.",
@@ -86,23 +171,55 @@ const CreatePost = () => {
       return;
     }
 
-    const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
+    const finalData = [];
 
-    addPost({
-      content: finalContent,
-      channels: postCreation.selectedChannels,
-      scheduledAt,
-      mediaUrls: postCreation.mediaUrls.map((media) => media.url),
-      status: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "sent",
+    selectedChannels.forEach((channelId) => {
+      const content = contentByChannel[channelId] || "";
+      const hasContent = content.trim() !== "" || postCreation.hashtags.length > 0;
+      const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+
+      if (!hasContent && mediaUrls.length === 0) {
+        toast({
+          title: "Content required",
+          description: "Please enter some content, hashtags, or add an image for your post.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const finalContent = addHashtagsToContent(content, postCreation.hashtags);
+
+      const postData = {
+        channelId: channelId,
+        text: finalContent,
+        scheduledTime: scheduledAt,
+        label: selectedTags.map((tag) => tag.id),
+        media: mediaUrls,
+        postType: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+        postStatus: "queued",
+      };
+
+      finalData.push(postData);
+
+      addPost({
+        content: finalContent,
+        channels: [channelId],
+        scheduledAt,
+        mediaUrls,
+        status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+      });
     });
+
+    console.log("finalData", finalData);
+
+    const statusText = isDraft ? "saved as draft" : postCreation.isScheduled ? "scheduled" : "sent";
 
     toast({
       title: isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
-      description: isDraft
-        ? "Your draft has been saved."
-        : postCreation.isScheduled
-        ? `Your post has been scheduled for ${format(scheduledAt!, "PPP p")}.`
-        : "Your post has been sent to the selected channels.",
+      description:
+        postCreation.isScheduled && scheduledAt
+          ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+          : `Your post has been ${statusText}.`,
     });
 
     navigate("/dashboard");
@@ -114,15 +231,55 @@ const CreatePost = () => {
   };
 
   const handleScheduleFromModal = (scheduledAt: Date, channelIds: string[]) => {
-    const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
+    if (channelIds.length === 0) {
+      toast({
+        title: "Channel selection required",
+        description: "Please select at least one channel for your post.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    addPost({
-      content: finalContent,
-      channels: channelIds,
-      scheduledAt,
-      mediaUrls: postCreation.mediaUrls.map((media) => media.url),
-      status: "scheduled",
+    const finalData = [];
+
+    channelIds.forEach((channelId) => {
+      const content = contentByChannel[channelId] || "";
+      const hasContent = content.trim() !== "" || postCreation.hashtags.length > 0;
+      const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+
+      if (!hasContent && mediaUrls.length === 0) {
+        toast({
+          title: "Content required",
+          description: "Please enter some content, hashtags, or add an image for your post.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const finalContent = addHashtagsToContent(content, postCreation.hashtags);
+
+      const postData = {
+        channelId: channelId,
+        text: finalContent,
+        scheduledTime: scheduledAt,
+        label: selectedTags.map((tag) => tag.id),
+        media: mediaUrls,
+        postType: "schedule",
+        postStatus: "queued",
+      };
+
+      finalData.push(postData);
+
+      addPost({
+        content: finalContent,
+        channels: [channelId],
+        scheduledAt,
+        mediaUrls,
+        status: "schedule",
+      });
     });
+
+    console.log("finalData", finalData);
 
     toast({
       title: "Post scheduled",
@@ -133,46 +290,207 @@ const CreatePost = () => {
     dispatch(resetPostCreation());
   };
 
-  const finalContent = addHashtagsToContent(postCreation.content, postCreation.hashtags);
+  const getSocialIcon = (type: string, size: number = 24) => {
+    switch (type) {
+      case "facebook":
+        return <Facebook size={size} className="text-[#1877F2]" />;
+      case "twitter":
+        return <Twitter size={size} className="text-[#1DA1F2]" />;
+      case "instagram":
+        return <Instagram size={size} className="text-[#E4405F]" />;
+      case "linkedin":
+        return <Linkedin size={size} className="text-[#0A66C2]" />;
+      case "youtube":
+        return <Youtube size={size} className="text-[#FF0000]" />;
+      default:
+        return <X size={size} className="text-[#1DA1F2]" />;
+    }
+  };
+
+  const getChannelById = (id: string) => {
+    return channels.find((c) => c.id === id);
+  };
 
   return (
     <MainLayout title="Create Post">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll lg:overflow-hidden">
         {/* Left column - Post composer */}
-        <div className="flex flex-col gap-5 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
-          <PostComposer
-            content={postCreation.content}
-            onContentChange={(content) => {
-              dispatch(setContent(content));
+        <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-3 flex-wrap">
+              {channels.map((channel) => (
+                <button
+                  key={channel.id}
+                  className={`relative rounded-full p-1.5 ${
+                    selectedChannels.includes(channel.id)
+                      ? "shadow shadow-blue-500"
+                      : "opacity-60 hover:opacity-100"
+                  }`}
+                  onClick={() => handleChannelToggle(channel.id)}
+                >
+                  <img
+                    src={channel.profileImage}
+                    alt={channel.name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <div
+                    className={cn(
+                      "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 flex items-center justify-center bg-white z-50",
+                      selectedChannels.includes(channel.id) && "shadow-blue-500",
+                    )}
+                  >
+                    {getSocialIcon(channel.type, 16)}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <TagSelector />
+          </div>
 
-              // Also update content for all selected channels
-              postCreation.selectedChannels.forEach((channelId) => {
-                dispatch(setContentForChannel({ channelId, content }));
-              });
-            }}
-            hashtags={postCreation.hashtags}
-            onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
-            onMediaUrlsChange={(urls) => dispatch(setMediaUrls(urls))}
-          />
+          {isCustomContent ? (
+            <div className="space-y-2">
+              {selectedChannels.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Select channels to create your post
+                </div>
+              ) : (
+                selectedChannels.map((channelId) => {
+                  const channel = getChannelById(channelId);
+                  if (!channel) return null;
+
+                  return (
+                    <Accordion type="single" key={channelId} collapsible>
+                      <AccordionItem value={channelId}>
+                        <AccordionTrigger
+                          className={`border rounded-md p-1.5 px-2 transition-all ${
+                            channelId === activeChannel
+                              ? "ring-1 ring-blue-500"
+                              : "hover:border-gray-400"
+                          }`}
+                          onClick={() => dispatch(setActiveChannel(channelId))}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center">
+                              <span className="mr-2">{getSocialIcon(channel.type, 16)}</span>
+                              <span className="font-medium">
+                                {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}{" "}
+                                {channel.username ? `- ${channel.username}` : ""}
+                              </span>
+                            </div>
+
+                            {channelId === activeChannel && (
+                              <Badge className="mx-2 bg-blue-500">Active</Badge>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        {channelId === activeChannel && (
+                          <AccordionContent>
+                            <div className="w-full">
+                              <PostComposer
+                                content={contentByChannel[channelId] || ""}
+                                onContentChange={(content) =>
+                                  handleContentChange(channelId, content)
+                                }
+                                hashtags={postCreation.hashtags}
+                                onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
+                                channelMedia={mediaByChannel[channelId]}
+                                onMediaUrlsChange={(media) => {
+                                  handleMediaChange(channelId, media);
+                                }}
+                                className="shadow-none border-none p-0"
+                                channelId={channelId}
+                              />
+                            </div>
+                          </AccordionContent>
+                        )}
+                      </AccordionItem>
+                    </Accordion>
+                  );
+                })
+              )}
+            </div>
+          ) : (
+            <PostComposer
+              content={postCreation.content}
+              onContentChange={(content) => {
+                dispatch(setContent(content));
+              }}
+              hashtags={postCreation.hashtags}
+              onHashtagsChange={(hashtags) => dispatch(setHashtags(hashtags))}
+              onMediaUrlsChange={(urls) => dispatch(setMediaUrls(urls))}
+              channelId={activeChannel}
+            />
+          )}
 
           {postCreation.isAIAssistantOpen && <AIAssistantPanel />}
+
+          {selectedChannels.length > 0 && (
+            <Button
+              onClick={handleToggleContentSync}
+              className="w-fit self-end text-sm flex justify-center items-center gap-2 ring-1 ring-blue-600"
+              variant="outline"
+            >
+              {isCustomContent ? (
+                <>
+                  Sync content
+                  <Unlink />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info />
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs w-64 h-fit text-wrap p-2 rounded-md bg-white">
+                        Sync content across all selected channels
+                        <br />
+                        Note: first channel content will be consider for syncing content
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              ) : (
+                <>
+                  Customize for each network
+                  <MoveRight />
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
-        {/* Right   column - Preview and controls */}
+        {/* Right column - Preview and controls */}
         <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll flex flex-col gap-3">
-          <ChannelSelector
-            channels={channels}
-            selectedChannels={postCreation.selectedChannels}
-            onChannelToggle={handleChannelToggle}
-            content={finalContent}
-          />
-
-          <PostPreviewPanel
-            content={postCreation.content}
-            // hashtags={postCreation.hashtags}
-            selectedChannels={postCreation.selectedChannels}
-            channels={channels}
-          />
+          {selectedChannels.length > 0 && activeChannel && (
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium">Selected channel preview</h3>
+                  <select
+                    value={activeChannel}
+                    onChange={(e) => dispatch(setActiveChannel(e.target.value))}
+                    className="border border-gray-300 rounded-md p-2"
+                  >
+                    {selectedChannels.map((channelId) => {
+                      const channel = getChannelById(channelId);
+                      return channel ? (
+                        <option key={channel.id} value={channel.id}>
+                          {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
+                          {channel.username ? ` - ${channel.username}` : ""}
+                        </option>
+                      ) : null;
+                    })}
+                  </select>
+                </div>
+                {activeChannel && getChannelById(activeChannel) && (
+                  <PostPreviewPanel
+                    content={contentByChannel[activeChannel] || ""}
+                    selectedChannels={[activeChannel]}
+                    channels={channels}
+                    isPage
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Scheduler */}
           <Card className="mb-6">
@@ -233,15 +551,6 @@ const CreatePost = () => {
           </Card>
 
           <div className="flex justify-end gap-5">
-            {/* <Button
-              variant="outline"
-              onClick={() => dispatch(setScheduleModalOpen(true))}
-              className="flex items-center space-x-2"
-            >
-              <CalendarIcon className="h-4 w-4" />
-              <span>Open Calendar</span>
-            </Button> */}
-
             <Button variant="outline" onClick={() => handleSubmit(true)}>
               Save as Draft
             </Button>
@@ -260,8 +569,26 @@ const CreatePost = () => {
         onClose={() => dispatch(setScheduleModalOpen(false))}
         selectedDate={postCreation.scheduledDate || new Date()}
         onSchedule={handleScheduleFromModal}
-        content={addHashtagsToContent(postCreation.content, postCreation.hashtags)}
+        content=""
       />
+
+      {/* Alert Dialog for Sync Confirmation */}
+      <AlertDialog open={isSyncAlertOpen} onOpenChange={setIsSyncAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sync Content</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sync content across all selected channels
+              <br />
+              Note: first channel content will be considered for syncing content
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSync}>Sync</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
