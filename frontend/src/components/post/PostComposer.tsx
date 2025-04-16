@@ -58,7 +58,7 @@ const PostComposer: React.FC<PostComposerProps> = ({
 
   return (
     <Card className={className}>
-      <CardContent className={cn(isPostModal ? "p-3" : "pt-6")}>
+      <CardContent className="p-3">
         <AIAssistantTextarea
           content={content}
           onContentChange={onContentChange}

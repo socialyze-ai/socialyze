@@ -352,20 +352,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
           className={cn(
-            "max-h-[90vh] flex gap-4 bg-transparent border-none p-0",
+            "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
             postCreation.isAIAssistantOpen && selectedChannels.length === 0
               ? "max-w-[60dvw]"
               : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
               ? "max-w-[90dvw]"
               : selectedChannels.length !== 0 && activeChannel
               ? "max-w-[60dvw]"
-              : "flex-1",
+              : "flex-1 h-fit",
           )}
         >
+          {/* AI Assistant */}
           {postCreation.isAIAssistantOpen && (
             <div
               className={cn(
-                "h-full overflow-y-auto max-h-[90vh]",
+                "h-full overflow-y-auto",
                 selectedChannels.length === 0 && !activeChannel ? "w-[40%]" : "w-[30%]",
               )}
             >
@@ -373,9 +374,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             </div>
           )}
 
+          {/* Post Composer */}
           <div
             className={cn(
-              "overflow-y-scroll bg-white p-5 rounded h-full max-h-[90vh]",
+              "overflow-y-scroll bg-white p-5 rounded h-full",
               postCreation.isAIAssistantOpen && selectedChannels.length === 0
                 ? "w-[60%]"
                 : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
@@ -500,42 +502,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
               </>
             ) : (
               <div className="lg:col-span-7 mb-3">
-                {/* Display media in synced mode */}
-                {/* {postCreation.mediaUrls.length > 0 && (
-                  <div className="mb-3">
-                    <div className="flex flex-wrap gap-2">
-                      {postCreation.mediaUrls.map((media) => (
-                        <div key={media.id} className="relative">
-                          {media.type === "video" ? (
-                            <video
-                              src={media.url}
-                              className="h-20 w-20 rounded object-cover"
-                              controls
-                            />
-                          ) : (
-                            <img
-                              src={media.url}
-                              alt=""
-                              className="h-20 w-20 rounded object-cover"
-                            />
-                          )}
-                          <button
-                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                            onClick={() => {
-                              const updatedMedia = postCreation.mediaUrls.filter(
-                                (m) => m.id !== media.id,
-                              );
-                              dispatch(setMediaUrls(updatedMedia));
-                            }}
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
-
                 <PostComposer
                   isPostModal
                   content={postCreation.content}
@@ -607,7 +573,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           {selectedChannels.length !== 0 && activeChannel && (
             <div
               className={cn(
-                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full max-h-[90vh] overflow-y-scroll",
+                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-scroll",
                 postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
@@ -641,7 +607,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 )}
               </div>
 
-              <div className="h-full">
+              <div className="h-fit">
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={contentByChannel[activeChannel] || ""}

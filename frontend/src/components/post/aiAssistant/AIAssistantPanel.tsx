@@ -120,168 +120,177 @@ const AIAssistantEditor = () => {
   };
 
   const renderStage1 = () => (
-    <>
-      <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
-        <div className="flex items-center">
-          <span className="text-blue-600 font-medium flex items-center text-sm">
-            <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
-          </span>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
+    <div className="h-full flex flex-col justify-between">
+      <div className="flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
+          <div className="flex items-center">
+            <span className="text-blue-600 font-medium flex items-center text-sm">
+              <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
+            </span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
 
-      <CardContent className="p-3">
-        <p className="text-sm text-gray-700 mb-2">What do you want to write about?</p>
-        <div className="relative">
-          <Input
-            value={prompt}
-            onChange={(e) => dispatch(setPrompt(e.target.value))}
-            placeholder="Write something..."
-            className="w-full pr-8"
-          />
-          {prompt && (
-            <Button
-              onClick={handleClear}
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
-            >
-              <X className="h-3 w-3" />
-            </Button>
+        <CardContent className="p-3">
+          <p className="text-sm text-gray-700 mb-2">What do you want to write about?</p>
+          <div className="relative">
+            <Input
+              value={prompt}
+              onChange={(e) => dispatch(setPrompt(e.target.value))}
+              placeholder="Write something..."
+              className="w-full pr-8"
+            />
+            {prompt && (
+              <Button
+                onClick={handleClear}
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {prompt === "" && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {examplePrompts.map((examplePrompt, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex w-fit items-center gap-1 pl-2 pr-1 py-1 bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => dispatch(setPrompt(examplePrompt))}
+                >
+                  {examplePrompt}
+                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
           )}
-        </div>
 
-        {prompt === "" && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {examplePrompts.map((examplePrompt, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="flex w-fit items-center gap-1 pl-2 pr-1 py-1 bg-gray-100 hover:bg-gray-200 cursor-pointer"
-                onClick={() => dispatch(setPrompt(examplePrompt))}
-              >
-                {examplePrompt}
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            ))}
+          <div className="mt-4">
+            <p className="text-sm text-gray-700 mb-2">Select tone:</p>
+            <div className="flex gap-2">
+              {tones.map((tone) => (
+                <Badge
+                  key={tone.id}
+                  variant={selectedTone === tone.id ? "default" : "outline"}
+                  className={`cursor-pointer ${
+                    selectedTone === tone.id ? "bg-blue-600" : "bg-white"
+                  }`}
+                  onClick={() => dispatch(setSelectedTone(tone.id))}
+                >
+                  {tone.icon} {tone.label}
+                </Badge>
+              ))}
+            </div>
           </div>
-        )}
 
-        <div className="mt-4">
-          <p className="text-sm text-gray-700 mb-2">Select tone:</p>
-          <div className="flex gap-2">
-            {tones.map((tone) => (
-              <Badge
-                key={tone.id}
-                variant={selectedTone === tone.id ? "default" : "outline"}
-                className={`cursor-pointer ${
-                  selectedTone === tone.id ? "bg-blue-600" : "bg-white"
-                }`}
-                onClick={() => dispatch(setSelectedTone(tone.id))}
-              >
-                {tone.icon} {tone.label}
-              </Badge>
-            ))}
+          <div className="mt-4">
+            <p className="text-sm text-gray-700 mb-2">Pro tip:</p>
+            <p className="text-xs text-gray-500">
+              Include key points, your target audience and your desired outcome for this post to get
+              better results.
+            </p>
           </div>
-        </div>
+        </CardContent>
+        <CardFooter className="flex justify-end p-3 border-t border-gray-200">
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            size="sm"
+            disabled={!prompt}
+            onClick={handleNext}
+          >
+            <span className="text-xs">Generate</span>
+          </Button>
+        </CardFooter>
+      </div>
 
-        <div className="mt-4">
-          <p className="text-sm text-gray-700 mb-2">Pro tip:</p>
-          <p className="text-xs text-gray-500">
-            Include key points, your target audience and your desired outcome for this post to get
-            better results.
-          </p>
-        </div>
-      </CardContent>
-
-      <CardFooter className="flex justify-end p-3 border-t border-gray-200">
-        <Button
-          className="bg-blue-600 hover:bg-blue-700"
-          size="sm"
-          disabled={!prompt}
-          onClick={handleNext}
-        >
-          <span className="text-xs">Generate</span>
-        </Button>
-      </CardFooter>
-    </>
+      <AIAlert />
+    </div>
   );
 
   const renderStage2 = () => (
     <>
-      <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-blue-600 font-medium flex items-center text-sm">
-            <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
-          </span>
+      <div className="h-full flex flex-col justify-between">
+        <div className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
+            <div className="flex items-center">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-blue-600 font-medium flex items-center text-sm">
+                <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
+              </span>
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+
+          <CardContent className="p-3">
+            <div className="flex justify-between mb-3">
+              <div className="text-sm text-gray-700">{prompt}</div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => dispatch(toggleFavorite())}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+              </Button>
+            </div>
+
+            <Tabs defaultValue="suggestion0" className="w-full">
+              <TabsList className="grid grid-cols-3 mb-2">
+                <TabsTrigger value="suggestion0">Option 1</TabsTrigger>
+                <TabsTrigger value="suggestion1">Option 2</TabsTrigger>
+                <TabsTrigger value="suggestion2">Option 3</TabsTrigger>
+              </TabsList>
+
+              {suggestions.map((suggestion, index) => (
+                <TabsContent key={index} value={`suggestion${index}`} className="mt-0">
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="text-sm text-gray-700">{suggestion}</p>
+                    <div className="flex justify-between mt-2 text-xs text-gray-500">
+                      <span>{getWordCount(suggestion)} words</span>
+                      <span>{getCharacterCount(suggestion)} characters</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between mt-3">
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                      onClick={() => {
+                        dispatch(setSelectedSuggestion(index));
+                        handleNext();
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Select</span>
+                    </Button>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
 
-      <CardContent className="p-3">
-        <div className="flex justify-between mb-3">
-          <div className="text-sm text-gray-700">{prompt}</div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => dispatch(toggleFavorite())}
-          >
-            <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
-          </Button>
-        </div>
-
-        <Tabs defaultValue="suggestion0" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-2">
-            <TabsTrigger value="suggestion0">Option 1</TabsTrigger>
-            <TabsTrigger value="suggestion1">Option 2</TabsTrigger>
-            <TabsTrigger value="suggestion2">Option 3</TabsTrigger>
-          </TabsList>
-
-          {suggestions.map((suggestion, index) => (
-            <TabsContent key={index} value={`suggestion${index}`} className="mt-0">
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-700">{suggestion}</p>
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <span>{getWordCount(suggestion)} words</span>
-                  <span>{getCharacterCount(suggestion)} characters</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between mt-3">
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700"
-                  size="sm"
-                  onClick={() => {
-                    dispatch(setSelectedSuggestion(index));
-                    handleNext();
-                  }}
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Select</span>
-                </Button>
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
+        <AIAlert />
+      </div>
 
       {/* <CardFooter className="flex flex-col p-3 border-t border-gray-200">
         <div className="flex flex-wrap justify-between gap-2 w-full">
@@ -325,131 +334,139 @@ const AIAssistantEditor = () => {
   );
 
   const renderStage3 = () => (
-    <>
-      <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-blue-600 font-medium flex items-center text-sm">
-            <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
-          </span>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-
-      <CardContent className="p-3">
-        <p className="text-sm font-medium text-gray-700 mb-2">Final Content</p>
-
-        <div className="bg-gray-50 p-3 rounded-md mb-4">
-          <p className="text-sm text-gray-700">{suggestions[selectedSuggestion]}</p>
-          <div className="flex justify-between mt-2 text-xs text-gray-500">
-            <span>{getWordCount(suggestions[selectedSuggestion])} words</span>
-            <span>{getCharacterCount(suggestions[selectedSuggestion])} characters</span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  ✎ Rephrase
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Rewrite with different wording</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  — Shorten
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Make the text more concise</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  + Expand
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add more detail to the text</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  ✦ More Casual
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Use more casual language</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  ✧ More Formal
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Use more formal language</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </CardContent>
-
-      <CardFooter className="flex flex-col p-3 border-t border-gray-200">
-        <div className="flex justify-between w-full mb-4">
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon">
-              <Copy className="h-4 w-4" />
+    <div className="h-full flex flex-col justify-between">
+      <div className="flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            {/* <Button variant="outline" size="icon">
+            <span className="text-blue-600 font-medium flex items-center text-sm">
+              <Wand2 className="h-4 w-4 mr-1" /> AI Assistant
+            </span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="p-3">
+          <p className="text-sm font-medium text-gray-700 mb-2">Final Content</p>
+
+          <div className="bg-gray-50 p-3 rounded-md mb-4">
+            <p className="text-sm text-gray-700">{suggestions[selectedSuggestion]}</p>
+            <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <span>{getWordCount(suggestions[selectedSuggestion])} words</span>
+              <span>{getCharacterCount(suggestions[selectedSuggestion])} characters</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    ✎ Rephrase
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Rewrite with different wording</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    — Shorten
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Make the text more concise</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    + Expand
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add more detail to the text</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    ✦ More Casual
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Use more casual language</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    ✧ More Formal
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Use more formal language</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col p-3 border-t border-gray-200">
+          <div className="flex justify-between w-full mb-4">
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon">
+                <Copy className="h-4 w-4" />
+              </Button>
+              {/* <Button variant="outline" size="icon">
               <Save className="h-4 w-4" />
             </Button> */}
-          </div>
+            </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReplace}>
-              <span className="text-xs">Replace</span>
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" size="sm" onClick={handleInsert}>
-              <span className="text-xs">Insert</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleReplace}>
+                <span className="text-xs">Replace</span>
+              </Button>
+              <Button className="bg-blue-600 hover:bg-blue-700" size="sm" onClick={handleInsert}>
+                <span className="text-xs">Insert</span>
+              </Button>
+            </div>
           </div>
-        </div>
+        </CardFooter>
+      </div>
 
-        <Alert className="py-2">
-          <AlertDescription className="flex items-center text-xs text-gray-500">
-            <span className="mr-1">⚠</span>
-            <p>
-              AI responses can be inaccurate or misleading. Always review before publishing.{" "}
-              <a href="#" className="text-blue-600 hover:underline">
-                Learn more
-              </a>
-            </p>
-          </AlertDescription>
-        </Alert>
-      </CardFooter>
-    </>
+      <AIAlert />
+    </div>
   );
 
   return (
-    <Card className="w-full border-gray-200">
+    <Card className="w-full h-full border-gray-200">
       {currentStage === 1 && renderStage1()}
       {currentStage === 2 && renderStage2()}
       {currentStage === 3 && renderStage3()}
     </Card>
+  );
+};
+
+const AIAlert = () => {
+  return (
+    <Alert className="py-2">
+      <AlertDescription className="flex items-center text-xs text-gray-500">
+        <span className="mr-1">⚠</span>
+        <p>
+          AI responses can be inaccurate or misleading. Always review before publishing.{" "}
+          <a href="#" className="text-blue-600 hover:underline">
+            Learn more
+          </a>
+        </p>
+      </AlertDescription>
+    </Alert>
   );
 };

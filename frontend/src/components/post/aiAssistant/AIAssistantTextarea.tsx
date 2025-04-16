@@ -203,8 +203,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       <Textarea
         placeholder={placeholder}
         className={cn(
-          "min-h-[150px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-          isPostModal ? "text-sm" : "text-base",
+          "resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
+          isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
           className,
         )}
         value={content}
