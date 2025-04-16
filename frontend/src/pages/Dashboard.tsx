@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { usePosts } from "@/context/PostsContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,34 +7,9 @@ import { BarChart2, Calendar, Clock, PenTool, Send, Settings } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import SelectedChannels from "@/components/post/SelectedChannels";
-import { addChannels } from "@/redux/slices/posts.slice";
-import { useGetChannel } from "@/api/apiHooks/useChannel";
-import { useDispatch } from "react-redux";
 
 const Dashboard = () => {
   const { posts, channels } = usePosts();
-  const dispatch = useDispatch();
-  const { data: channelsData, isLoading } = useGetChannel();
-
-  console.log("channelsData", channelsData);
-
-  useEffect(() => {
-    if (channelsData?.data?.length) {
-      const channels = channelsData.data.map((channel: any) => ({
-        id: channel._id,
-        type: channel.handle,
-        name: channel.channelName,
-        username: channel.user,
-        description: "",
-        profileImage: channel.channelPicture,
-        connected: true,
-        workspace: channel.workspace,
-        channelId: channel.channelId,
-      }));
-
-      dispatch(addChannels(channels));
-    }
-  }, [channelsData, dispatch]);
 
   const scheduledPosts = posts?.filter((post) => post?.status === "schedule") || [];
   const draftPosts = posts?.filter((post) => post?.status === "draft") || [];
