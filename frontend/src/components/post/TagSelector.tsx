@@ -156,9 +156,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({ initialTags, onTagsChange }) 
                 filteredTags.map((tag) => (
                   <div
                     key={tag.id}
-                    className={`flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer ${
-                      tag.name === "important" ? "bg-gray-200" : ""
-                    }`}
+                    className={
+                      "flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                    }
                     onClick={() => handleToggleTag(tag.id)}
                   >
                     <Checkbox checked={tag.selected} className="data-[state=checked]:bg-blue-600" />

@@ -11,14 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
-import { usePosts } from "@/context/PostsContext";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "../ui/card";
-import { getSocialIcon } from "./ChannelSelector";
 import SelectedChannels from "./SelectedChannels";
+import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { useSelector } from "react-redux";
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -35,19 +33,13 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
   onSchedule,
   content,
 }) => {
-  const { channels } = usePosts();
   const [time, setTime] = useState("12:00");
   const [date, setDate] = useState<Date | undefined>(selectedDate);
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+
+  const { selectedChannels } = useSelector(selectPostCreation);
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTime(e.target.value);
-  };
-
-  const handleChannelToggle = (channelId: string) => {
-    setSelectedChannels((prev) =>
-      prev.includes(channelId) ? prev.filter((id) => id !== channelId) : [...prev, channelId],
-    );
   };
 
   const handleSchedule = () => {
@@ -60,9 +52,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
     onSchedule(scheduledDate, selectedChannels);
     onClose();
   };
-
-  // Preview of the first few characters of content
-  const contentPreview = content.length > 100 ? `${content.substring(0, 100)}...` : content;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -116,39 +105,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
                   </div>
                 </Button>
               </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Social Channels</Label>
-            <div className="grid gap-3">
-              {channels.map((channel) => (
-                <div key={channel.id} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={`channel-${channel.id}`}
-                    checked={selectedChannels.includes(channel.id)}
-                    onCheckedChange={() => handleChannelToggle(channel.id)}
-                  />
-                  <Label
-                    htmlFor={`channel-${channel.id}`}
-                    className="flex items-center space-x-3 cursor-pointer"
-                  >
-                    <div className="h-8 w-8 rounded-full overflow-hidden bg-muted">
-                      <img
-                        src={channel.profileImage}
-                        alt={channel.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p>{channel.name}</p>
-                      <p className={`text-xs social-icon-${channel.type}`}>
-                        {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
-                      </p>
-                    </div>
-                  </Label>
-                </div>
-              ))}
             </div>
           </div>
         </div>

@@ -65,7 +65,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import TagSelector from "@/components/post/TagSelector";
-import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
+import { selectSelectedTags, unselectAllTags } from "@/redux/slices/tagManager.slice";
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 
 const CreatePost = () => {
@@ -151,7 +151,10 @@ const CreatePost = () => {
   };
 
   const handleSubmit = (isDraft: boolean = false) => {
-    if (selectedChannels.length === 0) {
+    if (
+      selectedChannels.length === 0 ||
+      Object.values(contentByChannel).every((content) => content.trim() === "")
+    ) {
       toast({
         title: "Channel selection required",
         description: "Please select at least one channel for your post.",
@@ -221,6 +224,8 @@ const CreatePost = () => {
           ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
           : `Your post has been ${statusText}.`,
     });
+
+    dispatch(unselectAllTags());
 
     navigate("/dashboard");
     dispatch(resetPostCreation());
@@ -460,10 +465,10 @@ const CreatePost = () => {
         {/* Right column - Preview and controls */}
         <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll flex flex-col gap-3">
           {selectedChannels.length > 0 && activeChannel && (
-            <Card className="mb-6">
+            <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium">Selected channel preview</h3>
+                  <h3 className="font-medium">Preview</h3>
                   <select
                     value={activeChannel}
                     onChange={(e) => dispatch(setActiveChannel(e.target.value))}

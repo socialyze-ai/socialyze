@@ -75,6 +75,11 @@ const tagManagerSlice = createSlice({
       );
     },
 
+    unselectAllTags: (state) => {
+      state.tags = state.tags.map((tag) => ({ ...tag, selected: false }));
+      state.filteredTags = state.filteredTags.map((tag) => ({ ...tag, selected: false }));
+    },
+
     setCreateDialogOpen: (state, action: PayloadAction<boolean>) => {
       state.isCreateDialogOpen = action.payload;
     },
@@ -130,6 +135,7 @@ export const {
   setInitialTags,
   setSearchValue,
   toggleTag,
+  unselectAllTags,
   setCreateDialogOpen,
   setNewTagName,
   setSelectedColor,
