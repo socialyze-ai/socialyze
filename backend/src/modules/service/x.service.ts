@@ -30,7 +30,6 @@ export class XService {
           forceLogin: false,
         },
       );
-    console.log('Here', url, oauth_token, oauth_token_secret);
 
     await this.oauthSessionModel.create({
       state: oauth_token,
@@ -50,9 +49,6 @@ export class XService {
   async authenticate(userId: string, authCode: string) {
     const [oauth_token, oauth_verifier, oauth_token_secret] =
       authCode.split(':');
-    console.log('oauth_token', oauth_token);
-    console.log('oauth_verifier', oauth_verifier);
-    console.log('oauth_token_secret', oauth_token_secret);
     const startingClient = new TwitterApi({
       appKey: process.env.X_API_KEY!,
       appSecret: process.env.X_API_SECRET!,
@@ -60,14 +56,8 @@ export class XService {
       accessSecret: oauth_token_secret,
     });
 
-    console.log('startingClient', startingClient);
-
     const { accessToken, accessSecret, client } =
       await startingClient.login(oauth_verifier);
-
-    console.log('accessToken', accessToken);
-    console.log('accessSecret', accessSecret);
-    console.log('client', client);
 
     const { data } = await client.v2.me({
       'user.fields': 'profile_image_url,username,name,id,verified',

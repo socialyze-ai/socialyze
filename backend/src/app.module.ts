@@ -8,6 +8,9 @@ import { ConfigModule } from '@nestjs/config';
 import { ChannelModule } from './modules/channel/channel.module';
 import { ServiceModule } from './modules/service/service.module';
 import { HashtagManagerModule } from './modules/hashtagManager/hashtagManager.module';
+import { MediaModule } from './modules/media/media.module';
+import { TagsModule } from './modules/tags/tags.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { HashtagManagerModule } from './modules/hashtagManager/hashtagManager.mo
     ChannelModule,
     ServiceModule,
     HashtagManagerModule,
+    MediaModule,
+    TagsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

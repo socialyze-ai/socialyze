@@ -18,7 +18,7 @@ import { UpdateHashtagManagerDto } from './dto/updateHashtagManager.dto';
 @Controller('hashtagManager')
 @UseInterceptors(AuthInterceptor)
 export class HashtagManagerController {
-  constructor(private readonly service: HashtagManagerService) {}
+  constructor(private readonly hashtagManagerService: HashtagManagerService) {}
 
   @Post()
   create(
@@ -26,27 +26,27 @@ export class HashtagManagerController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.service.create(createHashtagManagerDto, userId);
+    return this.hashtagManagerService.create(createHashtagManagerDto, userId);
   }
 
   @Get()
   findAll(@Req() req: any) {
     const userId = req.user.userId;
-    return this.service.findAll(userId);
+    return this.hashtagManagerService.findAll(userId);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    return this.hashtagManagerService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateHashtagManagerDto) {
-    return this.service.update(id, dto);
+    return this.hashtagManagerService.update(id, dto);
   }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    return this.service.delete(id);
+    return this.hashtagManagerService.delete(id);
   }
 }
