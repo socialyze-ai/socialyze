@@ -125,10 +125,32 @@ const TagSelector: React.FC<TagSelectorProps> = ({ initialTags, onTagsChange }) 
     dispatch(initiateTagCreation());
   };
 
-  // Render button text based on selection
-  const getButtonText = (): string => {
-    if (selectedTagsCount === 0) return "Add Tags";
-    return `${selectedTagsCount} Tag${selectedTagsCount > 1 ? "s" : ""} Selected`;
+  // Render selected tags up to 3 and show +2 for remaining tags
+  const renderSelectedTags = () => {
+    const selectedTags = tags.filter((tag) => tag.selected);
+    const displayedTags = selectedTags.slice(0, 3);
+    const remainingCount = selectedTags.length - displayedTags.length;
+
+    return (
+      <div className="flex items-center space-x-2">
+        {selectedTags.length > 0 ? (
+          <>
+            {displayedTags.map((tag) => (
+              <div key={tag.id} className="flex items-center space-x-2">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: tag.color }}
+                ></span>
+                <span className="text-sm flex-grow">{tag.name}</span>
+              </div>
+            ))}
+            {remainingCount > 0 && <span>+{remainingCount}</span>}
+          </>
+        ) : (
+          <span className="text-sm">Add Tags</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -136,7 +158,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ initialTags, onTagsChange }) 
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="w-fit justify-between" aria-expanded={isOpen}>
-            <span className="text-sm">{getButtonText()}</span>
+            {renderSelectedTags()}
             <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
           </Button>
         </PopoverTrigger>

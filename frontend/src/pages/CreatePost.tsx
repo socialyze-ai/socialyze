@@ -321,7 +321,7 @@ const CreatePost = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll lg:overflow-hidden">
         {/* Left column - Post composer */}
         <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
-          <div className="flex justify-between items-center">
+          <div className="flex gap-2 md:flex-row flex-col-reverse justify-between">
             <div className="flex gap-3 flex-wrap">
               {channels.map((channel) => (
                 <button
@@ -349,7 +349,9 @@ const CreatePost = () => {
                 </button>
               ))}
             </div>
-            <TagSelector />
+            <div className="self-end md:self-start">
+              <TagSelector />
+            </div>
           </div>
 
           {isCustomContent ? (

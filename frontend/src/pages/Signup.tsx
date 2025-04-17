@@ -18,12 +18,23 @@ const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const { signup, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Password mismatch",
+        description: "Please ensure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       await signup(name, email, password);
@@ -42,7 +53,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
@@ -50,15 +61,10 @@ const Signup = () => {
               S
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create your account</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{" "}
-            <Link
-              to="/login"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <Link to="/login" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               sign in to your existing account
             </Link>
           </p>
@@ -67,9 +73,7 @@ const Signup = () => {
         <Card>
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
-            <CardDescription>
-              Enter your information to create an account
-            </CardDescription>
+            <CardDescription>Enter your information to create an account</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
@@ -107,9 +111,19 @@ const Signup = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters long
-                </p>
+                <p className="text-xs text-muted-foreground">Must be at least 8 characters long</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Must be at least 8 characters long</p>
               </div>
             </CardContent>
 
@@ -124,17 +138,11 @@ const Signup = () => {
         <div className="text-center mt-4">
           <p className="text-sm text-gray-600">
             By signing up, you agree to our{" "}
-            <a
-              href="#"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <a href="#" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               Terms of Service
             </a>{" "}
             and{" "}
-            <a
-              href="#"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <a href="#" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               Privacy Policy
             </a>
           </p>
