@@ -1,5 +1,18 @@
 import React from "react";
-import { Wand2, X, ChevronLeft, RotateCcw, Copy, Heart, Check } from "lucide-react";
+import {
+  Wand2,
+  X,
+  ChevronLeft,
+  RotateCcw,
+  Copy,
+  Heart,
+  Check,
+  PlusCircle,
+  Scissors,
+  Edit,
+  FileText,
+  Smile,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -361,12 +374,16 @@ const AIAssistantEditor = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-3 p-2 bg-white rounded-lg shadow-md">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    ✎ Rephrase
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-blue-600 border border-blue-600 hover:bg-blue-100 transition duration-200"
+                  >
+                    <Edit className="h-4 w-4 mr-1" /> Rephrase
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Rewrite with different wording</TooltipContent>
@@ -376,8 +393,12 @@ const AIAssistantEditor = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    — Shorten
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-yellow-600 border border-yellow-600 hover:bg-yellow-100 transition duration-200"
+                  >
+                    <Scissors className="h-4 w-4 mr-1" /> Shorten
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Make the text more concise</TooltipContent>
@@ -387,8 +408,12 @@ const AIAssistantEditor = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    + Expand
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-green-600 border border-green-600 hover:bg-green-100 transition duration-200"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-1" /> Expand
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Add more detail to the text</TooltipContent>
@@ -398,8 +423,12 @@ const AIAssistantEditor = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    ✦ More Casual
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-purple-600 border border-purple-600 hover:bg-purple-100 transition duration-200"
+                  >
+                    <Smile className="h-4 w-4 mr-1" /> More Casual
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Use more casual language</TooltipContent>
@@ -409,8 +438,12 @@ const AIAssistantEditor = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    ✧ More Formal
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-red-600 border border-red-600 hover:bg-red-100 transition duration-200"
+                  >
+                    <FileText className="h-4 w-4 mr-1" /> More Formal
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Use more formal language</TooltipContent>
