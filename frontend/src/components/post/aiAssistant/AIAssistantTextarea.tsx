@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Hash, Wand2, Check, Sparkles, X, Loader2 } from "lucide-react";
+import { Hash, Wand2, Check, Sparkles, X, Loader2, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGenerateContent, useGenerateHashTags } from "@/api/apiHooks/useAI";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -422,6 +422,91 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     previousSelectionRef.current = null;
   };
 
+  // Handler for regenerating refined text while keeping the dialog open
+  const handleRegenerateRefinedText = () => {
+    // Use previousSelectionRef as a fallback if selectedRange is somehow lost
+    const selRange = selectedRange || previousSelectionRef.current;
+    if (!selRange) return;
+
+    const selStart = selRange.start;
+    const selEnd = selRange.end;
+    const selText = content.substring(selStart, selEnd);
+
+    // Wrap selected text in <focus> tags
+    const wholeText =
+      content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
+
+    generateContent(
+      {
+        text: wholeText,
+        action: "refine",
+      },
+      {
+        onSuccess: (data) => {
+          dispatch(setGeneratedRefineContent(data.text));
+          // No need to set showConfirmation to true as it's already open
+          // Keep the selection range active
+          if (!selectedRange || previousSelectionRef.current) {
+            dispatch(setSelectedRange(previousSelectionRef.current));
+          }
+          focusAndSelectText();
+        },
+        onError: () => {
+          toast({
+            title: "Error regenerating refined text",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  // Handler for regenerating content completion
+  const handleRegenerateCompletion = () => {
+    generateContent(
+      {
+        text: content,
+        action: "complete",
+      },
+      {
+        onSuccess: (data) => {
+          dispatch(setGeneratedContent(data.text));
+          // Dialog already open, so no need to set showConfirmation
+        },
+        onError: () => {
+          toast({
+            title: "Error regenerating content",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  // Handler for regenerating hashtags
+  const handleRegenerateHashtags = () => {
+    generateHashTags(
+      {
+        text: content,
+      },
+      {
+        onSuccess: (data) => {
+          dispatch(setHashtags(data.text));
+          // Dialog already open, so no need to set showConfirmation
+        },
+        onError: () => {
+          toast({
+            title: "Error regenerating hashtags",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
   return (
     <>
       <div className="relative" ref={textareaContainerRef}>
@@ -591,6 +676,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         title="Do you want to add the following hashtags?"
         content={hashtags}
         onConfirm={confirmHashtags}
+        onRegenerate={handleRegenerateHashtags}
+        isRegenerateLoading={isPendingHashTags}
       />
 
       <ConfirmationDialog
@@ -603,6 +690,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         title="Do you want to add the following content?"
         content={generatedContent}
         onConfirm={confirmGeneratedContent}
+        onRegenerate={handleRegenerateCompletion}
+        isRegenerateLoading={isPendingContent}
       />
 
       <ConfirmationDialog
@@ -621,6 +710,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           </div>
         }
         onConfirm={confirmRefineWithAI}
+        onRegenerate={handleRegenerateRefinedText}
+        isRegenerateLoading={isPendingContent}
       />
     </>
   );
@@ -628,7 +719,15 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
 export default AIAssistantTextarea;
 
-const ConfirmationDialog = ({ open, onOpenChange, title, content, onConfirm }) => {
+const ConfirmationDialog = ({
+  open,
+  onOpenChange,
+  title,
+  content,
+  onConfirm,
+  onRegenerate,
+  isRegenerateLoading = false,
+}) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md flex flex-col gap-2">
@@ -636,12 +735,27 @@ const ConfirmationDialog = ({ open, onOpenChange, title, content, onConfirm }) =
         <p className="font-semibold text-xs border border-gray-200 rounded-md p-1.5">{content}</p>
         <div className="flex gap-2 justify-end">
           <Button
+            onClick={onRegenerate}
+            type="button"
+            variant="outline"
+            className="text-green-600 hover:bg-green-100 text-xs"
+            disabled={isRegenerateLoading}
+          >
+            {isRegenerateLoading ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-3 w-3 mr-1" />
+            )}
+            Regenerate
+          </Button>
+
+          <Button
             onClick={onConfirm}
             type="button"
             variant="outline"
             className="text-green-600 hover:bg-green-100 text-xs"
           >
-            <Check /> Confirm
+            <Check className="h-3 w-3 mr-1" /> Confirm
           </Button>
         </div>
       </DialogContent>

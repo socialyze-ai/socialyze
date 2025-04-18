@@ -1,12 +1,21 @@
-import { useGetUnsplashMedia } from "@/api/apiHooks/useMedia";
+import { useGetImages } from "@/api/apiHooks/useMedia";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect } from "react";
 import { DebounceInput } from "react-debounce-input";
-import { useSelector } from "react-redux";
-import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 
 import { Media } from "../MediaUploader";
+
+interface UnsplashImage {
+  url: string;
+  download_location: string;
+  username: string;
+  profile_url: string;
+  alt_description: string;
+  width: number;
+  height: number;
+}
+
 const UnsplashMediaModalContent = ({
   selectedMediaContent,
   setSelectedMediaContent,
@@ -14,14 +23,25 @@ const UnsplashMediaModalContent = ({
   selectedMediaContent: Media[];
   setSelectedMediaContent: (media: Media[]) => void;
 }) => {
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<UnsplashImage[]>([]);
   const [page, setPage] = useState(1);
   const [searchKeyword, setSearchKeyword] = useState("trending");
-  const { data: unsplashData } = useGetUnsplashMedia(searchKeyword, page);
+
+  const {
+    data: unsplashData,
+    isLoading: isLoadingUnsplash,
+    isError: isErrorUnsplash,
+  } = useGetImages({
+    provider: "unsplash",
+    search: searchKeyword,
+    page: page,
+    limit: 10,
+    order: "latest",
+  });
 
   useEffect(() => {
-    if (unsplashData && unsplashData.data.results) {
-      setImages((prevImages) => [...prevImages, ...unsplashData.data.results]);
+    if (unsplashData?.data?.media) {
+      setImages((prevImages) => [...prevImages, ...unsplashData.data.media]);
     }
   }, [unsplashData]);
 
@@ -29,21 +49,17 @@ const UnsplashMediaModalContent = ({
     setPage((prevPage) => prevPage + 1);
   };
 
-  const toggleImageSelection = (imageUrl: string) => {
-    // Check if the image is already selected
-    const isSelected = selectedMediaContent.some((media) => media.url === imageUrl);
+  const toggleImageSelection = (image: UnsplashImage) => {
+    const isSelected = selectedMediaContent.some((media) => media.url === image.url);
 
-    // If already selected, remove it; otherwise, add it to the existing array
     if (isSelected) {
-      // Remove the selected image
-      setSelectedMediaContent(selectedMediaContent.filter((media) => media.url !== imageUrl));
+      setSelectedMediaContent(selectedMediaContent.filter((media) => media.url !== image.url));
     } else {
-      // Add the new image to existing selection
       setSelectedMediaContent([
         ...selectedMediaContent,
         {
           id: uuidv4(),
-          url: imageUrl,
+          url: image.url,
           type: "image" as const,
         },
       ]);
@@ -61,31 +77,57 @@ const UnsplashMediaModalContent = ({
         className="p-2 border rounded"
       />
       <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
-        <div className="grid grid-cols-3 gap-2">
-          {images.map((image: any) => {
-            const isSelected = selectedMediaContent.some((media) => media.url === image.urls.small);
+        {isLoadingUnsplash && <div className="text-center">Loading...</div>}
+        {isErrorUnsplash && <div className="text-center text-red-500">Error loading images</div>}
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {images.map((image) => {
+            const isSelected = selectedMediaContent.some((media) => media.url === image.url);
 
             return (
-              <img
-                key={image.id}
-                src={image.urls.small}
-                alt={image.alt_description}
-                className={cn(
-                  "cursor-pointer rounded-md",
-                  isSelected && "border-4 border-blue-500",
-                )}
-                onClick={() => toggleImageSelection(image.urls.small)}
-              />
+              <div key={image.url} className="flex flex-col gap-2">
+                <img
+                  src={image.url}
+                  alt={image.alt_description}
+                  className={cn(
+                    "cursor-pointer rounded-md",
+                    isSelected && "border-4 border-blue-500",
+                  )}
+                  onClick={() => toggleImageSelection(image)}
+                />
+
+                <div className="flex items-center hover:underline gap-1">
+                  <a
+                    href={image.profile_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-gray-700 hover:text-blue-500 flex items-center gap-1"
+                  >
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${image.username}&size=32`}
+                      alt={image.username}
+                      className="w-4 h-4 rounded-full"
+                    />
+                    <span className="text-xs">{image.username}</span>
+                  </a>
+
+                  {/* <a href={image.url} target="_blank" rel="noopener noreferrer">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </a> */}
+                </div>
+              </div>
             );
           })}
         </div>
 
-        <button
-          onClick={loadMoreImages}
-          className="self-center mt-4 p-2 bg-blue-500 text-white rounded text-sm"
-        >
-          Load More
-        </button>
+        {!isLoadingUnsplash && (
+          <button
+            onClick={loadMoreImages}
+            className="self-center mt-4 p-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+          >
+            Load More
+          </button>
+        )}
       </div>
     </div>
   );

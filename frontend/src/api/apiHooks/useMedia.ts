@@ -1,10 +1,11 @@
 import {
+  BACKEND_URL,
   UNSPALSH_ACCESS_KEY,
   UNSPLASH_API_URL,
   UNSPLASH_IMAGE_PER_PAGE,
 } from "@/config/config";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { makeRequest } from "./utils";
+import { HARD_CODED_TOKEN, makeRequest } from "./utils";
 
 interface ApiResponse {
   status: number;
@@ -26,7 +27,7 @@ export const useUploadMedia = () => {
       const response = await makeRequest(
         `${UNSPLASH_API_URL}?client_id=${UNSPALSH_ACCESS_KEY}`,
         "POST",
-        formData
+        formData,
       );
       return {
         status: response.status,
@@ -37,16 +38,13 @@ export const useUploadMedia = () => {
   });
 };
 
-export const useGetUnsplashMedia = (
-  searchKeyword: string,
-  pageNumber: number
-) => {
+export const useGetUnsplashMedia = (searchKeyword: string, pageNumber: number) => {
   return useQuery<ApiResponse>({
     queryKey: ["unsplash-media", searchKeyword, pageNumber],
     queryFn: async () => {
       const response = await makeRequest(
         `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET"
+        "GET",
       );
 
       return {
@@ -59,13 +57,31 @@ export const useGetUnsplashMedia = (
   });
 };
 
+interface GetImagesPayload {
+  provider: string;
+  search: string;
+  page: number;
+  limit: number;
+  order: string;
+}
+
+export const useGetImages = (filters?: GetImagesPayload) => {
+  return useQuery({
+    queryKey: ["media", filters],
+    queryFn: async () => {
+      return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, HARD_CODED_TOKEN);
+    },
+    enabled: !!filters,
+  });
+};
+
 export const useGetGiphyMedia = (searchKeyword: string, pageNumber: number) => {
   return useQuery<ApiResponse>({
     queryKey: ["giphy-media", searchKeyword, pageNumber],
     queryFn: async () => {
       const response = await makeRequest(
         `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET"
+        "GET",
       );
 
       return {
