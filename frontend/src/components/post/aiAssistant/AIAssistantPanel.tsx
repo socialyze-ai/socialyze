@@ -12,6 +12,7 @@ import {
   Edit,
   FileText,
   Smile,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ import {
   selectSelectedTone,
   selectSuggestions,
   selectSelectedSuggestion,
+  selectFinalContent,
   selectIsFavorite,
   selectExamplePrompts,
   setCurrentStage,
@@ -42,10 +44,18 @@ import {
   clearPrompt,
   setSelectedTone,
   setSelectedSuggestion,
+  setFinalContent,
   toggleFavorite,
   reset,
+  setSuggestions,
 } from "@/redux/slices/aiAssistant.slice";
 import { RootState } from "@/redux/store";
+import {
+  useGenerateContent,
+  GenerateContentResponse,
+  GenerateContentRequest,
+} from "@/api/apiHooks/useAI";
+import { useToast } from "@/hooks/use-toast";
 
 const AIAssistantPanel = () => {
   return <AIAssistantEditor />;
@@ -55,11 +65,14 @@ export default AIAssistantPanel;
 
 const AIAssistantEditor = () => {
   const dispatch = useDispatch();
+  const { toast } = useToast();
 
   const { content } = useSelector((state: RootState) => state.postCreation);
   const { contentByChannel } = useSelector((state: RootState) => state.postCreation);
   const activeChannel = useSelector(selectActiveChannel);
   const isCustomContent = useSelector(selectIsCustomContent);
+
+  const { mutate: generateContent, isPending: isPendingContent } = useGenerateContent();
 
   // Get state from Redux instead of local state
   const currentStage = useSelector(selectCurrentStage);
@@ -67,8 +80,13 @@ const AIAssistantEditor = () => {
   const selectedTone = useSelector(selectSelectedTone);
   const suggestions = useSelector(selectSuggestions);
   const selectedSuggestion = useSelector(selectSelectedSuggestion);
+  const finalContent = useSelector(selectFinalContent);
   const isFavorite = useSelector(selectIsFavorite);
   const examplePrompts = useSelector(selectExamplePrompts);
+
+  // Add state for tracking which action is currently loading
+  const [loadingAction, setLoadingAction] = React.useState<string | null>(null);
+  const [copiedIndex, setCopiedIndex] = React.useState<number | string | null>(null);
 
   const tones = [
     { id: "casual", label: "Casual", icon: "✦" },
@@ -110,11 +128,11 @@ const AIAssistantEditor = () => {
       dispatch(
         setContentForChannel({
           channelId: activeChannel,
-          content: suggestions[selectedSuggestion],
+          content: finalContent,
         }),
       );
     } else {
-      dispatch(setContent(suggestions[selectedSuggestion]));
+      dispatch(setContent(finalContent));
     }
   };
 
@@ -124,12 +142,130 @@ const AIAssistantEditor = () => {
       dispatch(
         setContentForChannel({
           channelId: activeChannel,
-          content: channelContent + "\n" + suggestions[selectedSuggestion],
+          content: channelContent + "\n" + finalContent,
         }),
       );
     } else {
-      dispatch(setContent(content + "\n" + suggestions[selectedSuggestion]));
+      dispatch(setContent(content + "\n" + finalContent));
     }
+  };
+
+  const dummySuggestions = [
+    {
+      text: "Travel to Paris",
+    },
+    {
+      text: "Travel to New York",
+    },
+    {
+      text: "Travel to Tokyo",
+    },
+  ];
+
+  const handleGenerateContent = () => {
+    generateContent(
+      {
+        text: prompt,
+        action: "generate",
+        tone: selectedTone,
+      },
+      {
+        onSuccess: (data: GenerateContentResponse) => {
+          const suggestions = dummySuggestions.map((item) => item.text);
+          dispatch(setSuggestions(suggestions));
+          handleNext();
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to generate content",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const dummySuggestions2 = [
+    {
+      text: "Travel to India",
+    },
+    {
+      text: "Travel to Thailand",
+    },
+    {
+      text: "Travel to Japan",
+    },
+  ];
+
+  const handleRegenerateContent = (index: number) => {
+    setLoadingAction(`regenerate-${index}`);
+    generateContent(
+      {
+        text: prompt,
+        action: "generate",
+        tone: selectedTone,
+      },
+      {
+        onSuccess: (data: GenerateContentResponse) => {
+          setLoadingAction(null);
+
+          const newSuggestions = dummySuggestions2.map((item) => item.text);
+          dispatch(setSuggestions(newSuggestions));
+        },
+        onError: () => {
+          setLoadingAction(null);
+          toast({
+            title: "Error",
+            description: "Failed to regenerate content",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const handleCopyToClipboard = (text: string, index: number | string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => {
+        setCopiedIndex(null);
+      }, 2000);
+    });
+  };
+
+  const handleContentAction = (action: string) => {
+    setLoadingAction(action);
+    generateContent(
+      {
+        text: finalContent,
+        action: action,
+        tone: selectedTone,
+      },
+      {
+        onSuccess: (data: GenerateContentResponse) => {
+          console.log("success", data);
+          setLoadingAction(null);
+          // Update finalContent with the received data
+          if (data && "text" in data) {
+            // Handle the new response format with a single text property
+            dispatch(setFinalContent(data.text));
+          } else if (data && Array.isArray(data) && data.length > 0) {
+            // Handle the previous array format for backward compatibility
+            const newContent = data[0].text || "";
+            dispatch(setFinalContent(newContent));
+          }
+        },
+        onError: () => {
+          setLoadingAction(null);
+          toast({
+            title: "Error",
+            description: "Failed to regenerate content",
+            variant: "destructive",
+          });
+        },
+      },
+    );
   };
 
   const renderStage1 = () => (
@@ -211,14 +347,40 @@ const AIAssistantEditor = () => {
             </p>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end p-3 border-t border-gray-200">
+        <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200">
           <Button
             className="bg-blue-600 hover:bg-blue-700"
             size="sm"
-            disabled={!prompt}
-            onClick={handleNext}
+            disabled={!prompt || isPendingContent}
+            onClick={handleGenerateContent}
           >
-            <span className="text-xs">Generate</span>
+            {isPendingContent ? (
+              <span className="text-xs flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Generating...
+              </span>
+            ) : (
+              <span className="text-xs">Generate</span>
+            )}
           </Button>
         </CardFooter>
       </div>
@@ -277,11 +439,50 @@ const AIAssistantEditor = () => {
 
                   <div className="flex justify-between mt-3">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Copy className="h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleCopyToClipboard(suggestion, index)}
+                        disabled={loadingAction !== null}
+                      >
+                        {copiedIndex === index ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
                       </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <RotateCcw className="h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleRegenerateContent(index)}
+                        disabled={loadingAction !== null}
+                      >
+                        {loadingAction === `regenerate-${index}` ? (
+                          <svg
+                            className="animate-spin h-4 w-4 text-gray-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        ) : (
+                          <RotateCcw className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     <Button
@@ -289,8 +490,10 @@ const AIAssistantEditor = () => {
                       size="sm"
                       onClick={() => {
                         dispatch(setSelectedSuggestion(index));
+                        dispatch(setFinalContent(suggestions[index]));
                         handleNext();
                       }}
+                      disabled={loadingAction !== null}
                     >
                       <Check className="h-4 w-4 mr-1" />
                       <span className="text-xs">Select</span>
@@ -367,10 +570,10 @@ const AIAssistantEditor = () => {
           <p className="text-sm font-medium text-gray-700 mb-2">Final Content</p>
 
           <div className="bg-gray-50 p-3 rounded-md mb-4">
-            <p className="text-sm text-gray-700">{suggestions[selectedSuggestion]}</p>
+            <p className="text-sm text-gray-700">{finalContent}</p>
             <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>{getWordCount(suggestions[selectedSuggestion])} words</span>
-              <span>{getCharacterCount(suggestions[selectedSuggestion])} characters</span>
+              <span>{getWordCount(finalContent)} words</span>
+              <span>{getCharacterCount(finalContent)} characters</span>
             </div>
           </div>
 
@@ -382,8 +585,38 @@ const AIAssistantEditor = () => {
                     variant="outline"
                     size="sm"
                     className="text-xs text-blue-600 border border-blue-600 hover:bg-blue-100 transition duration-200"
+                    onClick={() => handleContentAction("rephrase")}
+                    disabled={loadingAction !== null}
                   >
-                    <Edit className="h-4 w-4 mr-1" /> Rephrase
+                    {loadingAction === "rephrase" ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Rephrasing...
+                      </span>
+                    ) : (
+                      <>
+                        <Edit className="h-4 w-4 mr-1" /> Rephrase
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Rewrite with different wording</TooltipContent>
@@ -397,8 +630,38 @@ const AIAssistantEditor = () => {
                     variant="outline"
                     size="sm"
                     className="text-xs text-yellow-600 border border-yellow-600 hover:bg-yellow-100 transition duration-200"
+                    onClick={() => handleContentAction("shorten")}
+                    disabled={loadingAction !== null}
                   >
-                    <Scissors className="h-4 w-4 mr-1" /> Shorten
+                    {loadingAction === "shorten" ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-3 w-3 text-yellow-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Shortening...
+                      </span>
+                    ) : (
+                      <>
+                        <Scissors className="h-4 w-4 mr-1" /> Shorten
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Make the text more concise</TooltipContent>
@@ -412,8 +675,38 @@ const AIAssistantEditor = () => {
                     variant="outline"
                     size="sm"
                     className="text-xs text-green-600 border border-green-600 hover:bg-green-100 transition duration-200"
+                    onClick={() => handleContentAction("expand")}
+                    disabled={loadingAction !== null}
                   >
-                    <PlusCircle className="h-4 w-4 mr-1" /> Expand
+                    {loadingAction === "expand" ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-3 w-3 text-green-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Expanding...
+                      </span>
+                    ) : (
+                      <>
+                        <PlusCircle className="h-4 w-4 mr-1" /> Expand
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Add more detail to the text</TooltipContent>
@@ -427,8 +720,38 @@ const AIAssistantEditor = () => {
                     variant="outline"
                     size="sm"
                     className="text-xs text-purple-600 border border-purple-600 hover:bg-purple-100 transition duration-200"
+                    onClick={() => handleContentAction("casual")}
+                    disabled={loadingAction !== null}
                   >
-                    <Smile className="h-4 w-4 mr-1" /> More Casual
+                    {loadingAction === "casual" ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Updating...
+                      </span>
+                    ) : (
+                      <>
+                        <Smile className="h-4 w-4 mr-1" /> More Casual
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Use more casual language</TooltipContent>
@@ -442,8 +765,38 @@ const AIAssistantEditor = () => {
                     variant="outline"
                     size="sm"
                     className="text-xs text-red-600 border border-red-600 hover:bg-red-100 transition duration-200"
+                    onClick={() => handleContentAction("formal")}
+                    disabled={loadingAction !== null}
                   >
-                    <FileText className="h-4 w-4 mr-1" /> More Formal
+                    {loadingAction === "formal" ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-3 w-3 text-red-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Updating...
+                      </span>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-1" /> More Formal
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Use more formal language</TooltipContent>
@@ -455,19 +808,35 @@ const AIAssistantEditor = () => {
         <CardFooter className="flex flex-col p-3 border-t border-gray-200">
           <div className="flex justify-between w-full mb-4">
             <div className="flex gap-2">
-              <Button variant="outline" size="icon">
-                <Copy className="h-4 w-4" />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleCopyToClipboard(finalContent, "final")}
+                disabled={loadingAction !== null}
+              >
+                {copiedIndex === "final" ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </Button>
-              {/* <Button variant="outline" size="icon">
-              <Save className="h-4 w-4" />
-            </Button> */}
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleReplace}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReplace}
+                disabled={loadingAction !== null}
+              >
                 <span className="text-xs">Replace</span>
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700" size="sm" onClick={handleInsert}>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                size="sm"
+                onClick={handleInsert}
+                disabled={loadingAction !== null}
+              >
                 <span className="text-xs">Insert</span>
               </Button>
             </div>

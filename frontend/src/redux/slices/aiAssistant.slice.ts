@@ -12,6 +12,7 @@ export interface AIAssistantState {
   // Suggestions management
   suggestions: string[];
   selectedSuggestion: number;
+  finalContent: string;
   isFavorite: boolean;
 
   // Example prompts
@@ -28,6 +29,7 @@ const initialState: AIAssistantState = {
     "Looking to amplify your brand's impact? Our marketing solutions combine analytical precision with creative innovation, delivering measurable results. Industry leaders have seen 30-40% improvement in customer retention using our approach.",
   ],
   selectedSuggestion: 0,
+  finalContent: "",
   isFavorite: false,
   examplePrompts: [
     "Write something on marketing",
@@ -55,6 +57,9 @@ export const aiAssistantSlice = createSlice({
     setSelectedSuggestion: (state, action: PayloadAction<number>) => {
       state.selectedSuggestion = action.payload;
     },
+    setFinalContent: (state, action: PayloadAction<string>) => {
+      state.finalContent = action.payload;
+    },
     toggleFavorite: (state) => {
       state.isFavorite = !state.isFavorite;
     },
@@ -62,6 +67,7 @@ export const aiAssistantSlice = createSlice({
       state.currentStage = 1;
       state.prompt = "";
       state.selectedSuggestion = 0;
+      state.finalContent = "";
       state.isFavorite = false;
     },
     // This would be used for the AI generation API call in a real app
@@ -78,6 +84,7 @@ export const selectPrompt = (state: RootState) => state.aiAssistant.prompt;
 export const selectSelectedTone = (state: RootState) => state.aiAssistant.selectedTone;
 export const selectSuggestions = (state: RootState) => state.aiAssistant.suggestions;
 export const selectSelectedSuggestion = (state: RootState) => state.aiAssistant.selectedSuggestion;
+export const selectFinalContent = (state: RootState) => state.aiAssistant.finalContent;
 export const selectIsFavorite = (state: RootState) => state.aiAssistant.isFavorite;
 export const selectExamplePrompts = (state: RootState) => state.aiAssistant.examplePrompts;
 
@@ -87,6 +94,7 @@ export const {
   clearPrompt,
   setSelectedTone,
   setSelectedSuggestion,
+  setFinalContent,
   toggleFavorite,
   reset,
   setSuggestions,
