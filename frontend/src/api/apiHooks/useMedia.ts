@@ -7,27 +7,14 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HARD_CODED_TOKEN, makeRequest } from "./utils";
 
-interface ApiResponse {
-  status: number;
-  data: any;
-  error: string | null;
-}
-
-interface UploadMediaData {
-  files: File[];
-}
-
 export const useUploadMedia = () => {
-  return useMutation<ApiResponse, unknown, UploadMediaData>({
-    mutationFn: async (data) => {
-      const formData = new FormData();
-      data.files.forEach((file) => {
-        formData.append("file", file);
-      });
+  return useMutation({
+    mutationFn: async (data: any) => {
       const response = await makeRequest(
-        `${UNSPLASH_API_URL}?client_id=${UNSPALSH_ACCESS_KEY}`,
+        BACKEND_URL + "media/uploadMedia",
         "POST",
-        formData,
+        data,
+        HARD_CODED_TOKEN,
       );
       return {
         status: response.status,
@@ -35,25 +22,6 @@ export const useUploadMedia = () => {
         error: response.error || null,
       };
     },
-  });
-};
-
-export const useGetUnsplashMedia = (searchKeyword: string, pageNumber: number) => {
-  return useQuery<ApiResponse>({
-    queryKey: ["unsplash-media", searchKeyword, pageNumber],
-    queryFn: async () => {
-      const response = await makeRequest(
-        `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET",
-      );
-
-      return {
-        status: response.status,
-        data: response.data,
-        error: response.error || null,
-      };
-    },
-    enabled: !!searchKeyword,
   });
 };
 
@@ -72,23 +40,5 @@ export const useGetImages = (filters?: GetImagesPayload) => {
       return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, HARD_CODED_TOKEN);
     },
     enabled: !!filters,
-  });
-};
-
-export const useGetGiphyMedia = (searchKeyword: string, pageNumber: number) => {
-  return useQuery<ApiResponse>({
-    queryKey: ["giphy-media", searchKeyword, pageNumber],
-    queryFn: async () => {
-      const response = await makeRequest(
-        `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET",
-      );
-
-      return {
-        status: response.status,
-        data: response.data,
-        error: response.error || null,
-      };
-    },
   });
 };

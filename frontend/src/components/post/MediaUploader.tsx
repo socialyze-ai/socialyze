@@ -19,6 +19,8 @@ import {
   setMediaForChannel,
   selectMediaByChannel,
 } from "@/redux/slices/postCreation.slice";
+import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import { toast } from "@/components/ui/use-toast";
 
 export interface Media {
   id: string;
@@ -321,6 +323,8 @@ const MediaModal = ({
   const activeChannel = useSelector(selectActiveChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const [selectedMediaContent, setSelectedMediaContent] = useState<Media[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const { mutate: uploadMedia, isPending: isPendingUploadMedia } = useUploadMedia();
 
   // Reset selected media content when modal opens/closes
   useEffect(() => {
@@ -378,6 +382,114 @@ const MediaModal = ({
     setSelectedMediaContent([]);
   };
 
+  const uploadFilesToServer = async (files: FileList) => {
+    setIsUploading(true);
+    try {
+      // Create an array from the FileList to handle multiple files
+      const filesArray = Array.from(files);
+
+      const formData = new FormData();
+      formData.append("file", filesArray[0]);
+      formData.append("postId", uuidv4());
+
+      // Upload files to the server
+      await uploadMedia(formData, {
+        onSuccess: (response) => {
+          if (response?.data?.url) {
+            // Create media object from the server response
+            const newMedia: Media = {
+              id: uuidv4(),
+              url: response.data.url,
+              type: filesArray[0].type.startsWith("video/") ? "video" : "image",
+            };
+
+            console.log("newMedia", newMedia);
+
+            // If external media handling is provided, use that
+            if (onMediaSelect) {
+              // Add new media to existing array without replacing
+              onMediaSelect([...mediaUrls, newMedia]);
+            } else {
+              // Handle media update based on sync state and active channel
+              const updatedMedia = [...mediaUrls, newMedia];
+
+              // If we're in a specific channel context and unsynced
+              if (channelId && !isContentSynced) {
+                dispatch(
+                  setMediaForChannel({
+                    channelId,
+                    media: updatedMedia,
+                  }),
+                );
+              }
+              // If we have an active channel and not synced
+              else if (activeChannel && !isContentSynced) {
+                dispatch(
+                  setMediaForChannel({
+                    channelId: activeChannel,
+                    media: updatedMedia,
+                  }),
+                );
+              }
+              // If we're synced, use the sync action to update all channels
+              else if (isContentSynced && activeChannel) {
+                dispatch(
+                  syncMediaAcrossChannels({
+                    sourceChannelId: activeChannel,
+                    media: updatedMedia,
+                  }),
+                );
+              }
+              // Fallback for global context
+              else {
+                dispatch(setMediaUrls(updatedMedia));
+              }
+            }
+
+            toast({
+              title: "Success",
+              description: "Media uploaded successfully",
+            });
+          } else {
+            throw new Error("Invalid response format");
+          }
+        },
+        onError: (error) => {
+          console.error("Error uploading media:", error);
+          toast({
+            title: "Error",
+            description: "Failed to upload media",
+            variant: "destructive",
+          });
+        },
+      });
+
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload media",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Override the file change handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      uploadFilesToServer(files);
+    }
+
+    // Clear the file input for future uploads
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -392,15 +504,16 @@ const MediaModal = ({
               variant="outline"
               className="w-fit"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
             >
-              Upload from computer
+              {isUploading ? "Uploading..." : "Upload from computer"}
             </Button>
             <input
               type="file"
               accept="image/*, video/*"
               className="hidden"
               ref={fileInputRef}
-              onChange={handleFileChange}
+              onChange={handleFileUpload}
               multiple
             />
           </div>
