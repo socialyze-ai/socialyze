@@ -76,6 +76,8 @@ import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useAddPost } from "@/api/apiHooks/usePost";
+import { format } from "date-fns";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -95,6 +97,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
   const selectedTags = useSelector(selectSelectedTags);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -259,6 +262,22 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         mediaUrls: mediaUrls,
         status,
         scheduledAt,
+      });
+
+      addPostMutation(finalData, {
+        onSuccess: () => {
+          toast({
+            title: "Post scheduled",
+            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to schedule post",
+            variant: "destructive",
+          });
+        },
       });
     });
 

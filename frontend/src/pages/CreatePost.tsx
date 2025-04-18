@@ -68,6 +68,7 @@ import TagSelector from "@/components/post/TagSelector";
 import { selectSelectedTags, unselectAllTags } from "@/redux/slices/tagManager.slice";
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAddPost } from "@/api/apiHooks/usePost";
 
 const CreatePost = () => {
   const { channels, addPost } = usePosts();
@@ -83,6 +84,8 @@ const CreatePost = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
+
+  const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
 
   // Initialize content by channel when component mounts
   useEffect(() => {
@@ -216,20 +219,39 @@ const CreatePost = () => {
 
     console.log("finalData", finalData);
 
-    const statusText = isDraft ? "saved as draft" : postCreation.isScheduled ? "scheduled" : "sent";
+    addPostMutation(finalData, {
+      onSuccess: () => {
+        const statusText = isDraft
+          ? "saved as draft"
+          : postCreation.isScheduled
+          ? "scheduled"
+          : "sent";
 
-    toast({
-      title: isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
-      description:
-        postCreation.isScheduled && scheduledAt
-          ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
-          : `Your post has been ${statusText}.`,
+        toast({
+          title: isDraft
+            ? "Draft saved"
+            : postCreation.isScheduled
+            ? "Post scheduled"
+            : "Post sent",
+          description:
+            postCreation.isScheduled && scheduledAt
+              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+              : `Your post has been ${statusText}.`,
+        });
+
+        dispatch(unselectAllTags());
+
+        navigate("/dashboard");
+        dispatch(resetPostCreation());
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to add post",
+          variant: "destructive",
+        });
+      },
     });
-
-    dispatch(unselectAllTags());
-
-    navigate("/dashboard");
-    dispatch(resetPostCreation());
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,6 +304,22 @@ const CreatePost = () => {
         scheduledAt,
         mediaUrls,
         status: "schedule",
+      });
+
+      addPostMutation(finalData, {
+        onSuccess: () => {
+          toast({
+            title: "Post scheduled",
+            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to schedule post",
+            variant: "destructive",
+          });
+        },
       });
     });
 
