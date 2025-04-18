@@ -6,6 +6,7 @@ import postCreationReducer from "./slices/postCreation.slice";
 import postsReducer from "./slices/posts.slice";
 import aiAssistantReducer from "./slices/aiAssistant.slice";
 import tagManagerReducer from "./slices/tagManager.slice";
+import aiTextareaReducer from "./slices/aiTextarea.slice";
 
 const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ const store = configureStore({
     posts: postsReducer,
     aiAssistant: aiAssistantReducer,
     tagManager: tagManagerReducer,
+    aiTextarea: aiTextareaReducer,
   },
   // middleware: (getDefaultMiddleware) =>
   //   getDefaultMiddleware({
