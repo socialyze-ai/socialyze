@@ -35,7 +35,7 @@ const InitialDataLoader = () => {
         id: channel._id,
         type: channel.handle,
         name: channel.channelName,
-        username: channel.user,
+        username: channel.channelName,
         description: "",
         profileImage: channel.channelPicture,
         connected: true,

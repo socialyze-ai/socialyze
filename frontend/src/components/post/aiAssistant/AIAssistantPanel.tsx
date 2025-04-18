@@ -374,7 +374,7 @@ const AIAssistantEditor = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-3 p-2 bg-white rounded-lg shadow-md">
+          <div className="flex flex-wrap justify-end gap-1.5">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

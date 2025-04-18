@@ -61,7 +61,7 @@ const mockChannels = {
   message: "Mock channels data fetched successfully",
 };
 
-export const useGetChannel = (isMockData: boolean = true) => {
+export const useGetChannel = (isMockData: boolean = false) => {
   const query = useQuery({
     queryKey: ["channels"],
     queryFn: async () => {
