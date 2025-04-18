@@ -22,9 +22,8 @@ import {
   setGeneratedRefineContent,
   resetTextState,
   resetConfirmation,
-  setIsPendingGeneratingHashTags,
-  setIsPendingGeneratingContent,
 } from "@/redux/slices/aiTextarea.slice";
+import { useToast } from "@/hooks/use-toast";
 
 interface AIAssistantTextareaProps {
   content: string;
@@ -41,6 +40,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   isPostModal = false,
   className,
 }) => {
+  const { toast } = useToast();
   const dispatch = useDispatch();
   const {
     selectedText,
@@ -54,8 +54,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     hashtags,
     generatedContent,
     generatedRefineContent: generateRefineWithAI,
-    isPendingGeneratingHashTags,
-    isPendingGeneratingContent,
   } = useSelector(selectAITextarea);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -68,8 +66,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setContent(content));
   }, [dispatch, content]);
 
-  const { mutate: generateHashTags } = useGenerateHashTags();
-  const { mutate: generateContent } = useGenerateContent();
+  const { mutate: generateHashTags, isPending: isPendingHashTags } = useGenerateHashTags();
+  const { mutate: generateContent, isPending: isPendingContent } = useGenerateContent();
 
   // Handle text selection to show underline and selection card
   const handleTextSelection = () => {
@@ -320,7 +318,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       const wholeText =
         content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
 
-      dispatch(setIsPendingGeneratingContent(true));
       generateContent(
         {
           text: wholeText,
@@ -331,7 +328,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             dispatch(setGeneratedRefineContent(data.text));
             dispatch(setShowConfirmation(true));
             dispatch(setShowAIOptions(false));
-            dispatch(setIsPendingGeneratingContent(false));
             // Make sure we keep the selection range active for the confirmation
             if (!selectedRange || previousSelectionRef.current) {
               dispatch(setSelectedRange(previousSelectionRef.current));
@@ -339,7 +335,11 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             focusAndSelectText();
           },
           onError: () => {
-            dispatch(setIsPendingGeneratingContent(false));
+            toast({
+              title: "Error refining with AI",
+              description: "Please try again.",
+              variant: "destructive",
+            });
           },
         },
       );
@@ -347,7 +347,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   };
 
   const handleCompleteWithAI = () => {
-    dispatch(setIsPendingGeneratingContent(true));
     generateContent(
       {
         text: content,
@@ -358,14 +357,19 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           dispatch(setGeneratedContent(data.text));
           dispatch(setShowConfirmation(true));
           dispatch(setShowAIOptions(false));
-          dispatch(setIsPendingGeneratingContent(false));
+        },
+        onError: () => {
+          toast({
+            title: "Error completing with AI",
+            description: "Please try again.",
+            variant: "destructive",
+          });
         },
       },
     );
   };
 
   const handleGenerateHashtags = () => {
-    dispatch(setIsPendingGeneratingHashTags(true));
     generateHashTags(
       {
         text: content,
@@ -374,7 +378,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         onSuccess: (data) => {
           dispatch(setHashtags(data.text));
           dispatch(setShowConfirmation(true));
-          dispatch(setIsPendingGeneratingHashTags(false));
+        },
+        onError: () => {
+          toast({
+            title: "Error generating hashtags",
+            description: "Please try again.",
+            variant: "destructive",
+          });
         },
       },
     );
@@ -499,8 +509,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                       onClick={handleRefineWithAI}
                       className="w-full justify-start text-left rounded-sm hover:bg-green-50 p-1.5 h-auto"
                       variant="ghost"
+                      disabled={isPendingContent}
                     >
-                      {isPendingGeneratingContent ? (
+                      {isPendingContent ? (
                         <Loader2 className="h-3 w-3 text-green-600 animate-spin mx-auto" />
                       ) : (
                         <div className="flex items-center">
@@ -524,8 +535,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                       onClick={handleCompleteWithAI}
                       className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
                       variant="ghost"
+                      disabled={isPendingContent}
                     >
-                      {isPendingGeneratingContent ? (
+                      {isPendingContent ? (
                         <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />
                       ) : (
                         <div className="flex items-center">
@@ -545,9 +557,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                       onClick={handleGenerateHashtags}
                       className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
                       variant="ghost"
-                      disabled={isPendingGeneratingHashTags}
+                      disabled={isPendingHashTags}
                     >
-                      {isPendingGeneratingHashTags ? (
+                      {isPendingHashTags ? (
                         <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />
                       ) : (
                         <div className="flex items-center">

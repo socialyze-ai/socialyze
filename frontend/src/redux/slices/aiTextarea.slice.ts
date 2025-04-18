@@ -24,10 +24,6 @@ export interface AITextareaState {
   hashtags: string;
   generatedContent: string;
   generatedRefineContent: string;
-
-  // Loading states
-  isPendingGeneratingHashTags: boolean;
-  isPendingGeneratingContent: boolean;
 }
 
 const initialState: AITextareaState = {
@@ -45,9 +41,6 @@ const initialState: AITextareaState = {
   hashtags: "",
   generatedContent: "",
   generatedRefineContent: "",
-
-  isPendingGeneratingHashTags: false,
-  isPendingGeneratingContent: false,
 };
 
 export const aiTextareaSlice = createSlice({
@@ -90,12 +83,6 @@ export const aiTextareaSlice = createSlice({
     setGeneratedRefineContent: (state, action: PayloadAction<string>) => {
       state.generatedRefineContent = action.payload;
     },
-    setIsPendingGeneratingHashTags: (state, action: PayloadAction<boolean>) => {
-      state.isPendingGeneratingHashTags = action.payload;
-    },
-    setIsPendingGeneratingContent: (state, action: PayloadAction<boolean>) => {
-      state.isPendingGeneratingContent = action.payload;
-    },
     resetTextState: (state) => {
       state.selectedRange = null;
       state.selectedText = "";
@@ -107,8 +94,6 @@ export const aiTextareaSlice = createSlice({
       state.hashtags = "";
       state.generatedContent = "";
       state.generatedRefineContent = "";
-      state.isPendingGeneratingHashTags = false;
-      state.isPendingGeneratingContent = false;
     },
     reset: () => initialState,
   },
@@ -129,10 +114,6 @@ export const selectHashtags = (state: RootState) => state.aiTextarea.hashtags;
 export const selectGeneratedContent = (state: RootState) => state.aiTextarea.generatedContent;
 export const selectGeneratedRefineContent = (state: RootState) =>
   state.aiTextarea.generatedRefineContent;
-export const selectIsPendingGeneratingHashTags = (state: RootState) =>
-  state.aiTextarea.isPendingGeneratingHashTags;
-export const selectIsPendingGeneratingContent = (state: RootState) =>
-  state.aiTextarea.isPendingGeneratingContent;
 
 export const {
   setContent,
@@ -147,8 +128,6 @@ export const {
   setHashtags,
   setGeneratedContent,
   setGeneratedRefineContent,
-  setIsPendingGeneratingHashTags,
-  setIsPendingGeneratingContent,
   resetTextState,
   resetConfirmation,
   reset,
