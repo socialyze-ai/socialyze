@@ -224,11 +224,13 @@ const PostPreview: React.FC<PostPreviewProps> = ({
       <div className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img
-              src={channel.profileImage}
-              alt={channel.name}
-              className="w-10 h-10 rounded-full mr-2"
-            />
+            <Avatar className="w-10 h-10 rounded-full mr-2">
+              <AvatarImage src={channel.profileImage} />
+              <AvatarFallback className="capitalize font-semibold text-xl">
+                {channel.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+
             <div>
               <div className="font-medium">{channel.name}</div>
               <div className="text-xs text-gray-500">
@@ -261,11 +263,12 @@ const PostPreview: React.FC<PostPreviewProps> = ({
     <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
       <div className="flex items-center justify-between p-2 border-b">
         <div className="flex items-center">
-          <img
-            src={channel.profileImage}
-            alt={channel.name}
-            className="w-10 h-10 rounded-full mr-2"
-          />
+          <Avatar className="w-10 h-10 rounded-full mr-2">
+            <AvatarImage src={channel.profileImage} />
+            <AvatarFallback className="capitalize font-semibold text-xl">
+              {channel.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
           <span className="font-medium text-sm">
             {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
           </span>

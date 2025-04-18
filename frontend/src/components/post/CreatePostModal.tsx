@@ -75,6 +75,7 @@ import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -416,14 +417,15 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                       }`}
                       onClick={() => handleChannelToggle(channel.id)}
                     >
-                      <img
-                        src={channel.profileImage}
-                        alt={channel.name}
-                        className="w-10 h-10 rounded-full"
-                      />
+                      <Avatar className="w-10 h-10 rounded-full">
+                        <AvatarImage src={channel.profileImage} />
+                        <AvatarFallback className="capitalize font-semibold text-xl">
+                          {channel.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div
                         className={cn(
-                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 flex items-center justify-center bg-white z-50",
+                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
                           selectedChannels.includes(channel.id) && "shadow-blue-500",
                         )}
                       >
@@ -581,13 +583,14 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 <select
                   value={activeChannel}
                   onChange={(e) => dispatch(setActiveChannel(e.target.value))}
-                  className="border border-gray-300 rounded-md p-2 w-full mt-5"
+                  className="border border-gray-300 rounded-md p-2 w-full mt-5 text-sm"
                 >
                   {selectedChannels.map((channelId) => {
                     const channel = getChannelById(channelId);
                     return channel ? (
                       <option key={channel.id} value={channel.id}>
                         {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
+                        {channel.username ? ` - ${channel.username}` : ""}
                       </option>
                     ) : null;
                   })}

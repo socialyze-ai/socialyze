@@ -67,6 +67,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import TagSelector from "@/components/post/TagSelector";
 import { selectSelectedTags, unselectAllTags } from "@/redux/slices/tagManager.slice";
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const CreatePost = () => {
   const { channels, addPost } = usePosts();
@@ -333,11 +334,12 @@ const CreatePost = () => {
                   }`}
                   onClick={() => handleChannelToggle(channel.id)}
                 >
-                  <img
-                    src={channel.profileImage}
-                    alt={channel.name}
-                    className="w-10 h-10 rounded-full"
-                  />
+                  <Avatar className="w-10 h-10 rounded-full">
+                    <AvatarImage src={channel.profileImage} />
+                    <AvatarFallback className="capitalize font-semibold text-xl">
+                      {channel.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
                   <div
                     className={cn(
                       "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 flex items-center justify-center bg-white z-50",
@@ -474,7 +476,7 @@ const CreatePost = () => {
                   <select
                     value={activeChannel}
                     onChange={(e) => dispatch(setActiveChannel(e.target.value))}
-                    className="border border-gray-300 rounded-md p-2"
+                    className="border border-gray-300 rounded-md p-2 text-sm"
                   >
                     {selectedChannels.map((channelId) => {
                       const channel = getChannelById(channelId);

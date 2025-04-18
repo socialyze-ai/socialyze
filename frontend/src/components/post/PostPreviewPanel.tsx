@@ -64,13 +64,14 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
             <select
               value={currentPreviewTab}
               onChange={(e) => setCurrentPreviewTab(e.target.value)}
-              className="mb-4 min-w-fit max-w-4/6 border border-gray-300 rounded-md p-2"
+              className="mb-4 min-w-fit max-w-4/6 border border-gray-300 rounded-md p-2 text-sm"
             >
               {selectedChannels.map((channelId) => {
                 const channel = channels.find((c) => c.id === channelId);
                 return channel ? (
                   <option key={channel.id} value={channel.id}>
                     {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
+                    {channel.username ? ` - ${channel.username}` : ""}
                   </option>
                 ) : null;
               })}
