@@ -320,11 +320,11 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
       generateContent(
         {
-          text: wholeText,
+          text: selText, // send only selected text
           action: "refine",
         },
         {
-          onSuccess: (data) => {
+          onSuccess: (data: { text: string }) => {
             dispatch(setGeneratedRefineContent(data.text));
             dispatch(setShowConfirmation(true));
             dispatch(setShowAIOptions(false));
@@ -353,7 +353,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         action: "complete",
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: { text: string }) => {
           dispatch(setGeneratedContent(data.text));
           dispatch(setShowConfirmation(true));
           dispatch(setShowAIOptions(false));
@@ -442,7 +442,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         action: "refine",
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: { text: string }) => {
           dispatch(setGeneratedRefineContent(data.text));
           // No need to set showConfirmation to true as it's already open
           // Keep the selection range active
@@ -470,7 +470,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         action: "complete",
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: { text: string }) => {
           dispatch(setGeneratedContent(data.text));
           // Dialog already open, so no need to set showConfirmation
         },
