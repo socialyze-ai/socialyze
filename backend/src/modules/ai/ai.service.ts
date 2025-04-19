@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { OpenAiService } from '../service/openai.service';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class AiService {
 
     switch (action) {
       case 'generate':
-        prompt = `Write a social media post about: "${text}".`;
+        prompt = `Write a social media in ${tone || 'natural'} tone, with relevant hashtags about: "${text}". Each response should have 3 option. Reply in JSON format like: ["This is option 1", "This is option 2", "This is option 3"]`;
         break;
       case 'rephrase':
         prompt = `Rephrase the following post in a ${tone || 'natural'} tone:\n"${text}"`;
@@ -27,24 +27,31 @@ export class AiService {
         prompt = `Shorten this post while keeping the meaning:\n"${text}"`;
         break;
       case 'complete':
-        prompt = `Complete this unfinished sentence:\n"${text}"`;
+        prompt = `Complete this unfinished sentence:\n"${text}". Reply only the completed part.`;
+        break;
+      case 'refine':
+        prompt = `Refine only focused text for grammar and quality.\n\n Focused text: \n "${text}`;
         break;
       default:
-        return { text: 'Invalid action' };
+        throw new BadRequestException('Invalid action');
     }
 
-    const reponse = await this.openAiService.generate(prompt);
-    return { text: reponse };
+    let response = await this.openAiService.generate(prompt);
+    if (action === 'generate') {
+      response = JSON.parse(response);
+    }
+    console.log(response, typeof response);
+    return { text: response };
   }
 
   async generateHashTags(text: string) {
-    const prompt = `Generate 3-5 relevant and trending hashtags for this post:\n"${text}"`;
+    const prompt = `Generate 5-6 relevant and trending hashtags for this post:\n"${text}"`;
     const reponse = await this.openAiService.generate(prompt);
     return { text: reponse };
   }
 
   async completeContent(text: string) {
-    const prompt = `Complete the following sentence or paragraph naturally:\n"${text}"`;
+    const prompt = `Complete the following sentence or paragraph naturally:\n"${text}" \n\n No numbers, only hashtags seperated with space.`;
     const reponse = await this.openAiService.generate(prompt);
     return { text: reponse };
   }
