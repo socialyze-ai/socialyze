@@ -64,8 +64,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import TagSelector from "@/components/post/TagSelector";
-import { selectSelectedTags, unselectAllTags } from "@/redux/slices/tagManager.slice";
+import LabelSelector from "@/components/post/LabelSelector";
+import { selectSelectedLabels, unselectAllLabels } from "@/redux/slices/labelManager.slice";
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
@@ -80,7 +80,7 @@ const CreatePost = () => {
   const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
-  const selectedTags = useSelector(selectSelectedTags);
+  const selectedLabels = useSelector(selectSelectedLabels);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
@@ -200,7 +200,7 @@ const CreatePost = () => {
         channelId: channelId,
         text: finalContent,
         scheduledTime: scheduledAt,
-        label: selectedTags.map((tag) => tag.id),
+        label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
         postStatus: "queued",
@@ -239,7 +239,7 @@ const CreatePost = () => {
               : `Your post has been ${statusText}.`,
         });
 
-        dispatch(unselectAllTags());
+        dispatch(unselectAllLabels());
 
         navigate("/dashboard");
         dispatch(resetPostCreation());
@@ -290,7 +290,7 @@ const CreatePost = () => {
         channelId: channelId,
         text: finalContent,
         scheduledTime: scheduledAt,
-        label: selectedTags.map((tag) => tag.id),
+        label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: "schedule",
         postStatus: "queued",
@@ -390,7 +390,7 @@ const CreatePost = () => {
               ))}
             </div>
             <div className="self-end md:self-start">
-              <TagSelector />
+              <LabelSelector />
             </div>
           </div>
 

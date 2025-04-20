@@ -68,16 +68,16 @@ import { Media } from "./MediaUploader";
 import PostComposer from "./PostComposer";
 import { cn } from "@/lib/utils";
 import AIAssistantPanel from "./aiAssistant/AIAssistantPanel";
-import TagSelector from "./TagSelector";
 import { TooltipContent } from "@radix-ui/react-tooltip";
 import { TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
-import { selectSelectedTags } from "@/redux/slices/tagManager.slice";
+import { selectSelectedLabels } from "@/redux/slices/labelManager.slice";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
+import LabelSelector from "./LabelSelector";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -98,7 +98,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const navigate = useNavigate();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
-  const selectedTags = useSelector(selectSelectedTags);
+  const selectedLabels = useSelector(selectSelectedLabels);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
@@ -248,7 +248,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         channelId: channelId,
         text: finalContent,
         scheduledTime: scheduledAt,
-        label: selectedTags.map((tag) => tag.id),
+        label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: status, // "postnow" | "schedule" | "draft"
         postStatus: "queued",
@@ -412,7 +412,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 <div className="flex w-full justify-between items-center">
                   <DialogTitle>Create Post</DialogTitle>
 
-                  <TagSelector />
+                  <LabelSelector />
                 </div>
                 <DialogDescription>
                   Create and schedule posts for your social media channels

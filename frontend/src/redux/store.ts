@@ -5,7 +5,7 @@ import imageEditorReducer from "./slices/imageEditor.slice";
 import postCreationReducer from "./slices/postCreation.slice";
 import postsReducer from "./slices/posts.slice";
 import aiAssistantReducer from "./slices/aiAssistant.slice";
-import tagManagerReducer from "./slices/tagManager.slice";
+import labelManagerReducer from "./slices/labelManager.slice";
 import aiTextareaReducer from "./slices/aiTextarea.slice";
 
 const store = configureStore({
@@ -16,7 +16,7 @@ const store = configureStore({
     postCreation: postCreationReducer,
     posts: postsReducer,
     aiAssistant: aiAssistantReducer,
-    tagManager: tagManagerReducer,
+    labelManager: labelManagerReducer,
     aiTextarea: aiTextareaReducer,
   },
   // middleware: (getDefaultMiddleware) =>
