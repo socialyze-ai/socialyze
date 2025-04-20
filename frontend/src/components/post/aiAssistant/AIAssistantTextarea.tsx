@@ -1,29 +1,29 @@
 import React, { useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Hash, Wand2, Check, Sparkles, X, Loader2, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useGenerateContent, useGenerateHashTags } from "@/api/apiHooks/useAI";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectAITextarea,
   setContent,
-  setSelectedText,
-  setSelectedRange,
   setIsTyping,
-  setUnderlineType,
-  setIsTextSelected,
   setHasScrollbar,
   setShowAIOptions,
-  setShowConfirmation,
-  setHashtags,
-  setGeneratedContent,
-  setGeneratedRefineContent,
   resetTextState,
   resetConfirmation,
+  setUnderlineType,
 } from "@/redux/slices/aiTextarea.slice";
-import { useToast } from "@/hooks/use-toast";
+
+// Import components
+import ConfirmationDialog from "./components/ConfirmationDialog";
+import AIOptions from "./components/AIOptions";
+import TypeEffect from "./components/TypeEffect";
+import TypeEffectControls from "./components/TypeEffectControls";
+import SparkleButton from "./components/SparkleButton";
+
+// Import hooks
+import { useTypeEffect } from "./hooks/useTypeEffect";
+import { useTextSelection } from "./hooks/useTextSelection";
+import { useAIContent } from "./hooks/useAIContent";
 
 interface AIAssistantTextareaProps {
   content: string;
@@ -40,7 +40,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   isPostModal = false,
   className,
 }) => {
-  const { toast } = useToast();
   const dispatch = useDispatch();
   const {
     selectedText,
@@ -59,91 +58,49 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const textareaContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const previousSelectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  // Use custom hooks
+  const {
+    isTypingEffect,
+    typedContent,
+    fullContent,
+    contentType,
+    showTypeControls,
+    startTypeEffect,
+    resetTypeEffect,
+  } = useTypeEffect();
+
+  const { handleTextSelection, handleSelectionChange, focusAndSelectText, previousSelectionRef } =
+    useTextSelection({
+      textareaRef,
+      content,
+      isTyping,
+    });
+
+  const {
+    handleRefineWithAI,
+    handleCompleteWithAI,
+    handleGenerateHashtags,
+    handleRegenerateRefinedText,
+    handleRegenerateCompletion,
+    handleRegenerateHashtags,
+    isPendingHashTags,
+    isPendingContent,
+  } = useAIContent({
+    content,
+    startTypeEffect,
+    focusAndSelectText: () => focusAndSelectText(selectedRange),
+    previousSelectionRef,
+  });
 
   // Update Redux store with initial content
   useEffect(() => {
     dispatch(setContent(content));
   }, [dispatch, content]);
 
-  const { mutate: generateHashTags, isPending: isPendingHashTags } = useGenerateHashTags();
-  const { mutate: generateContent, isPending: isPendingContent } = useGenerateContent();
-
-  // Handle text selection to show underline and selection card
-  const handleTextSelection = () => {
-    if (!textareaRef.current) return;
-
-    const textarea = textareaRef.current;
-    const hasSelection =
-      textarea.selectionStart !== undefined &&
-      textarea.selectionEnd !== undefined &&
-      textarea.selectionStart !== textarea.selectionEnd;
-
-    if (hasSelection) {
-      const selStart = textarea.selectionStart;
-      const selEnd = textarea.selectionEnd;
-      const selText = content.substring(selStart, selEnd);
-
-      if (selText.trim().length > 0) {
-        dispatch(setSelectedText(selText));
-        dispatch(setSelectedRange({ start: selStart, end: selEnd }));
-        dispatch(setUnderlineType("selection"));
-        dispatch(setIsTextSelected(true));
-        previousSelectionRef.current = { start: selStart, end: selEnd };
-
-        // Position the underline
-        const textBeforeCursor = content.substring(0, selStart);
-        const selectedTextContent = content.substring(selStart, selEnd);
-        const textareaRect = textarea.getBoundingClientRect();
-
-        // Create a temporary element to measure text position
-        const mirror = document.createElement("div");
-        mirror.style.position = "absolute";
-        mirror.style.visibility = "hidden";
-        mirror.style.whiteSpace = "pre-wrap";
-        mirror.style.wordBreak = "break-word";
-
-        const styles = window.getComputedStyle(textarea);
-        ["font-family", "font-size", "line-height", "padding", "width"].forEach((prop) => {
-          mirror.style[prop as any] = styles[prop];
-        });
-
-        // Insert a marker at the beginning of selection
-        mirror.innerHTML = textBeforeCursor.replace(/\n/g, "<br>") + '<span id="marker"></span>';
-        document.body.appendChild(mirror);
-
-        const marker = mirror.querySelector("#marker");
-        if (marker) {
-          const markerRect = marker.getBoundingClientRect();
-
-          // Measure selected text width
-          const textWidthMeasure = document.createElement("span");
-          textWidthMeasure.style.visibility = "hidden";
-          textWidthMeasure.style.position = "absolute";
-          textWidthMeasure.style.whiteSpace = "pre";
-          textWidthMeasure.style.font = styles.font;
-          textWidthMeasure.textContent = selectedTextContent;
-          document.body.appendChild(textWidthMeasure);
-
-          const textWidth = textWidthMeasure.getBoundingClientRect().width;
-          document.body.removeChild(textWidthMeasure);
-        }
-
-        document.body.removeChild(mirror);
-      }
-    } else if (content.trim().length > 0 && !isTyping) {
-      // Show completion suggestion at end of text
-      dispatch(setUnderlineType("completion"));
-      dispatch(setIsTextSelected(false));
-    } else {
-      dispatch(setIsTextSelected(false));
-    }
-  };
-
   // Handle hovering over textarea to show AI suggestions
   const handleTextareaMouseEnter = () => {
     if (selectedRange || isTyping || !content.trim().length) return;
-
     dispatch(setUnderlineType("completion"));
   };
 
@@ -206,49 +163,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }, 1000);
   };
 
-  // Handle cursor position change to unselect text
-  const handleSelectionChange = () => {
-    if (!textareaRef.current) return;
-
-    const textarea = textareaRef.current;
-    const currentStart = textarea.selectionStart;
-    const currentEnd = textarea.selectionEnd;
-
-    // If there's a previous selection and cursor position changed without selecting text
-    if (
-      previousSelectionRef.current &&
-      (currentStart !== previousSelectionRef.current.start ||
-        currentEnd !== previousSelectionRef.current.end) &&
-      currentStart === currentEnd
-    ) {
-      // User moved cursor without selecting text, clear selection
-      dispatch(setSelectedRange(null));
-      dispatch(setSelectedText(""));
-      dispatch(setIsTextSelected(false));
-      previousSelectionRef.current = null;
-    }
-  };
-
-  // Helper function to focus and select text
-  const focusAndSelectText = () => {
-    // Use either the active selection or the stored selection from ref
-    const selRange = selectedRange || previousSelectionRef.current;
-    if (selRange && textareaRef.current) {
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(selRange.start, selRange.end);
-          // Ensure the selection is also reflected in the Redux state
-          if (!selectedRange) {
-            dispatch(setSelectedRange(selRange));
-            dispatch(setSelectedText(content.substring(selRange.start, selRange.end)));
-            dispatch(setIsTextSelected(true));
-          }
-        }
-      }, 0);
-    }
-  };
-
   // When clicking outside textarea, hide all popups
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -298,109 +212,21 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   useEffect(() => {
     if (showConfirmation && generateRefineWithAI.length > 0) {
       // When showing confirmation for refined text, ensure selection is maintained
-      focusAndSelectText();
+      focusAndSelectText(selectedRange);
     }
   }, [showConfirmation, generateRefineWithAI]);
 
-  const hasContent = content.trim().length > 0;
-
-  // handle api calls
-  const handleRefineWithAI = () => {
-    if (selectedRange) {
-      const selStart = selectedRange.start;
-      const selEnd = selectedRange.end;
-      const selText = content.substring(selStart, selEnd);
-
-      // Store the current selection in a ref to ensure we can access it later
-      previousSelectionRef.current = { start: selStart, end: selEnd };
-
-      // Wrap selected text in <focus> tags
-      const wholeText =
-        content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
-
-      generateContent(
-        {
-          text: selText, // send only selected text
-          action: "refine",
-        },
-        {
-          onSuccess: (data: { text: string }) => {
-            dispatch(setGeneratedRefineContent(data.text));
-            dispatch(setShowConfirmation(true));
-            dispatch(setShowAIOptions(false));
-            // Make sure we keep the selection range active for the confirmation
-            if (!selectedRange || previousSelectionRef.current) {
-              dispatch(setSelectedRange(previousSelectionRef.current));
-            }
-            focusAndSelectText();
-          },
-          onError: () => {
-            toast({
-              title: "Error refining with AI",
-              description: "Please try again.",
-              variant: "destructive",
-            });
-          },
-        },
-      );
-    }
-  };
-
-  const handleCompleteWithAI = () => {
-    generateContent(
-      {
-        text: content,
-        action: "complete",
-      },
-      {
-        onSuccess: (data: { text: string }) => {
-          dispatch(setGeneratedContent(data.text));
-          dispatch(setShowConfirmation(true));
-          dispatch(setShowAIOptions(false));
-        },
-        onError: () => {
-          toast({
-            title: "Error completing with AI",
-            description: "Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
-
-  const handleGenerateHashtags = () => {
-    generateHashTags(
-      {
-        text: content,
-      },
-      {
-        onSuccess: (data) => {
-          dispatch(setHashtags(data.text));
-          dispatch(setShowConfirmation(true));
-        },
-        onError: () => {
-          toast({
-            title: "Error generating hashtags",
-            description: "Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
-
   const confirmHashtags = () => {
-    onContentChange(content + "\n" + hashtags);
-    dispatch(setContent(content + "\n" + hashtags));
-    dispatch(resetConfirmation());
+    onContentChange(content + "\n" + fullContent);
+    dispatch(setContent(content + "\n" + fullContent));
+    resetTypeEffect();
     dispatch(resetTextState());
   };
 
   const confirmGeneratedContent = () => {
-    onContentChange(content + " " + generatedContent);
-    dispatch(setContent(content + " " + generatedContent));
-    dispatch(resetConfirmation());
+    onContentChange(content + " " + fullContent);
+    dispatch(setContent(content + " " + fullContent));
+    resetTypeEffect();
     dispatch(resetTextState());
   };
 
@@ -411,101 +237,38 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
     const beforeText = content.substring(0, selRange.start);
     const afterText = content.substring(selRange.end);
-    const newContent = beforeText + generateRefineWithAI + afterText;
+    const newContent = beforeText + fullContent + afterText;
 
     onContentChange(newContent);
     dispatch(setContent(newContent));
-    dispatch(resetConfirmation());
+    resetTypeEffect();
 
     // Reset text selection after replacing the text
     dispatch(resetTextState());
     previousSelectionRef.current = null;
   };
 
-  // Handler for regenerating refined text while keeping the dialog open
-  const handleRegenerateRefinedText = () => {
-    // Use previousSelectionRef as a fallback if selectedRange is somehow lost
-    const selRange = selectedRange || previousSelectionRef.current;
-    if (!selRange) return;
-
-    const selStart = selRange.start;
-    const selEnd = selRange.end;
-    const selText = content.substring(selStart, selEnd);
-
-    // Wrap selected text in <focus> tags
-    const wholeText =
-      content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
-
-    generateContent(
-      {
-        text: wholeText,
-        action: "refine",
-      },
-      {
-        onSuccess: (data: { text: string }) => {
-          dispatch(setGeneratedRefineContent(data.text));
-          // No need to set showConfirmation to true as it's already open
-          // Keep the selection range active
-          if (!selectedRange || previousSelectionRef.current) {
-            dispatch(setSelectedRange(previousSelectionRef.current));
-          }
-          focusAndSelectText();
-        },
-        onError: () => {
-          toast({
-            title: "Error regenerating refined text",
-            description: "Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
+  const handleConfirm = () => {
+    if (contentType === "hashtags") {
+      confirmHashtags();
+    } else if (contentType === "complete") {
+      confirmGeneratedContent();
+    } else if (contentType === "refine") {
+      confirmRefineWithAI();
+    }
   };
 
-  // Handler for regenerating content completion
-  const handleRegenerateCompletion = () => {
-    generateContent(
-      {
-        text: content,
-        action: "complete",
-      },
-      {
-        onSuccess: (data: { text: string }) => {
-          dispatch(setGeneratedContent(data.text));
-          // Dialog already open, so no need to set showConfirmation
-        },
-        onError: () => {
-          toast({
-            title: "Error regenerating content",
-            description: "Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
+  const handleRegenerate = () => {
+    if (contentType === "hashtags") {
+      handleRegenerateHashtags();
+    } else if (contentType === "complete") {
+      handleRegenerateCompletion();
+    } else if (contentType === "refine") {
+      handleRegenerateRefinedText(selectedRange);
+    }
   };
 
-  // Handler for regenerating hashtags
-  const handleRegenerateHashtags = () => {
-    generateHashTags(
-      {
-        text: content,
-      },
-      {
-        onSuccess: (data) => {
-          dispatch(setHashtags(data.text));
-          // Dialog already open, so no need to set showConfirmation
-        },
-        onError: () => {
-          toast({
-            title: "Error regenerating hashtags",
-            description: "Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
+  const hasContent = content.trim().length > 0;
 
   return (
     <>
@@ -530,139 +293,39 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
         {/* Sparkles icon at the top right - only show when there is content */}
         {hasContent && (
-          <div
-            className={cn(
-              "absolute z-10",
-              hasScrollbar
-                ? isPostModal
-                  ? "top-1.5 right-3"
-                  : "top-1.5 right-4"
-                : "top-1 right-1",
-            )}
-          >
-            <Sparkles
-              className={cn(
-                "w-5 h-5 cursor-pointer bg-white rounded-full p-0.5 shadow-sm",
-                isTextSelected ? "text-green-500" : "text-blue-500",
-              )}
-              onClick={handleSparkleClick}
-            />
-          </div>
+          <SparkleButton
+            onClick={handleSparkleClick}
+            isTextSelected={isTextSelected}
+            hasScrollbar={hasScrollbar}
+            isPostModal={isPostModal}
+          />
         )}
 
         {/* AI suggestion card inside the textarea */}
         {showAIOptions && (
-          <div
-            className="absolute z-20 bg-white rounded-lg shadow-lg pointer-events-auto w-64 border border-gray-100"
-            style={{
-              top: "40px",
-              right: "10px",
-              maxHeight: "calc(100% - 50px)",
-              overflow: "auto",
-            }}
-          >
-            {/* Card header */}
-            <div className="flex justify-between items-center w-full px-3 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
-              <div className="flex items-center">
-                <Wand2
-                  className={cn(
-                    "h-4 w-4 mr-1.5",
-                    underlineType === "selection" ? "text-green-500" : "text-blue-500",
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-xs font-medium",
-                    underlineType === "selection" ? "text-green-700" : "text-blue-700",
-                  )}
-                >
-                  {underlineType === "selection" ? "Improve Selection" : "AI Suggestions"}
-                </span>
-              </div>
-              <button onClick={handleCloseOptions} className="text-gray-400 hover:text-gray-600">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
+          <AIOptions
+            underlineType={underlineType}
+            onClose={handleCloseOptions}
+            handleRefineWithAI={() => handleRefineWithAI(selectedRange)}
+            handleCompleteWithAI={handleCompleteWithAI}
+            handleGenerateHashtags={handleGenerateHashtags}
+            isPendingContent={isPendingContent}
+            isPendingHashTags={isPendingHashTags}
+          />
+        )}
 
-            {/* Card body */}
-            <div className="px-3 py-2">
-              {underlineType === "selection" ? (
-                <>
-                  <div className="space-y-1">
-                    <Button
-                      size="sm"
-                      onClick={handleRefineWithAI}
-                      className="w-full justify-start text-left rounded-sm hover:bg-green-50 p-1.5 h-auto"
-                      variant="ghost"
-                      disabled={isPendingContent}
-                    >
-                      {isPendingContent ? (
-                        <Loader2 className="h-3 w-3 text-green-600 animate-spin mx-auto" />
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="bg-green-100 rounded-full p-1 mr-2">
-                            <Wand2 className="h-3 w-3 text-green-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-800">Refine with AI</p>
-                            <p className="text-xs text-gray-500">Improve clarity and style</p>
-                          </div>
-                        </div>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <Button
-                      size="sm"
-                      onClick={handleCompleteWithAI}
-                      className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
-                      variant="ghost"
-                      disabled={isPendingContent}
-                    >
-                      {isPendingContent ? (
-                        <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="bg-blue-100 rounded-full p-1 mr-2">
-                            <Wand2 className="h-3 w-3 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-800">Complete with AI</p>
-                            <p className="text-xs text-gray-500">Finish your thought</p>
-                          </div>
-                        </div>
-                      )}
-                    </Button>
+        {/* Type effect container */}
+        {isTypingEffect && <TypeEffect typedContent={typedContent} />}
 
-                    <Button
-                      size="sm"
-                      onClick={handleGenerateHashtags}
-                      className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
-                      variant="ghost"
-                      disabled={isPendingHashTags}
-                    >
-                      {isPendingHashTags ? (
-                        <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="bg-blue-100 rounded-full p-1 mr-2">
-                            <Hash className="h-3 w-3 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-800">Generate Hashtags</p>
-                            <p className="text-xs text-gray-500">Add relevant hashtags</p>
-                          </div>
-                        </div>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+        {/* Controls after typing effect is complete */}
+        {showTypeControls && (
+          <TypeEffectControls
+            typedContent={typedContent}
+            onConfirm={handleConfirm}
+            onRegenerate={handleRegenerate}
+            onCancel={resetTypeEffect}
+            isPending={isPendingContent || isPendingHashTags}
+          />
         )}
       </div>
 
@@ -710,7 +373,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           </div>
         }
         onConfirm={confirmRefineWithAI}
-        onRegenerate={handleRegenerateRefinedText}
+        onRegenerate={() => handleRegenerateRefinedText(selectedRange)}
         isRegenerateLoading={isPendingContent}
       />
     </>
@@ -718,47 +381,3 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 };
 
 export default AIAssistantTextarea;
-
-const ConfirmationDialog = ({
-  open,
-  onOpenChange,
-  title,
-  content,
-  onConfirm,
-  onRegenerate,
-  isRegenerateLoading = false,
-}) => {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md flex flex-col gap-2">
-        <p className="text-sm">{title}</p>
-        <p className="font-semibold text-xs border border-gray-200 rounded-md p-1.5">{content}</p>
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={onRegenerate}
-            type="button"
-            variant="outline"
-            className="text-green-600 hover:bg-green-100 text-xs"
-            disabled={isRegenerateLoading}
-          >
-            {isRegenerateLoading ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-3 w-3 mr-1" />
-            )}
-            Regenerate
-          </Button>
-
-          <Button
-            onClick={onConfirm}
-            type="button"
-            variant="outline"
-            className="text-green-600 hover:bg-green-100 text-xs"
-          >
-            <Check className="h-3 w-3 mr-1" /> Confirm
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
