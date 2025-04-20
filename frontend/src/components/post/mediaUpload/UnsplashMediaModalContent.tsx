@@ -80,23 +80,31 @@ const UnsplashMediaModalContent = ({
         {isLoadingUnsplash && <div className="text-center">Loading...</div>}
         {isErrorUnsplash && <div className="text-center text-red-500">Error loading images</div>}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="columns-3 gap-4">
           {images.map((image) => {
             const isSelected = selectedMediaContent.some((media) => media.url === image.url);
+            const aspectRatio = (image.height / image.width) * 100;
 
             return (
-              <div key={image.url} className="flex flex-col gap-1">
-                <img
-                  src={image.url}
-                  alt={image.alt_description}
-                  className={cn(
-                    "cursor-pointer rounded-md",
-                    isSelected && "border-4 border-blue-500",
-                  )}
-                  onClick={() => toggleImageSelection(image)}
-                />
+              <div key={image.url} className="mb-4 break-inside-avoid">
+                <div
+                  className="relative w-full"
+                  style={{
+                    paddingBottom: `${aspectRatio}%`,
+                  }}
+                >
+                  <img
+                    src={image.url}
+                    alt={image.alt_description}
+                    className={cn(
+                      "absolute top-0 left-0 w-full h-full object-cover cursor-pointer rounded-md",
+                      isSelected && "border-4 border-blue-500",
+                    )}
+                    onClick={() => toggleImageSelection(image)}
+                  />
+                </div>
 
-                <div className="flex items-center gap-1 text-xs group">
+                <div className="flex items-center gap-1 text-xs group mt-1">
                   <a
                     href={image.profile_url}
                     target="_blank"
