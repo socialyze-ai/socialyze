@@ -333,16 +333,74 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             )}
           >
             <div className="text-gray-800 text-wrap">
-              {content}
-              {isTypingEffect ? (
-                <span
-                  className="bg-yellow-200 inline"
-                  style={{ animation: "pulse-bg 1.5s ease-in-out" }}
-                >
-                  {typedContent}
-                </span>
+              {contentType === "refine" && isTypingEffect ? (
+                <>
+                  {content.substring(0, selectedRange?.start || 0)}
+                  <span className="line-through text-red-600 inline">{selectedText}</span>
+                  <span
+                    className="bg-yellow-200 inline"
+                    style={{ animation: "pulse-bg 1.5s ease-in-out" }}
+                  >
+                    {typedContent}
+                  </span>
+                  {content.substring(selectedRange?.end || 0)}
+                </>
+              ) : contentType === "refine" && showTypeControls ? (
+                <>
+                  {content.substring(0, selectedRange?.start || 0)}
+                  <span className="line-through text-red-600 inline">{selectedText}</span>
+                  <span
+                    className={cn("inline", contentHighlight ? "bg-yellow-200" : "")}
+                    style={
+                      contentHighlight
+                        ? {
+                            animation: "pulse-bg 1.5s ease-in-out",
+                          }
+                        : undefined
+                    }
+                  >
+                    {fullContent}
+                  </span>
+                  {content.substring(selectedRange?.end || 0)}
+                  <span className="inline-flex space-x-1.5 ml-1 align-middle">
+                    <button
+                      className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
+                      onClick={handleConfirm}
+                    >
+                      <Check size={16} className="text-green-600" />
+                    </button>
+                    <button
+                      className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
+                      onClick={handleRegenerate}
+                      disabled={isPendingContent || isPendingHashTags}
+                    >
+                      {isPendingContent || isPendingHashTags ? (
+                        <RefreshCcw size={16} className="text-blue-600 animate-spin" />
+                      ) : (
+                        <RefreshCcw size={16} className="text-blue-600" />
+                      )}
+                    </button>
+                    <button
+                      className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
+                      onClick={handleCancel}
+                    >
+                      <X size={16} className="text-red-600" />
+                    </button>
+                  </span>
+                </>
+              ) : isTypingEffect ? (
+                <>
+                  {content}
+                  <span
+                    className="bg-yellow-200 inline"
+                    style={{ animation: "pulse-bg 1.5s ease-in-out" }}
+                  >
+                    {typedContent}
+                  </span>
+                </>
               ) : showTypeControls ? (
                 <>
+                  {content}
                   <span
                     className={cn("inline", contentHighlight ? "bg-yellow-200" : "")}
                     style={
@@ -381,7 +439,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                     </button>
                   </span>
                 </>
-              ) : null}
+              ) : (
+                content
+              )}
             </div>
 
             {/* AI suggestion card below typed content when showing div instead of textarea */}
