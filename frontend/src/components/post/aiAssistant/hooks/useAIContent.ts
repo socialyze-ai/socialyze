@@ -105,6 +105,7 @@ export const useAIContent = ({
       {
         onSuccess: (data) => {
           dispatch(setHashtags(data.text));
+          dispatch(setShowAIOptions(false));
           startTypeEffect(data.text, "hashtags");
         },
         onError: () => {

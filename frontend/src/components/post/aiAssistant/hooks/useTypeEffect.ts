@@ -12,27 +12,33 @@ interface UseTypeEffectReturn {
   resetTypeEffect: () => void;
 }
 
-export const useTypeEffect = (typeSpeed = 20): UseTypeEffectReturn => {
+export const useTypeEffect = (baseTypeSpeed = 20): UseTypeEffectReturn => {
   const [isTypingEffect, setIsTypingEffect] = useState(false);
   const [typedContent, setTypedContent] = useState("");
   const [fullContent, setFullContent] = useState("");
   const [contentType, setContentType] = useState<ContentType>(null);
   const [showTypeControls, setShowTypeControls] = useState(false);
 
-  // Type effect implementation
+  // Type effect implementation with random speed variation for natural feel
   useEffect(() => {
     if (isTypingEffect && fullContent) {
       if (typedContent.length < fullContent.length) {
+        // Add slight randomization to typing speed for a more natural feel
+        const randomVariation = Math.random() * 30 - 10; // -10 to +20ms variation
+        const currentTypeSpeed = Math.max(10, baseTypeSpeed + randomVariation);
+
         const timer = setTimeout(() => {
           setTypedContent(fullContent.substring(0, typedContent.length + 1));
-        }, typeSpeed);
+        }, currentTypeSpeed);
+
         return () => clearTimeout(timer);
       } else {
+        // Typing is complete
         setIsTypingEffect(false);
         setShowTypeControls(true);
       }
     }
-  }, [isTypingEffect, typedContent, fullContent, typeSpeed]);
+  }, [isTypingEffect, typedContent, fullContent, baseTypeSpeed]);
 
   const startTypeEffect = (text: string, type: ContentType) => {
     setFullContent(text);

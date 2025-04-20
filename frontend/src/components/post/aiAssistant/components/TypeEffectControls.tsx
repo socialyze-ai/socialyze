@@ -19,13 +19,13 @@ const TypeEffectControls: React.FC<TypeEffectControlsProps> = ({
   isPending,
 }) => {
   return (
-    <div className="absolute bottom-2 left-2 right-2 bg-gray-50 p-2 rounded-md border border-gray-200 flex items-center justify-between">
-      <span className="text-sm text-gray-700 mr-2 flex-grow overflow-hidden text-ellipsis">
-        {typedContent}
-      </span>
+    <div className="absolute bottom-2 left-2 right-2 bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm flex items-center justify-between">
+      <div className="type-wrapper flex-grow mr-2 overflow-hidden text-ellipsis">
+        <span className="text-gray-800 font-medium">{typedContent}</span>
+      </div>
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex space-x-1">
+          <div className="flex space-x-1.5">
             <Button
               size="icon"
               variant="ghost"

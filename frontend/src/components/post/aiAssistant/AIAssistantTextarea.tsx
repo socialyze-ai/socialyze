@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,6 +24,7 @@ import SparkleButton from "./components/SparkleButton";
 import { useTypeEffect } from "./hooks/useTypeEffect";
 import { useTextSelection } from "./hooks/useTextSelection";
 import { useAIContent } from "./hooks/useAIContent";
+import { Check, CircleX, RefreshCcw, X } from "lucide-react";
 
 interface AIAssistantTextareaProps {
   content: string;
@@ -58,6 +59,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const textareaContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showTextarea, setShowTextarea] = useState(true);
+  const [contentHighlight, setContentHighlight] = useState(false);
 
   // Use custom hooks
   const {
@@ -97,6 +100,27 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   useEffect(() => {
     dispatch(setContent(content));
   }, [dispatch, content]);
+
+  // Toggle textarea and div based on typing effect
+  useEffect(() => {
+    if (isTypingEffect) {
+      setShowTextarea(false);
+    }
+  }, [isTypingEffect]);
+
+  // Show brief highlight after typing effect completes
+  useEffect(() => {
+    if (showTypeControls && !contentHighlight) {
+      setContentHighlight(true);
+
+      // After 1 second, remove the highlight
+      const highlightTimeout = setTimeout(() => {
+        setContentHighlight(false);
+      }, 1500);
+
+      return () => clearTimeout(highlightTimeout);
+    }
+  }, [showTypeControls, contentHighlight]);
 
   // Handle hovering over textarea to show AI suggestions
   const handleTextareaMouseEnter = () => {
@@ -186,19 +210,19 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
   // Focus and restore selection after components update
   useEffect(() => {
-    if (selectedRange && textareaRef.current && !isTyping) {
+    if (selectedRange && textareaRef.current && !isTyping && showTextarea) {
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
     }
-  }, [selectedRange, isTyping]);
+  }, [selectedRange, isTyping, showTextarea]);
 
   // Maintain selection when AI options are shown
   useEffect(() => {
-    if (showAIOptions && selectedRange && textareaRef.current) {
+    if (showAIOptions && selectedRange && textareaRef.current && showTextarea) {
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
     }
-  }, [showAIOptions, selectedRange]);
+  }, [showAIOptions, selectedRange, showTextarea]);
 
   // Check if textarea has scrollbar
   useEffect(() => {
@@ -221,6 +245,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setContent(content + "\n" + fullContent));
     resetTypeEffect();
     dispatch(resetTextState());
+    setShowTextarea(true);
   };
 
   const confirmGeneratedContent = () => {
@@ -228,6 +253,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setContent(content + " " + fullContent));
     resetTypeEffect();
     dispatch(resetTextState());
+    setShowTextarea(true);
   };
 
   const confirmRefineWithAI = () => {
@@ -246,6 +272,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     // Reset text selection after replacing the text
     dispatch(resetTextState());
     previousSelectionRef.current = null;
+    setShowTextarea(true);
   };
 
   const handleConfirm = () => {
@@ -268,31 +295,123 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }
   };
 
+  const handleCancel = () => {
+    resetTypeEffect();
+    setShowTextarea(true);
+  };
+
   const hasContent = content.trim().length > 0;
 
   return (
     <>
       <div className="relative" ref={textareaContainerRef}>
-        <Textarea
-          placeholder={placeholder}
-          className={cn(
-            "resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-            isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
-            hasScrollbar ? "pr-5" : "pr-6",
-            className,
-          )}
-          value={content}
-          onChange={handleTyping}
-          ref={textareaRef}
-          onMouseEnter={handleTextareaMouseEnter}
-          onMouseUp={handleTextSelection}
-          onKeyUp={handleTextSelection}
-          onClick={handleSelectionChange}
-          onKeyDown={handleSelectionChange}
-        />
+        {showTextarea ? (
+          <Textarea
+            placeholder={placeholder}
+            className={cn(
+              "resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
+              isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
+              hasScrollbar ? "pr-5" : "pr-6",
+              className,
+            )}
+            value={content}
+            onChange={handleTyping}
+            ref={textareaRef}
+            onMouseEnter={handleTextareaMouseEnter}
+            onMouseUp={handleTextSelection}
+            onKeyUp={handleTextSelection}
+            onClick={handleSelectionChange}
+            onKeyDown={handleSelectionChange}
+          />
+        ) : (
+          <div
+            className={cn(
+              "border-0 p-3 overflow-y-auto whitespace-pre-wrap bg-[#f9fafb]",
+              isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
+              hasScrollbar ? "pr-5" : "pr-6",
+              className,
+            )}
+          >
+            <div className="text-gray-800 text-wrap">
+              {content}
+              {isTypingEffect ? (
+                <span
+                  className="bg-yellow-200 inline"
+                  style={{ animation: "pulse-bg 1.5s ease-in-out" }}
+                >
+                  {typedContent}
+                </span>
+              ) : showTypeControls ? (
+                <>
+                  <span
+                    className={cn("inline", contentHighlight ? "bg-yellow-200" : "")}
+                    style={
+                      contentHighlight
+                        ? {
+                            animation: "pulse-bg 1.5s ease-in-out",
+                          }
+                        : undefined
+                    }
+                  >
+                    {fullContent}
+                  </span>
+                  <span className="inline-flex space-x-1.5 ml-1 align-middle">
+                    <button
+                      className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
+                      onClick={handleConfirm}
+                    >
+                      <Check size={16} className="text-green-600" />
+                    </button>
+                    <button
+                      className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
+                      onClick={handleRegenerate}
+                      disabled={isPendingContent || isPendingHashTags}
+                    >
+                      {isPendingContent || isPendingHashTags ? (
+                        <RefreshCcw size={16} className="text-blue-600 animate-spin" />
+                      ) : (
+                        <RefreshCcw size={16} className="text-blue-600" />
+                      )}
+                    </button>
+                    <button
+                      className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
+                      onClick={handleCancel}
+                    >
+                      <X size={16} className="text-red-600" />
+                    </button>
+                  </span>
+                </>
+              ) : null}
+            </div>
+
+            {/* AI suggestion card below typed content when showing div instead of textarea */}
+            {showAIOptions && !showTextarea && (
+              <div className="mt-4">
+                <AIOptions
+                  underlineType={underlineType}
+                  onClose={handleCloseOptions}
+                  handleRefineWithAI={() => handleRefineWithAI(selectedRange)}
+                  handleCompleteWithAI={handleCompleteWithAI}
+                  handleGenerateHashtags={handleGenerateHashtags}
+                  isPendingContent={isPendingContent}
+                  isPendingHashTags={isPendingHashTags}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <style>
+          {`
+            @keyframes pulse-bg {
+              0%, 100% { background-color: rgba(254, 240, 138, 0.5); }
+              50% { background-color: rgba(254, 240, 138, 1); }
+            }
+          `}
+        </style>
 
         {/* Sparkles icon at the top right - only show when there is content */}
-        {hasContent && (
+        {hasContent && showTextarea && (
           <SparkleButton
             onClick={handleSparkleClick}
             isTextSelected={isTextSelected}
@@ -302,7 +421,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         )}
 
         {/* AI suggestion card inside the textarea */}
-        {showAIOptions && (
+        {showAIOptions && showTextarea && (
           <AIOptions
             underlineType={underlineType}
             onClose={handleCloseOptions}
@@ -311,20 +430,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             handleGenerateHashtags={handleGenerateHashtags}
             isPendingContent={isPendingContent}
             isPendingHashTags={isPendingHashTags}
-          />
-        )}
-
-        {/* Type effect container */}
-        {isTypingEffect && <TypeEffect typedContent={typedContent} />}
-
-        {/* Controls after typing effect is complete */}
-        {showTypeControls && (
-          <TypeEffectControls
-            typedContent={typedContent}
-            onConfirm={handleConfirm}
-            onRegenerate={handleRegenerate}
-            onCancel={resetTypeEffect}
-            isPending={isPendingContent || isPendingHashTags}
           />
         )}
       </div>

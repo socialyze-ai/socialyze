@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Wand2 } from "lucide-react";
 import AIAssistantTextarea from "./aiAssistant/AIAssistantTextarea";
-import TagSelector from "./TagSelector";
 
 interface PostComposerProps {
   isPostModal?: boolean;
