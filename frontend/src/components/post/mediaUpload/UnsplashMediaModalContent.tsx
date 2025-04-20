@@ -85,7 +85,7 @@ const UnsplashMediaModalContent = ({
             const isSelected = selectedMediaContent.some((media) => media.url === image.url);
 
             return (
-              <div key={image.url} className="flex flex-col gap-2">
+              <div key={image.url} className="flex flex-col gap-1">
                 <img
                   src={image.url}
                   alt={image.alt_description}
@@ -96,24 +96,28 @@ const UnsplashMediaModalContent = ({
                   onClick={() => toggleImageSelection(image)}
                 />
 
-                <div className="flex items-center hover:underline gap-1">
+                <div className="flex items-center gap-1 text-xs group">
                   <a
                     href={image.profile_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-700 hover:text-blue-500 flex items-center gap-1"
+                    className="text-gray-700 flex items-center gap-1"
                   >
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${image.username}&size=32`}
-                      alt={image.username}
-                      className="w-4 h-4 rounded-full"
-                    />
-                    <span className="text-xs">{image.username}</span>
+                    <span className="underline">{image.username}</span>
                   </a>
 
-                  {/* <a href={image.url} target="_blank" rel="noopener noreferrer">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </a> */}
+                  <div className="items-center transition-opacity duration-1000 ease-in-out opacity-0 group-hover:opacity-100">
+                    <span className="mr-1">for</span>
+
+                    <a
+                      href={image.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Unsplash
+                    </a>
+                  </div>
                 </div>
               </div>
             );
