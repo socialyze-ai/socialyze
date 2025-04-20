@@ -18,23 +18,30 @@ interface LabelManagerState {
   selectedColor: string;
 }
 
-// Initial state with default labels
+// Helper to get selected labels from localStorage
+const getSelectedLabelsFromStorage = (): Record<string, boolean> => {
+  try {
+    const stored = localStorage.getItem("selectedLabels");
+    return stored ? JSON.parse(stored) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+// Helper to save selected labels to localStorage
+const saveSelectedLabelsToStorage = (selectedLabels: Record<string, boolean>) => {
+  try {
+    localStorage.setItem("selectedLabels", JSON.stringify(selectedLabels));
+  } catch (e) {
+    console.error("Failed to save selected labels to localStorage", e);
+  }
+};
+
+// Initial state with empty labels (will be populated from API)
 const initialState: LabelManagerState = {
-  labels: [
-    { id: "1", name: "hello", color: "#9c27b0", selected: false },
-    { id: "2", name: "important", color: "#e74c3c", selected: false },
-    { id: "3", name: "lop", color: "#1abc9c", selected: false },
-    { id: "4", name: "tags", color: "#8bc34a", selected: false },
-    { id: "5", name: "test", color: "#e91e63", selected: false },
-  ],
+  labels: [],
   searchValue: "",
-  filteredLabels: [
-    { id: "1", name: "hello", color: "#9c27b0", selected: false },
-    { id: "2", name: "important", color: "#e74c3c", selected: false },
-    { id: "3", name: "lop", color: "#1abc9c", selected: false },
-    { id: "4", name: "tags", color: "#8bc34a", selected: false },
-    { id: "5", name: "test", color: "#e91e63", selected: false },
-  ],
+  filteredLabels: [],
   isCreateDialogOpen: false,
   newLabelName: "",
   selectedColor: "#9c27b0",
@@ -45,9 +52,17 @@ const labelManagerSlice = createSlice({
   initialState,
   reducers: {
     setInitialLabels: (state, action: PayloadAction<Label[]>) => {
-      state.labels = action.payload;
-      // Also update filtered labels to match
-      state.filteredLabels = action.payload;
+      // Get selected labels from localStorage
+      const storedSelectedLabels = getSelectedLabelsFromStorage();
+
+      // Apply stored selection state to labels
+      const labelsWithSelection = action.payload.map((label) => ({
+        ...label,
+        selected: storedSelectedLabels[label.id] || false,
+      }));
+
+      state.labels = labelsWithSelection;
+      state.filteredLabels = labelsWithSelection;
     },
 
     setSearchValue: (state, action: PayloadAction<string>) => {
@@ -65,6 +80,8 @@ const labelManagerSlice = createSlice({
 
     toggleLabel: (state, action: PayloadAction<string>) => {
       const labelId = action.payload;
+
+      // Update labels in state
       state.labels = state.labels.map((label) =>
         label.id === labelId ? { ...label, selected: !label.selected } : label,
       );
@@ -73,11 +90,26 @@ const labelManagerSlice = createSlice({
       state.filteredLabels = state.filteredLabels.map((label) =>
         label.id === labelId ? { ...label, selected: !label.selected } : label,
       );
+
+      // Update localStorage
+      const storedLabels = getSelectedLabelsFromStorage();
+      const isSelected = state.labels.find((l) => l.id === labelId)?.selected || false;
+
+      if (isSelected) {
+        storedLabels[labelId] = true;
+      } else {
+        delete storedLabels[labelId];
+      }
+
+      saveSelectedLabelsToStorage(storedLabels);
     },
 
     unselectAllLabels: (state) => {
       state.labels = state.labels.map((label) => ({ ...label, selected: false }));
       state.filteredLabels = state.filteredLabels.map((label) => ({ ...label, selected: false }));
+
+      // Clear localStorage
+      saveSelectedLabelsToStorage({});
     },
 
     setCreateDialogOpen: (state, action: PayloadAction<boolean>) => {
@@ -93,28 +125,36 @@ const labelManagerSlice = createSlice({
     },
 
     createLabel: (state) => {
+      // This is now handled by the API, but we keep this for local UI updates
+      // The actual API call is made in the component
       if (
         state.newLabelName.trim() &&
         !state.labels.some((label) => label.name.toLowerCase() === state.newLabelName.toLowerCase())
       ) {
-        const newLabel: Label = {
-          id: `label-${Date.now()}`,
-          name: state.newLabelName.trim(),
-          color: state.selectedColor,
-          selected: false,
-        };
-
-        state.labels.push(newLabel);
+        // Reset state after label creation
         state.newLabelName = "";
         state.isCreateDialogOpen = false;
         state.searchValue = "";
-        state.filteredLabels = state.labels;
+        // Labels will be updated when the API responds
       }
     },
 
     initiateLabelCreation: (state) => {
       state.newLabelName = state.searchValue;
       state.isCreateDialogOpen = true;
+    },
+
+    removeDeletedLabel: (state, action: PayloadAction<string>) => {
+      const labelId = action.payload;
+
+      // Remove from state
+      state.labels = state.labels.filter((label) => label.id !== labelId);
+      state.filteredLabels = state.filteredLabels.filter((label) => label.id !== labelId);
+
+      // Remove from localStorage
+      const storedLabels = getSelectedLabelsFromStorage();
+      delete storedLabels[labelId];
+      saveSelectedLabelsToStorage(storedLabels);
     },
   },
 });
@@ -141,6 +181,7 @@ export const {
   setSelectedColor,
   createLabel,
   initiateLabelCreation,
+  removeDeletedLabel,
 } = labelManagerSlice.actions;
 
 export default labelManagerSlice.reducer;

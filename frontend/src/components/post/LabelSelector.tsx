@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Check, ChevronDown, Plus, X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,14 +31,27 @@ import {
   setSelectedColor,
   createLabel,
   initiateLabelCreation,
+  removeDeletedLabel,
 } from "@/redux/slices/labelManager.slice";
+import {
+  TagLabelType,
+  useCreateTagLabel,
+  useDeleteTagLabel,
+  useGetTagLabels,
+  useUpdateTagLabel,
+} from "@/api/apiHooks/useTagLabel";
 
 interface LabelSelectorProps {
   initialLabels?: Label[];
   onLabelsChange?: (selectedLabels: Label[]) => void;
+  workspaceId?: string;
 }
 
-const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsChange }) => {
+const LabelSelector: React.FC<LabelSelectorProps> = ({
+  initialLabels,
+  onLabelsChange,
+  workspaceId = "default-workspace", // Fallback workspace ID
+}) => {
   // Redux hooks
   const dispatch = useDispatch();
   const labels = useSelector(selectLabels);
@@ -49,8 +62,18 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
   const selectedColor = useSelector(selectSelectedColor);
   const selectedLabelsCount = useSelector(selectSelectedLabelsCount);
 
-  // Local state for popover
-  const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  // API hooks
+  const { data: apiLabels, isLoading: isLoadingLabels } = useGetTagLabels();
+  const { mutate: createNewLabel, isPending: isCreatingNewLabel } = useCreateTagLabel();
+  const { mutate: updateLabel, isPending: isUpdatingLabel } = useUpdateTagLabel();
+  const { mutate: deleteLabel, isPending: isDeletingLabel } = useDeleteTagLabel();
+
+  // Local state
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [editingLabel, setEditingLabel] = useState<TagLabelType | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
+  const [editLabelName, setEditLabelName] = useState<string>("");
+  const [editLabelColor, setEditLabelColor] = useState<string>("");
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,12 +99,18 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
     "#e0e0e0",
   ];
 
-  // Initialize with initial labels if provided
+  // Sync API labels with Redux state
   useEffect(() => {
-    if (initialLabels) {
-      dispatch(setInitialLabels(initialLabels));
+    if (apiLabels && apiLabels.length > 0) {
+      const formattedLabels: Label[] = apiLabels.map((label) => ({
+        id: label._id,
+        name: label.name,
+        color: label.color,
+        selected: initialLabels ? initialLabels.some((l) => l.id === label._id) : false,
+      }));
+      dispatch(setInitialLabels(formattedLabels));
     }
-  }, [initialLabels, dispatch]);
+  }, [apiLabels, dispatch, initialLabels]);
 
   // Focus input when popover opens
   useEffect(() => {
@@ -117,12 +146,52 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
 
   // Create new label
   const handleCreateLabel = () => {
-    dispatch(createLabel());
+    if (newLabelName.trim() && !labelExists(newLabelName)) {
+      createNewLabel({
+        name: newLabelName.trim(),
+        color: selectedColor,
+        workspace: workspaceId,
+      });
+      dispatch(setCreateDialogOpen(false));
+      dispatch(setNewLabelName(""));
+    }
   };
 
   // Initialize label creation from search
   const handleInitiateLabelCreation = () => {
     dispatch(initiateLabelCreation());
+  };
+
+  // Handle editing a label
+  const handleEditClick = (e: React.MouseEvent, label: TagLabelType) => {
+    e.stopPropagation(); // Prevent label toggle
+    setEditingLabel(label);
+    setEditLabelName(label.name);
+    setEditLabelColor(label.color);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle deleting a label
+  const handleDeleteClick = (e: React.MouseEvent, labelId: string) => {
+    e.stopPropagation(); // Prevent label toggle
+    deleteLabel(labelId);
+    // After deleting from API, remove the label from Redux state
+    dispatch(removeDeletedLabel(labelId));
+  };
+
+  // Save edited label
+  const handleSaveEdit = () => {
+    if (editingLabel && editLabelName.trim()) {
+      updateLabel({
+        id: editingLabel._id,
+        payload: {
+          name: editLabelName,
+          color: editLabelColor,
+        },
+      });
+      setIsEditDialogOpen(false);
+      setEditingLabel(null);
+    }
   };
 
   // Render selected labels up to 3 and show +2 for remaining labels
@@ -141,7 +210,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: label.color }}
                 ></span>
-                <span className="text-sm flex-grow">{label.name}</span>
+                <span className="text-sm flex-grow max-w-20 truncate">{label.name}</span>
               </div>
             ))}
             {remainingCount > 0 && <span>+{remainingCount}</span>}
@@ -163,7 +232,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-fit p-0" align="end">
+        <PopoverContent className="w-fit max-w-xs p-0" align="end">
           <div className="p-2">
             <Input
               ref={inputRef}
@@ -174,26 +243,51 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
             />
 
             <ScrollArea className="h-fit max-h-64 pr-4 overflow-y-scroll">
-              {filteredLabels.length > 0 ? (
-                filteredLabels.map((label) => (
-                  <div
-                    key={label.id}
-                    className={
-                      "flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                    }
-                    onClick={() => handleToggleLabel(label.id)}
-                  >
-                    <Checkbox
-                      checked={label.selected}
-                      className="data-[state=checked]:bg-blue-600"
-                    />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: label.color }}
-                    ></span>
-                    <span className="text-sm flex-grow">{label.name}</span>
-                  </div>
-                ))
+              {isLoadingLabels ? (
+                <div className="py-6 text-center text-gray-500">Loading labels...</div>
+              ) : filteredLabels.length > 0 ? (
+                filteredLabels.map((label) => {
+                  // Find the corresponding API label to get its full data
+                  const apiLabel = apiLabels?.find((l) => l._id === label.id);
+
+                  return (
+                    <div
+                      key={label.id}
+                      className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                      onClick={() => handleToggleLabel(label.id)}
+                    >
+                      <Checkbox
+                        checked={label.selected}
+                        className="data-[state=checked]:bg-blue-600"
+                      />
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: label.color }}
+                      ></span>
+                      <span className="w-4/6 text-sm flex-grow">{label.name}</span>
+                      {apiLabel && (
+                        <div className="w-1/6 flex gap-1 items-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-gray-500"
+                            onClick={(e) => handleEditClick(e, apiLabel)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-500"
+                            onClick={(e) => handleDeleteClick(e, apiLabel._id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <div className="py-6 text-center text-gray-500">No labels match your search</div>
               )}
@@ -261,10 +355,76 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({ initialLabels, onLabelsCh
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => dispatch(setCreateDialogOpen(false))}>
+            <Button
+              variant="outline"
+              onClick={() => dispatch(setCreateDialogOpen(false))}
+              disabled={isCreatingNewLabel}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateLabel}>Save Label</Button>
+            <Button
+              onClick={handleCreateLabel}
+              disabled={isCreatingNewLabel || !newLabelName.trim()}
+            >
+              {isCreatingNewLabel ? "Saving..." : "Save Label"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Label Dialog */}
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingLabel(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Label</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={editLabelName}
+                onChange={(e) => setEditLabelName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Color</label>
+              <div className="grid grid-cols-9 gap-2 mt-2">
+                {colors.map((color) => (
+                  <div
+                    key={color}
+                    className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center ${
+                      editLabelColor === color ? "ring-2 ring-offset-2 ring-blue-600" : ""
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setEditLabelColor(color)}
+                  >
+                    {editLabelColor === color && <Check className="h-4 w-4 text-white" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isUpdatingLabel}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isUpdatingLabel || !editLabelName.trim()}>
+              {isUpdatingLabel ? "Saving..." : "Update Label"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
