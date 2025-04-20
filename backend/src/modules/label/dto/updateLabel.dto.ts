@@ -1,4 +1,4 @@
-export class UpdateTagDto {
+export class UpdateLabelDto {
   name?: string;
   color?: string;
 }

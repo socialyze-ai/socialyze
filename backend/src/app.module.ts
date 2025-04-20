@@ -9,8 +9,8 @@ import { ChannelModule } from './modules/channel/channel.module';
 import { ServiceModule } from './modules/service/service.module';
 import { HashtagManagerModule } from './modules/hashtagManager/hashtagManager.module';
 import { MediaModule } from './modules/media/media.module';
-import { TagsModule } from './modules/tags/tags.module';
 import { AiModule } from './modules/ai/ai.module';
+import { LabelModule } from './modules/label/label.module';
 
 @Module({
   imports: [
@@ -24,7 +24,7 @@ import { AiModule } from './modules/ai/ai.module';
     ServiceModule,
     HashtagManagerModule,
     MediaModule,
-    TagsModule,
+    LabelModule,
     AiModule,
   ],
   controllers: [AppController],

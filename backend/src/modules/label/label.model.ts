@@ -3,7 +3,7 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Tags {
+export class Label {
   @Prop({ required: true })
   name: string;
 
@@ -17,4 +17,4 @@ export class Tags {
   color: string;
 }
 
-export const TagsSchema = SchemaFactory.createForClass(Tags);
+export const LabelSchema = SchemaFactory.createForClass(Label);
