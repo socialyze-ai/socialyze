@@ -150,18 +150,6 @@ const AIAssistantEditor = () => {
     }
   };
 
-  const dummySuggestions = [
-    {
-      text: "Travel to Paris",
-    },
-    {
-      text: "Travel to New York",
-    },
-    {
-      text: "Travel to Tokyo",
-    },
-  ];
-
   const handleGenerateContent = () => {
     generateContent(
       {
@@ -171,7 +159,7 @@ const AIAssistantEditor = () => {
       },
       {
         onSuccess: (data: GenerateContentResponse) => {
-          const suggestions = dummySuggestions.map((item) => item.text);
+          const suggestions = data?.text || [];
           dispatch(setSuggestions(suggestions));
           handleNext();
         },
@@ -186,18 +174,6 @@ const AIAssistantEditor = () => {
     );
   };
 
-  const dummySuggestions2 = [
-    {
-      text: "Travel to India",
-    },
-    {
-      text: "Travel to Thailand",
-    },
-    {
-      text: "Travel to Japan",
-    },
-  ];
-
   const handleRegenerateContent = (index: number) => {
     setLoadingAction(`regenerate-${index}`);
     generateContent(
@@ -210,7 +186,7 @@ const AIAssistantEditor = () => {
         onSuccess: (data: GenerateContentResponse) => {
           setLoadingAction(null);
 
-          const newSuggestions = dummySuggestions2.map((item) => item.text);
+          const newSuggestions = data?.text || [];
           dispatch(setSuggestions(newSuggestions));
         },
         onError: () => {
@@ -243,7 +219,7 @@ const AIAssistantEditor = () => {
         tone: selectedTone,
       },
       {
-        onSuccess: (data: GenerateContentResponse) => {
+        onSuccess: (data: { text: string }) => {
           console.log("success", data);
           setLoadingAction(null);
           // Update finalContent with the received data

@@ -13,10 +13,10 @@ export interface GenerateContentRequest {
 }
 
 export interface GenerateContentItem {
-  text: string;
+  text: string[];
 }
 
-export type GenerateContentResponse = GenerateContentItem[] | { text: string };
+export type GenerateContentResponse = GenerateContentItem;
 
 export const useGenerateHashTags = () => {
   const generateHashTags = async (body: { text: string }): Promise<GenerateHashTagsResponse> => {
@@ -35,9 +35,7 @@ export const useGenerateHashTags = () => {
 };
 
 export const useGenerateContent = () => {
-  const generateContent = async (
-    body: GenerateContentRequest,
-  ): Promise<GenerateContentResponse> => {
+  const generateContent = async (body: GenerateContentRequest) => {
     const { data } = await makeRequest(
       BACKEND_URL + "ai/generateContent",
       "POST",
