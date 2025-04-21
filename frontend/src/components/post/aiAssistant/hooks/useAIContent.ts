@@ -30,6 +30,11 @@ export const useAIContent = ({
   const { mutate: generateHashTags, isPending: isPendingHashTags } = useGenerateHashTags();
   const { mutate: generateContent, isPending: isPendingContent } = useGenerateContent();
 
+  // Helper function to clean content
+  const cleanContent = (text: string): string => {
+    return text.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
   // Handle refine with AI (for selected text)
   const handleRefineWithAI = (selectedRange: { start: number; end: number } | null) => {
     if (selectedRange) {
@@ -37,23 +42,31 @@ export const useAIContent = ({
       const selEnd = selectedRange.end;
       const selText = content.substring(selStart, selEnd);
 
+      // Clean selected text from any HTML
+      const cleanSelectedText = cleanContent(selText);
+
       // Store the current selection in a ref to ensure we can access it later
       previousSelectionRef.current = { start: selStart, end: selEnd };
 
       // Wrap selected text in <focus> tags
       const wholeText =
-        content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
+        content.substring(0, selStart) +
+        `<focus>${cleanSelectedText}</focus>` +
+        content.substring(selEnd);
 
       generateContent(
         {
-          text: selText, // send only selected text
+          text: cleanSelectedText, // send only selected text
           action: "refine",
         },
         {
           onSuccess: (data: { text: string }) => {
             dispatch(setGeneratedRefineContent(data.text));
             dispatch(setShowAIOptions(false));
-            startTypeEffect(data.text, "refine");
+
+            // We're no longer using type effect for refine
+            // startTypeEffect(data.text, "refine");
+
             // Make sure we keep the selection range active
             if (!selectedRange || previousSelectionRef.current) {
               dispatch(setSelectedRange(previousSelectionRef.current));
@@ -74,9 +87,12 @@ export const useAIContent = ({
 
   // Handle complete with AI
   const handleCompleteWithAI = () => {
+    // Clean content from any HTML
+    const cleanedContent = cleanContent(content);
+
     generateContent(
       {
-        text: content,
+        text: cleanedContent,
         action: "complete",
       },
       {
@@ -98,9 +114,12 @@ export const useAIContent = ({
 
   // Handle generate hashtags
   const handleGenerateHashtags = () => {
+    // Clean content from any HTML
+    const cleanedContent = cleanContent(content);
+
     generateHashTags(
       {
-        text: content,
+        text: cleanedContent,
       },
       {
         onSuccess: (data) => {
@@ -129,19 +148,27 @@ export const useAIContent = ({
     const selEnd = selRange.end;
     const selText = content.substring(selStart, selEnd);
 
+    // Clean selected text
+    const cleanSelectedText = cleanContent(selText);
+
     // Wrap selected text in <focus> tags
     const wholeText =
-      content.substring(0, selStart) + `<focus>${selText}</focus>` + content.substring(selEnd);
+      content.substring(0, selStart) +
+      `<focus>${cleanSelectedText}</focus>` +
+      content.substring(selEnd);
 
     generateContent(
       {
-        text: wholeText,
+        text: cleanSelectedText,
         action: "refine",
       },
       {
         onSuccess: (data: { text: string }) => {
           dispatch(setGeneratedRefineContent(data.text));
-          startTypeEffect(data.text, "refine");
+
+          // We're no longer using type effect for refine
+          // startTypeEffect(data.text, "refine");
+
           // Keep the selection range active
           if (!selectedRange || previousSelectionRef.current) {
             dispatch(setSelectedRange(previousSelectionRef.current));
@@ -161,9 +188,12 @@ export const useAIContent = ({
 
   // Handler for regenerating content completion
   const handleRegenerateCompletion = () => {
+    // Clean content from any HTML
+    const cleanedContent = cleanContent(content);
+
     generateContent(
       {
-        text: content,
+        text: cleanedContent,
         action: "complete",
       },
       {
@@ -184,9 +214,12 @@ export const useAIContent = ({
 
   // Handler for regenerating hashtags
   const handleRegenerateHashtags = () => {
+    // Clean content from any HTML
+    const cleanedContent = cleanContent(content);
+
     generateHashTags(
       {
-        text: content,
+        text: cleanedContent,
       },
       {
         onSuccess: (data) => {

@@ -41,7 +41,10 @@ export const useTypeEffect = (baseTypeSpeed = 20): UseTypeEffectReturn => {
   }, [isTypingEffect, typedContent, fullContent, baseTypeSpeed]);
 
   const startTypeEffect = (text: string, type: ContentType) => {
-    setFullContent(text);
+    // Clean up any unwanted HTML that might come from content editable
+    const cleanedText = text.replace(/<\/?[^>]+(>|$)/g, "");
+
+    setFullContent(cleanedText);
     setTypedContent("");
     setIsTypingEffect(true);
     setContentType(type);

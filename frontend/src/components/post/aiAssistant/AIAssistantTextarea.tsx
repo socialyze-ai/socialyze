@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import ContentEditable from "react-contenteditable";
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -11,6 +11,7 @@ import {
   resetTextState,
   resetConfirmation,
   setUnderlineType,
+  setIsFocused,
 } from "@/redux/slices/aiTextarea.slice";
 
 // Import components
@@ -24,7 +25,8 @@ import SparkleButton from "./components/SparkleButton";
 import { useTypeEffect } from "./hooks/useTypeEffect";
 import { useTextSelection } from "./hooks/useTextSelection";
 import { useAIContent } from "./hooks/useAIContent";
-import { Check, CircleX, RefreshCcw, X } from "lucide-react";
+import { Check, CircleX, RefreshCcw, X, Wand2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AIAssistantTextareaProps {
   content: string;
@@ -56,11 +58,15 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     generatedRefineContent: generateRefineWithAI,
   } = useSelector(selectAITextarea);
 
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const textareaContainerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [showTextarea, setShowTextarea] = useState(true);
+  const [showEditor, setShowEditor] = useState(true);
+  const [showSelectionMode, setShowSelectionMode] = useState(false);
   const [contentHighlight, setContentHighlight] = useState(false);
+  const [showRefineOption, setShowRefineOption] = useState(false);
+  const [showRefinePreview, setShowRefinePreview] = useState(false);
+  const contentEditableRef = useRef<ContentEditable>(null);
 
   // Use custom hooks
   const {
@@ -73,12 +79,16 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     resetTypeEffect,
   } = useTypeEffect();
 
-  const { handleTextSelection, handleSelectionChange, focusAndSelectText, previousSelectionRef } =
-    useTextSelection({
-      textareaRef,
-      content,
-      isTyping,
-    });
+  const {
+    handleTextSelection,
+    handleSelectionChange: hookHandleSelectionChange,
+    focusAndSelectText,
+    previousSelectionRef,
+  } = useTextSelection({
+    editorRef,
+    content,
+    isTyping,
+  });
 
   const {
     handleRefineWithAI,
@@ -101,10 +111,10 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setContent(content));
   }, [dispatch, content]);
 
-  // Toggle textarea and div based on typing effect
+  // Toggle editor and div based on typing effect
   useEffect(() => {
     if (isTypingEffect) {
-      setShowTextarea(false);
+      setShowEditor(false);
     }
   }, [isTypingEffect]);
 
@@ -122,8 +132,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }
   }, [showTypeControls, contentHighlight]);
 
-  // Handle hovering over textarea to show AI suggestions
-  const handleTextareaMouseEnter = () => {
+  // Handle hovering over editor to show AI suggestions
+  const handleEditorMouseEnter = () => {
     if (selectedRange || isTyping || !content.trim().length) return;
     dispatch(setUnderlineType("completion"));
   };
@@ -141,14 +151,61 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     );
 
     // Maintain text selection when opening AI options
-    if (selectedRange && textareaRef.current) {
+    if (selectedRange && editorRef.current) {
       setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
+        if (editorRef.current) {
+          editorRef.current.focus();
+          const selection = window.getSelection();
+          if (selection) {
+            const range = document.createRange();
+
+            // Find the text node
+            const textNodes = getTextNodesIn(editorRef.current);
+            if (textNodes.length > 0) {
+              // Simple approach - assuming all text is in one text node
+              const textNode = textNodes[0];
+              range.setStart(textNode, selectedRange.start);
+              range.setEnd(textNode, selectedRange.end);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
         }
       }, 0);
     }
+  };
+
+  // Helper function to get text nodes in an element
+  const getTextNodesIn = (node: Node): Text[] => {
+    const textNodes: Text[] = [];
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodes.push(node as Text);
+    } else {
+      const childNodes = node.childNodes;
+      for (let i = 0; i < childNodes.length; i++) {
+        textNodes.push(...getTextNodesIn(childNodes[i]));
+      }
+    }
+    return textNodes;
+  };
+
+  // Helper function to get the coordinates of the current text selection
+  const getSelectionCoordinates = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const editorRect = editorRef.current?.getBoundingClientRect();
+
+    if (!editorRect) return null;
+
+    return {
+      top: rect.top - editorRect.top + editorRef.current!.scrollTop,
+      bottom: rect.bottom - editorRect.top + editorRef.current!.scrollTop,
+      left: rect.left - editorRect.left + editorRef.current!.scrollLeft,
+      right: rect.right - editorRect.left + editorRef.current!.scrollLeft,
+    };
   };
 
   // Handle closing the AI options popup
@@ -157,23 +214,92 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setShowAIOptions(false));
 
     // Restore text selection if we have a selected range
-    if (selectedRange && textareaRef.current && underlineType === "selection") {
+    if (selectedRange && editorRef.current && underlineType === "selection") {
       setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
+        if (editorRef.current) {
+          editorRef.current.focus();
+          const selection = window.getSelection();
+          if (selection) {
+            const range = document.createRange();
+            const textNodes = getTextNodesIn(editorRef.current);
+            if (textNodes.length > 0) {
+              const textNode = textNodes[0];
+              range.setStart(textNode, selectedRange.start);
+              range.setEnd(textNode, selectedRange.end);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
         }
       }, 0);
     }
   };
 
-  // Track typing state
-  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onContentChange(e.target.value);
-    dispatch(setContent(e.target.value));
+  // Update how refine with AI works
+  const handleInlineRefineWithAI = () => {
+    setShowRefineOption(false);
+    setShowSelectionMode(false);
+    // Instead of starting a type effect, just show the preview
+    handleRefineWithAI(selectedRange);
+    setShowRefinePreview(true);
+  };
+
+  // Handle refine action directly
+  const handleRefineAction = (selectedRange: { start: number; end: number } | null) => {
+    if (!selectedRange) return;
+
+    const selRange = selectedRange || previousSelectionRef.current;
+    if (!selRange) return;
+
+    const beforeText = content.substring(0, selRange.start);
+    const afterText = content.substring(selRange.end);
+    const newContent = beforeText + generateRefineWithAI + afterText;
+
+    onContentChange(newContent);
+    dispatch(setContent(newContent));
+    setShowRefinePreview(false);
+    setShowSelectionMode(false);
+
+    // Reset text selection after replacing the text
+    dispatch(resetTextState());
+    previousSelectionRef.current = null;
+    setShowEditor(true);
+  };
+
+  // Update the handleSelectionChange function to clear selection when clicking elsewhere
+  const handleSelectionChange = (e: React.MouseEvent | React.KeyboardEvent) => {
+    // Get current selection
+    const selection = window.getSelection();
+
+    // If there's no selection or it's empty, and we had a previous selection
+    // This means user clicked elsewhere after selecting text
+    if ((!selection || selection.toString().trim() === "") && selectedText) {
+      // Clear the selection in Redux
+      dispatch(resetTextState());
+
+      // Hide popover if showing
+      setShowRefinePreview(false);
+    }
+
+    // Proceed with the existing selection handling
+    if (editorRef.current) {
+      setTimeout(() => {
+        hookHandleSelectionChange();
+      }, 0);
+    }
+  };
+
+  // Update the handleEditorInput to also clear any selection
+  const handleEditorInput = (e: React.FormEvent<HTMLElement>) => {
+    const newContent = e.currentTarget.innerHTML;
+    onContentChange(newContent); // Use the ContentEditable innerHTML property
+    dispatch(setContent(newContent));
     dispatch(setIsTyping(true));
     dispatch(setShowAIOptions(false));
+
+    // Clear any selection when typing
     dispatch(resetTextState());
+    setShowRefinePreview(false);
 
     // Clear any existing timeout
     if (typingTimeoutRef.current) {
@@ -183,19 +309,39 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     // Set timeout to mark user as not typing after 1 second of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       dispatch(setIsTyping(false));
-      handleTextSelection(); // Check for new selections or completion opportunities
+      hookHandleSelectionChange(); // Check for new selections or completion opportunities
     }, 1000);
   };
 
-  // When clicking outside textarea, hide all popups
+  // Also add a click handler to the editor to clear selection when clicking outside of selected text
+  const handleEditorClick = (e: React.MouseEvent) => {
+    // Only handle if we have a selection
+    if (selectedRange && selectedText) {
+      const selection = window.getSelection();
+
+      // If clicked outside the current selection
+      if (!selection || selection.toString().trim() === "") {
+        dispatch(resetTextState());
+        setShowRefinePreview(false);
+      }
+    }
+
+    // Call the existing selection change handler
+    handleSelectionChange(e);
+  };
+
+  // When clicking outside editor, hide all popups
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        textareaContainerRef.current &&
-        !textareaContainerRef.current.contains(event.target as Node)
+        editorContainerRef.current &&
+        !editorContainerRef.current.contains(event.target as Node)
       ) {
         dispatch(setShowAIOptions(false));
         dispatch(resetTextState());
+        setShowRefineOption(false);
+        setShowRefinePreview(false);
+        setShowSelectionMode(false);
       }
     };
 
@@ -210,25 +356,47 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
   // Focus and restore selection after components update
   useEffect(() => {
-    if (selectedRange && textareaRef.current && !isTyping && showTextarea) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
+    if (selectedRange && editorRef.current && !isTyping && showEditor && !showSelectionMode) {
+      editorRef.current.focus();
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        const textNodes = getTextNodesIn(editorRef.current);
+        if (textNodes.length > 0) {
+          const textNode = textNodes[0];
+          range.setStart(textNode, selectedRange.start);
+          range.setEnd(textNode, selectedRange.end);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     }
-  }, [selectedRange, isTyping, showTextarea]);
+  }, [selectedRange, isTyping, showEditor, showSelectionMode]);
 
   // Maintain selection when AI options are shown
   useEffect(() => {
-    if (showAIOptions && selectedRange && textareaRef.current && showTextarea) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(selectedRange.start, selectedRange.end);
+    if (showAIOptions && selectedRange && editorRef.current && showEditor && !showSelectionMode) {
+      editorRef.current.focus();
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        const textNodes = getTextNodesIn(editorRef.current);
+        if (textNodes.length > 0) {
+          const textNode = textNodes[0];
+          range.setStart(textNode, selectedRange.start);
+          range.setEnd(textNode, selectedRange.end);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     }
-  }, [showAIOptions, selectedRange, showTextarea]);
+  }, [showAIOptions, selectedRange, showEditor, showSelectionMode]);
 
-  // Check if textarea has scrollbar
+  // Check if editor has scrollbar
   useEffect(() => {
-    if (textareaRef.current) {
-      const textarea = textareaRef.current;
-      dispatch(setHasScrollbar(textarea.scrollHeight > textarea.clientHeight));
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      dispatch(setHasScrollbar(editor.scrollHeight > editor.clientHeight));
     }
   }, [content, dispatch]);
 
@@ -241,38 +409,21 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   }, [showConfirmation, generateRefineWithAI]);
 
   const confirmHashtags = () => {
-    onContentChange(content + "\n" + fullContent);
-    dispatch(setContent(content + "\n" + fullContent));
-    resetTypeEffect();
-    dispatch(resetTextState());
-    setShowTextarea(true);
-  };
-
-  const confirmGeneratedContent = () => {
-    onContentChange(content + " " + fullContent);
-    dispatch(setContent(content + " " + fullContent));
-    resetTypeEffect();
-    dispatch(resetTextState());
-    setShowTextarea(true);
-  };
-
-  const confirmRefineWithAI = () => {
-    // Use previousSelectionRef as a fallback if selectedRange is somehow lost
-    const selRange = selectedRange || previousSelectionRef.current;
-    if (!selRange) return;
-
-    const beforeText = content.substring(0, selRange.start);
-    const afterText = content.substring(selRange.end);
-    const newContent = beforeText + fullContent + afterText;
-
+    // Add the hashtags to the existing content
+    const newContent = content + "\n" + fullContent;
     onContentChange(newContent);
     dispatch(setContent(newContent));
     resetTypeEffect();
-
-    // Reset text selection after replacing the text
     dispatch(resetTextState());
-    previousSelectionRef.current = null;
-    setShowTextarea(true);
+  };
+
+  const confirmGeneratedContent = () => {
+    // Add the generated content to the existing content
+    const newContent = content + " " + fullContent;
+    onContentChange(newContent);
+    dispatch(setContent(newContent));
+    resetTypeEffect();
+    dispatch(resetTextState());
   };
 
   const handleConfirm = () => {
@@ -281,7 +432,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     } else if (contentType === "complete") {
       confirmGeneratedContent();
     } else if (contentType === "refine") {
-      confirmRefineWithAI();
+      if (selectedRange) {
+        handleRefineAction(selectedRange);
+      }
     }
   };
 
@@ -296,137 +449,160 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   };
 
   const handleCancel = () => {
+    // Just reset the typing effect without changing the content
     resetTypeEffect();
-    setShowTextarea(true);
+    dispatch(resetTextState());
+  };
+
+  // Add focus/blur handlers to the editor
+  const handleEditorFocus = () => {
+    dispatch(setIsFocused(true));
+
+    // If editor is empty, clear any placeholder text that might be there
+    if (!content.trim() && editorRef.current) {
+      // Make sure we're not actually clearing real content
+      if (editorRef.current.innerHTML === placeholder) {
+        editorRef.current.innerHTML = "";
+      }
+    }
+  };
+
+  const handleEditorBlur = () => {
+    dispatch(setIsFocused(false));
+    // Only hide options if click was outside the editor container
+    // We handle this in the click outside listener
   };
 
   const hasContent = content.trim().length > 0;
 
+  // Handle clicking anywhere in selection mode to return to editor
+  const handleSelectionModeClick = (e: React.MouseEvent) => {
+    // Don't exit selection mode if clicking on the refine button
+    if ((e.target as HTMLElement).closest(".refine-button")) {
+      return;
+    }
+
+    setShowSelectionMode(false);
+    setShowEditor(true);
+    // Focus the editor and restore selection
+    if (editorRef.current && selectedRange) {
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+          const selection = window.getSelection();
+          if (selection) {
+            const range = document.createRange();
+            const textNodes = getTextNodesIn(editorRef.current);
+            if (textNodes.length > 0) {
+              const textNode = textNodes[0];
+              range.setStart(textNode, selectedRange.start);
+              range.setEnd(textNode, selectedRange.end);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
+        }
+      }, 0);
+    }
+  };
+
+  // Paste as plain text handler
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  };
+
   return (
     <>
-      <div className="relative" ref={textareaContainerRef}>
-        {showTextarea ? (
-          <Textarea
-            placeholder={placeholder}
-            className={cn(
-              "resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-              isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
-              hasScrollbar ? "pr-5" : "pr-6",
-              className,
-            )}
-            value={content}
-            onChange={handleTyping}
-            ref={textareaRef}
-            onMouseEnter={handleTextareaMouseEnter}
-            onMouseUp={handleTextSelection}
-            onKeyUp={handleTextSelection}
-            onClick={handleSelectionChange}
-            onKeyDown={handleSelectionChange}
-          />
-        ) : (
-          <div
-            className={cn(
-              "border-0 p-3 overflow-y-auto whitespace-pre-wrap bg-[#f9fafb]",
-              isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
-              hasScrollbar ? "pr-5" : "pr-6",
-              className,
-            )}
-          >
-            <div className="text-gray-800 text-wrap">
-              {contentType === "refine" && isTypingEffect ? (
-                <>
-                  {content.substring(0, selectedRange?.start || 0)}
-                  <span className="line-through text-red-600 inline">{selectedText}</span>
-                  <span
-                    className="bg-blue-400 inline"
-                    style={{ animation: "pulse-bg 1.5s ease-in-out" }}
-                  >
-                    {typedContent}
-                  </span>
-                  {content.substring(selectedRange?.end || 0)}
-                </>
-              ) : contentType === "refine" && showTypeControls ? (
-                <>
-                  {content.substring(0, selectedRange?.start || 0)}
-                  <span className="line-through text-red-600 inline">{selectedText}</span>
-                  <span
-                    className={cn("inline", contentHighlight ? "bg-blue-200" : "")}
-                    style={
-                      contentHighlight
-                        ? {
-                            animation: "pulse-bg 1.5s ease-in-out",
-                          }
-                        : undefined
-                    }
-                  >
-                    {fullContent}
-                  </span>
-                  {content.substring(selectedRange?.end || 0)}
-                  <ActionButtons
-                    handleConfirm={handleConfirm}
-                    handleRegenerate={handleRegenerate}
-                    handleCancel={handleCancel}
-                    isPendingContent={isPendingContent}
-                    isPendingHashTags={isPendingHashTags}
-                  />
-                </>
-              ) : isTypingEffect ? (
-                <>
-                  {content}
-                  <span
-                    className="bg-blue-200 inline"
-                    style={{ animation: "pulse-bg 1.5s ease-in-out" }}
-                  >
-                    {typedContent}
-                  </span>
-                </>
-              ) : showTypeControls ? (
-                <>
-                  {content}
-                  <span
-                    className={cn("inline", contentHighlight ? "bg-blue-200" : "")}
-                    style={
-                      contentHighlight
-                        ? {
-                            animation: "pulse-bg 1.5s ease-in-out",
-                          }
-                        : undefined
-                    }
-                  >
-                    {fullContent}
-                  </span>
-                  <ActionButtons
-                    handleConfirm={handleConfirm}
-                    handleRegenerate={handleRegenerate}
-                    handleCancel={handleCancel}
-                    isPendingContent={isPendingContent}
-                    isPendingHashTags={isPendingHashTags}
-                  />
-                </>
-              ) : (
-                content
-              )}
-            </div>
+      <div className="relative" ref={editorContainerRef}>
+        <ContentEditable
+          innerRef={editorRef}
+          html={
+            content +
+            (isTypingEffect || showTypeControls
+              ? '<span class="ai-generated">' +
+                (isTypingEffect ? typedContent : fullContent) +
+                "</span>"
+              : "")
+          }
+          disabled={isTypingEffect || showTypeControls}
+          className={cn(
+            "resize-none border-0 outline-none focus:outline-none p-3 bg-gray-50 rounded overflow-y-auto whitespace-pre-wrap",
+            isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
+            hasScrollbar ? "pr-5" : "pr-6",
+            className,
+          )}
+          data-placeholder={placeholder}
+          onChange={handleEditorInput}
+          onMouseEnter={handleEditorMouseEnter}
+          onMouseUp={handleTextSelection}
+          onKeyUp={handleTextSelection}
+          onClick={handleEditorClick}
+          onKeyDown={handleSelectionChange}
+          onFocus={handleEditorFocus}
+          onBlur={handleEditorBlur}
+          onPaste={handlePaste}
+        />
 
-            {/* AI suggestion card below typed content when showing div instead of textarea */}
-            {showAIOptions && !showTextarea && (
-              <div className="mt-4">
-                <AIOptions
-                  underlineType={underlineType}
-                  onClose={handleCloseOptions}
-                  handleRefineWithAI={() => handleRefineWithAI(selectedRange)}
-                  handleCompleteWithAI={handleCompleteWithAI}
-                  handleGenerateHashtags={handleGenerateHashtags}
-                  isPendingContent={isPendingContent}
-                  isPendingHashTags={isPendingHashTags}
-                />
-              </div>
-            )}
+        {/* Controls for AI-generated content after typing effect completes */}
+        {showTypeControls && (
+          <div className="absolute bottom-2 right-2 bg-white rounded-md shadow-sm border border-gray-100 p-1 flex items-center gap-1.5">
+            <span className="text-xs text-gray-500 mr-1">AI generated:</span>
+            <ActionButtons
+              handleConfirm={handleConfirm}
+              handleRegenerate={handleRegenerate}
+              handleCancel={handleCancel}
+              isPendingContent={isPendingContent}
+              isPendingHashTags={isPendingHashTags}
+            />
           </div>
         )}
 
-        {/* Sparkles icon at the top right - only show when there is content */}
-        {hasContent && showTextarea && (
+        {/* Show the Refine with AI button when text is selected */}
+        {selectedRange && selectedText && !isTyping && !isTypingEffect && (
+          <div
+            className="absolute z-50"
+            style={{
+              top: `${getSelectionCoordinates()?.bottom || 0}px`,
+              left: `${getSelectionCoordinates()?.left || 0}px`,
+            }}
+          >
+            <Button
+              onClick={handleInlineRefineWithAI}
+              className="refine-button flex items-center gap-1.5 px-2 py-1 mt-1 bg-green-50 border border-green-200 hover:bg-green-100 text-xs rounded-md shadow-sm"
+              variant="ghost"
+              size="sm"
+            >
+              <Wand2 className="h-3.5 w-3.5 text-green-600" />
+              <span className="text-green-700 font-medium">Refine with AI</span>
+            </Button>
+          </div>
+        )}
+
+        {/* Show AI response preview when requested */}
+        {showRefinePreview && generateRefineWithAI && (
+          <div
+            className="absolute z-50 bg-white rounded-md shadow-lg max-w-sm border border-gray-200"
+            style={{
+              top: `${getSelectionCoordinates()?.top || 0}px`,
+              left: `${getSelectionCoordinates()?.left || 0}px`,
+              transform: "translateY(-100%)",
+            }}
+          >
+            <RefinePopover
+              selectedRange={selectedRange}
+              generateRefineWithAI={generateRefineWithAI}
+              setShowRefinePreview={setShowRefinePreview}
+              handleRefineAction={handleRefineAction}
+              handleRegenerateRefinedText={handleRegenerateRefinedText}
+              isPendingContent={isPendingContent}
+            />
+          </div>
+        )}
+
+        {/* Sparkles icon at the top right */}
+        {hasContent && !isTyping && (
           <SparkleButton
             onClick={handleSparkleClick}
             isTextSelected={isTextSelected}
@@ -435,12 +611,11 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           />
         )}
 
-        {/* AI suggestion card inside the textarea */}
-        {showAIOptions && showTextarea && (
+        {/* AI suggestion card */}
+        {showAIOptions && underlineType === "completion" && (
           <AIOptions
             underlineType={underlineType}
             onClose={handleCloseOptions}
-            handleRefineWithAI={() => handleRefineWithAI(selectedRange)}
             handleCompleteWithAI={handleCompleteWithAI}
             handleGenerateHashtags={handleGenerateHashtags}
             isPendingContent={isPendingContent}
@@ -449,53 +624,25 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         )}
       </div>
 
-      <ConfirmationDialog
-        open={showConfirmation && hashtags.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            dispatch(resetConfirmation());
+      <style>
+        {`
+          @keyframes pulse-bg {
+            0%, 100% { background-color: rgba(191, 219, 254, 0.5); }
+            50% { background-color: rgba(191, 219, 254, 1); }
           }
-        }}
-        title="Do you want to add the following hashtags?"
-        content={hashtags}
-        onConfirm={confirmHashtags}
-        onRegenerate={handleRegenerateHashtags}
-        isRegenerateLoading={isPendingHashTags}
-      />
-
-      <ConfirmationDialog
-        open={showConfirmation && generatedContent.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            dispatch(resetConfirmation());
+          [contenteditable=true]:empty:not(:focus):before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+            display: block;
           }
-        }}
-        title="Do you want to add the following content?"
-        content={generatedContent}
-        onConfirm={confirmGeneratedContent}
-        onRegenerate={handleRegenerateCompletion}
-        isRegenerateLoading={isPendingContent}
-      />
-
-      <ConfirmationDialog
-        open={showConfirmation && generateRefineWithAI.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            dispatch(resetConfirmation());
+          .ai-generated {
+            background-color: rgba(186, 230, 253, 0.4);
+            border-radius: 2px;
+            padding: 0 2px;
           }
-        }}
-        title="Do you want to replace the following text?"
-        content={
-          <div>
-            <p className="font-semibold text-xs line-through text-red-600">{selectedText}</p>
-            <br />
-            <p className="font-semibold text-xs text-green-600">{generateRefineWithAI}</p>
-          </div>
-        }
-        onConfirm={confirmRefineWithAI}
-        onRegenerate={() => handleRegenerateRefinedText(selectedRange)}
-        isRegenerateLoading={isPendingContent}
-      />
+        `}
+      </style>
     </>
   );
 };
@@ -513,7 +660,7 @@ const ActionButtons = ({
   handleRegenerate: () => void;
   handleCancel: () => void;
   isPendingContent: boolean;
-  isPendingHashTags: boolean;
+  isPendingHashTags?: boolean;
 }) => {
   return (
     <span className="inline-flex space-x-1.5 ml-1 align-middle">
@@ -541,5 +688,41 @@ const ActionButtons = ({
         <X size={16} className="text-red-600" />
       </button>
     </span>
+  );
+};
+
+const RefinePopover = ({
+  selectedRange,
+  generateRefineWithAI,
+  setShowRefinePreview,
+  handleRefineAction,
+  handleRegenerateRefinedText,
+  isPendingContent,
+}: {
+  selectedRange: { start: number; end: number };
+  generateRefineWithAI: string;
+  setShowRefinePreview: (show: boolean) => void;
+  handleRefineAction: (selectedRange: { start: number; end: number }) => void;
+  handleRegenerateRefinedText: (selectedRange: { start: number; end: number }) => void;
+  isPendingContent: boolean;
+}) => {
+  return (
+    <div className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm">
+      {isPendingContent ? (
+        <p className="text-xs text-gray-600 mt-1">Refining...</p>
+      ) : (
+        <p className="text-xs text-green-600 mt-1">{generateRefineWithAI}</p>
+      )}
+      <div className="flex justify-end">
+        <ActionButtons
+          handleConfirm={() => handleRefineAction(selectedRange)}
+          handleRegenerate={() => handleRegenerateRefinedText(selectedRange)}
+          handleCancel={() => {
+            setShowRefinePreview(false);
+          }}
+          isPendingContent={isPendingContent}
+        />
+      </div>
+    </div>
   );
 };

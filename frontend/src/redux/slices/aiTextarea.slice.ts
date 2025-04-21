@@ -24,6 +24,9 @@ export interface AITextareaState {
   hashtags: string;
   generatedContent: string;
   generatedRefineContent: string;
+
+  // Editor state
+  isFocused: boolean;
 }
 
 const initialState: AITextareaState = {
@@ -41,6 +44,8 @@ const initialState: AITextareaState = {
   hashtags: "",
   generatedContent: "",
   generatedRefineContent: "",
+
+  isFocused: false,
 };
 
 export const aiTextareaSlice = createSlice({
@@ -48,7 +53,8 @@ export const aiTextareaSlice = createSlice({
   initialState,
   reducers: {
     setContent: (state, action: PayloadAction<string>) => {
-      state.content = action.payload;
+      // Clean HTML tags that might come from contentEditable
+      state.content = action.payload.replace(/<\/?[^>]+(>|$)/g, "");
     },
     setSelectedText: (state, action: PayloadAction<string>) => {
       state.selectedText = action.payload;
@@ -83,6 +89,9 @@ export const aiTextareaSlice = createSlice({
     setGeneratedRefineContent: (state, action: PayloadAction<string>) => {
       state.generatedRefineContent = action.payload;
     },
+    setIsFocused: (state, action: PayloadAction<boolean>) => {
+      state.isFocused = action.payload;
+    },
     resetTextState: (state) => {
       state.selectedRange = null;
       state.selectedText = "";
@@ -114,6 +123,7 @@ export const selectHashtags = (state: RootState) => state.aiTextarea.hashtags;
 export const selectGeneratedContent = (state: RootState) => state.aiTextarea.generatedContent;
 export const selectGeneratedRefineContent = (state: RootState) =>
   state.aiTextarea.generatedRefineContent;
+export const selectIsFocused = (state: RootState) => state.aiTextarea.isFocused;
 
 export const {
   setContent,
@@ -128,6 +138,7 @@ export const {
   setHashtags,
   setGeneratedContent,
   setGeneratedRefineContent,
+  setIsFocused,
   resetTextState,
   resetConfirmation,
   reset,
