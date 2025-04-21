@@ -27,7 +27,15 @@ export class AiService {
         prompt = `Shorten this post while keeping the meaning:\n"${text}"`;
         break;
       case 'complete':
-        prompt = `Complete this unfinished sentence:\n"${text}". Reply only the completed part.`;
+        prompt = `Complete the incomplete sentence.
+                  Reply only the extra part.
+
+                  Example: 
+                  Prompt - I love to visit Delhi.
+                  Completed Sentence - I love to Delhi because of delicious food.
+                  Your response should be - because of delicious food
+                  
+                  Text: ${text}`;
         break;
       case 'refine':
         prompt = `Refine only focused text for grammar and quality.\n\n Focused text: \n "${text}`;
@@ -40,7 +48,7 @@ export class AiService {
     if (action === 'generate') {
       response = JSON.parse(response);
     }
-    console.log(response, typeof response);
+
     return { text: response };
   }
 

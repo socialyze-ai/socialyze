@@ -5,6 +5,7 @@ import { UploadMediaDto } from './dto/uploadMedia.dto';
 import { GiphyService } from '../service/giphy.service';
 import { GoogleImageService } from '../service/googleImage.service';
 import { GcsService } from '../service/gcs.service';
+import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
 
 @Injectable()
 export class MediaService {
@@ -41,18 +42,28 @@ export class MediaService {
     userId: string,
   ) {
     try {
-      const { provider, postId } = uploadMediaDto;
-      let response;
-      if (provider === 'unsplash') {
-        response = await this.unsplashService.uploadMedia(
-          media,
-          uploadMediaDto,
-          userId,
-        );
-      } else {
-        const foldering = `${userId}/${postId}`;
-        response = await this.gcsService.uploadMedia(media, foldering);
-      }
+      const { postId } = uploadMediaDto;
+
+      const foldering = `${userId}/${postId}`;
+      const response = await this.gcsService.uploadMedia(media, foldering);
+
+      return response;
+    } catch (error) {
+      console.error('Error fetching channels:', error);
+      throw new Error('Failed to fetch channels');
+    }
+  }
+
+  async uploadMediaForUnsplash(
+    uploadMediaForUnsplashDto: UploadMediaForUnsplashDto,
+    userId: string,
+  ) {
+    try {
+      const { url, postId } = uploadMediaForUnsplashDto;
+      const foldering = `${userId}/${postId}`;
+      const media = await this.unsplashService.downloadMedia(url);
+      const response = await this.gcsService.uploadMedia(media, foldering);
+
       return response;
     } catch (error) {
       console.error('Error fetching channels:', error);

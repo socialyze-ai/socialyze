@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import axios from 'axios';
 import { GetImagesDto } from '../media/dto/getImages.dto';
 import { UploadMediaDto } from '../media/dto/uploadMedia.dto';
+import { Readable } from 'stream';
 
 // const storage = new Storage({
 //   keyFilename: process.env.GCS_KEYFILE_PATH, // e.g., './gcs-key.json'
@@ -66,29 +67,40 @@ export class UnsplashService {
     }
   }
 
-  async uploadMedia(media, uploadMediaDto, userId) {
+  async downloadMedia(url: string): Promise<Express.Multer.File> {
     try {
-      // const { url, filename } = uploadImageDto;
-      // const response = await axios.get(url, { responseType: 'arraybuffer' });
-      // const fileExt = path.extname(new URL(url).pathname) || '.jpg';
-      // const gcsFilename = `${filename || uuidv4()}${fileExt}`;
-      // const bucket = storage.bucket(bucketName);
-      // const file = bucket.file(gcsFilename);
-      // await file.save(response.data, {
-      //   metadata: { contentType: response.headers['content-type'] },
-      //   resumable: false,
-      // });
-      // await file.makePublic();
-      // return {
-      //   gcs_url: `https://storage.googleapis.com/${bucketName}/${gcsFilename}`,
-      //   filename: gcsFilename,
-      // };
-    } catch (error) {
-      console.error('GCS upload failed:', error);
+      const trackDownload = await axios.get(
+        `${url}&client_id=${process.env.UNSPLASH_ACCESS_KEY}`,
+      );
+
+      const downloadUrl = trackDownload.data.url;
+      console.log('1', trackDownload.data);
+
+      const mediaResponse = await axios.get(downloadUrl, {
+        responseType: 'arraybuffer',
+      });
+
+      const buffer = Buffer.from(mediaResponse.data);
+      const mimetype = mediaResponse.headers['content-type'] || 'image/jpeg';
+      const originalname = `unsplash-media.${mimetype.split('/')[1] || 'jpg'}`;
+
       return {
-        error: 'Failed to upload to GCS',
-        details: error.response?.data || error.message,
+        fieldname: 'file',
+        originalname,
+        encoding: '7bit',
+        mimetype,
+        size: buffer.length,
+        buffer,
+        stream: Readable.from(buffer),
+        destination: '',
+        filename: originalname,
+        path: '',
       };
+    } catch (error) {
+      console.error('Failed to download media from Unsplash:', error);
+      throw new InternalServerErrorException(
+        'Failed to download media from Unsplash',
+      );
     }
   }
 }
