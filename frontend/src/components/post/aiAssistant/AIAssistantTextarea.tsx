@@ -338,7 +338,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                   {content.substring(0, selectedRange?.start || 0)}
                   <span className="line-through text-red-600 inline">{selectedText}</span>
                   <span
-                    className="bg-yellow-200 inline"
+                    className="bg-blue-400 inline"
                     style={{ animation: "pulse-bg 1.5s ease-in-out" }}
                   >
                     {typedContent}
@@ -350,7 +350,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                   {content.substring(0, selectedRange?.start || 0)}
                   <span className="line-through text-red-600 inline">{selectedText}</span>
                   <span
-                    className={cn("inline", contentHighlight ? "bg-yellow-200" : "")}
+                    className={cn("inline", contentHighlight ? "bg-blue-200" : "")}
                     style={
                       contentHighlight
                         ? {
@@ -362,37 +362,19 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                     {fullContent}
                   </span>
                   {content.substring(selectedRange?.end || 0)}
-                  <span className="inline-flex space-x-1.5 ml-1 align-middle">
-                    <button
-                      className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
-                      onClick={handleConfirm}
-                    >
-                      <Check size={16} className="text-green-600" />
-                    </button>
-                    <button
-                      className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
-                      onClick={handleRegenerate}
-                      disabled={isPendingContent || isPendingHashTags}
-                    >
-                      {isPendingContent || isPendingHashTags ? (
-                        <RefreshCcw size={16} className="text-blue-600 animate-spin" />
-                      ) : (
-                        <RefreshCcw size={16} className="text-blue-600" />
-                      )}
-                    </button>
-                    <button
-                      className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
-                      onClick={handleCancel}
-                    >
-                      <X size={16} className="text-red-600" />
-                    </button>
-                  </span>
+                  <ActionButtons
+                    handleConfirm={handleConfirm}
+                    handleRegenerate={handleRegenerate}
+                    handleCancel={handleCancel}
+                    isPendingContent={isPendingContent}
+                    isPendingHashTags={isPendingHashTags}
+                  />
                 </>
               ) : isTypingEffect ? (
                 <>
                   {content}
                   <span
-                    className="bg-yellow-200 inline"
+                    className="bg-blue-200 inline"
                     style={{ animation: "pulse-bg 1.5s ease-in-out" }}
                   >
                     {typedContent}
@@ -402,7 +384,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                 <>
                   {content}
                   <span
-                    className={cn("inline", contentHighlight ? "bg-yellow-200" : "")}
+                    className={cn("inline", contentHighlight ? "bg-blue-200" : "")}
                     style={
                       contentHighlight
                         ? {
@@ -413,31 +395,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
                   >
                     {fullContent}
                   </span>
-                  <span className="inline-flex space-x-1.5 ml-1 align-middle">
-                    <button
-                      className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
-                      onClick={handleConfirm}
-                    >
-                      <Check size={16} className="text-green-600" />
-                    </button>
-                    <button
-                      className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
-                      onClick={handleRegenerate}
-                      disabled={isPendingContent || isPendingHashTags}
-                    >
-                      {isPendingContent || isPendingHashTags ? (
-                        <RefreshCcw size={16} className="text-blue-600 animate-spin" />
-                      ) : (
-                        <RefreshCcw size={16} className="text-blue-600" />
-                      )}
-                    </button>
-                    <button
-                      className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
-                      onClick={handleCancel}
-                    >
-                      <X size={16} className="text-red-600" />
-                    </button>
-                  </span>
+                  <ActionButtons
+                    handleConfirm={handleConfirm}
+                    handleRegenerate={handleRegenerate}
+                    handleCancel={handleCancel}
+                    isPendingContent={isPendingContent}
+                    isPendingHashTags={isPendingHashTags}
+                  />
                 </>
               ) : (
                 content
@@ -460,15 +424,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             )}
           </div>
         )}
-
-        <style>
-          {`
-            @keyframes pulse-bg {
-              0%, 100% { background-color: rgba(254, 240, 138, 0.5); }
-              50% { background-color: rgba(254, 240, 138, 1); }
-            }
-          `}
-        </style>
 
         {/* Sparkles icon at the top right - only show when there is content */}
         {hasContent && showTextarea && (
@@ -546,3 +501,45 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 };
 
 export default AIAssistantTextarea;
+
+const ActionButtons = ({
+  handleConfirm,
+  handleRegenerate,
+  handleCancel,
+  isPendingContent,
+  isPendingHashTags,
+}: {
+  handleConfirm: () => void;
+  handleRegenerate: () => void;
+  handleCancel: () => void;
+  isPendingContent: boolean;
+  isPendingHashTags: boolean;
+}) => {
+  return (
+    <span className="inline-flex space-x-1.5 ml-1 align-middle">
+      <button
+        className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
+        onClick={handleConfirm}
+      >
+        <Check size={16} className="text-green-600" />
+      </button>
+      <button
+        className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
+        onClick={handleRegenerate}
+        disabled={isPendingContent || isPendingHashTags}
+      >
+        {isPendingContent || isPendingHashTags ? (
+          <RefreshCcw size={16} className="text-blue-600 animate-spin" />
+        ) : (
+          <RefreshCcw size={16} className="text-blue-600" />
+        )}
+      </button>
+      <button
+        className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
+        onClick={handleCancel}
+      >
+        <X size={16} className="text-red-600" />
+      </button>
+    </span>
+  );
+};

@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Wand2, X, Hash, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDispatch } from "react-redux";
+import { setShowAIOptions } from "@/redux/slices/aiTextarea.slice";
 
 interface AIOptionsProps {
   underlineType: string;
@@ -22,8 +24,26 @@ const AIOptions: React.FC<AIOptionsProps> = ({
   isPendingContent,
   isPendingHashTags,
 }) => {
+  const optionsRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Handle clicks outside the options popover
+    const handleClickOutside = (event: MouseEvent) => {
+      if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+        dispatch(setShowAIOptions(false));
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dispatch]);
+
   return (
     <div
+      ref={optionsRef}
       className="absolute z-20 bg-white rounded-lg shadow-lg pointer-events-auto w-64 border border-gray-100"
       style={{
         top: "40px",
