@@ -219,13 +219,13 @@ const HashtagModal = () => {
           setContentForChannel({
             channelId: activeChannel,
             content:
-              channelContent + "\n" + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" "),
+              channelContent + " " + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" "),
           }),
         );
       } else {
         const content = contentByChannel[activeChannel] || "";
         dispatch(
-          setContent(content + "\n" + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" ")),
+          setContent(content + " " + groupToInsert.hashtags.map((tag) => `#${tag}`).join(" ")),
         );
       }
     }

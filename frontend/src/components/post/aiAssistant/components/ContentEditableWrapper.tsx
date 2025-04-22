@@ -63,7 +63,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
         disabled={isTypingEffect || showTypeControls}
         className={cn(
           "resize-none border-0 outline-none focus:outline-none p-3 bg-gray-50 rounded overflow-y-auto whitespace-pre-wrap",
-          isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
+          isPostModal ? "text-sm h-[300px]" : "text-base h-[200px]",
           hasScrollbar ? "pr-5" : "pr-6",
           className,
         )}

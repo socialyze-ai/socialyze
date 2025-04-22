@@ -15,7 +15,6 @@ import {
 
 // Import components
 import ContentEditableWrapper from "./components/ContentEditableWrapper";
-import ConfirmationDialog from "./components/ConfirmationDialog";
 import AIOptions from "./components/AIOptions";
 import SelectionTooltip from "./components/SelectionTooltip";
 import SparkleButton from "./components/SparkleButton";
