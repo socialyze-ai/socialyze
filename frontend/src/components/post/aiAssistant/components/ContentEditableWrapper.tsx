@@ -48,7 +48,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
   const hasContent = content.trim().length > 0;
 
   return (
-    <>
+    <div className="relative">
       <ContentEditable
         innerRef={editorRef}
         html={
@@ -56,6 +56,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
           (isTypingEffect || showTypeControls
             ? '<span class="ai-generated">' +
               (isTypingEffect ? typedContent : fullContent) +
+              '<span id="typing-effect-end" class="typing-effect-end"></span>' +
               "</span>"
             : "")
         }
@@ -95,9 +96,17 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
             border-radius: 2px;
             padding: 0 2px;
           }
+          .typing-effect-end {
+            display: inline;
+            position: relative;
+            white-space: nowrap;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+          }
         `}
       </style>
-    </>
+    </div>
   );
 };
 

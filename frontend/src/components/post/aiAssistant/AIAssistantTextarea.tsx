@@ -21,6 +21,7 @@ import SelectionTooltip from "./components/SelectionTooltip";
 import SparkleButton from "./components/SparkleButton";
 import RefinePopover from "./components/RefinePopover";
 import GeneratedContentControls from "./components/GeneratedContentControls";
+import GeneratedContentControlsPortal from "./components/GeneratedContentControlsPortal";
 
 // Import hooks
 import { useTypeEffect } from "./hooks/useTypeEffect";
@@ -459,13 +460,21 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       />
 
       {/* Controls for AI-generated content after typing effect completes */}
-      <GeneratedContentControls
-        showTypeControls={showTypeControls}
-        handleConfirm={handleConfirm}
-        handleRegenerate={handleRegenerate}
-        handleCancel={handleCancel}
-        isPending={isPendingContent || isPendingHashTags}
-      />
+      {showTypeControls && (
+        <GeneratedContentControlsPortal
+          targetId="typing-effect-end"
+          controls={
+            <GeneratedContentControls
+              showTypeControls={showTypeControls}
+              handleConfirm={handleConfirm}
+              handleRegenerate={handleRegenerate}
+              handleCancel={handleCancel}
+              isPending={isPendingContent || isPendingHashTags}
+              isInline={true}
+            />
+          }
+        />
+      )}
 
       {/* Show the Refine with AI button when text is selected */}
       {selectedRange && selectedText && !isTyping && !isTypingEffect && !showRefinePreview && (

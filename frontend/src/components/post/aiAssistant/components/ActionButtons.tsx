@@ -12,7 +12,7 @@ const ActionButtons = ({
   isPending: boolean;
 }) => {
   return (
-    <span className="inline-flex space-x-1.5 ml-1 align-middle">
+    <span className="inline-flex space-x-1.5 align-middle">
       <button
         className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
         onClick={handleConfirm}
