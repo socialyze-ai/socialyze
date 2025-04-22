@@ -617,6 +617,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
               if (response?.data?.url) {
                 // Call the onSave with the server URL instead of data URL
                 onSave(response.data.url, selectedImage);
+                // Reset crop data to default
+                dispatch(resetCropMode());
                 toast({
                   title: "Image edited",
                   description: "Your image has been edited and uploaded successfully.",
