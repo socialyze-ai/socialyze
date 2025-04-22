@@ -93,11 +93,13 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
       const selText = selection.text;
 
       if (selText.trim().length > 0) {
+        // Store current selection in previousSelectionRef for future use
+        previousSelectionRef.current = { start: selStart, end: selEnd };
+
         dispatch(setSelectedText(selText));
         dispatch(setSelectedRange({ start: selStart, end: selEnd }));
         dispatch(setUnderlineType("selection"));
         dispatch(setIsTextSelected(true));
-        previousSelectionRef.current = { start: selStart, end: selEnd };
       }
     } else if (content.trim().length > 0 && !isTyping) {
       // Show completion suggestion at end of text
@@ -122,69 +124,87 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
     }
   };
 
-  // Helper function to focus and select text
+  // Add a function to deliberately clear selection
+  const clearSelection = () => {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+
+    // Clear the Redux state
+    dispatch(setSelectedText(""));
+    dispatch(setSelectedRange(null));
+    dispatch(setIsTextSelected(false));
+    previousSelectionRef.current = null;
+  };
+
+  // Improve focusAndSelectText to work better with pasted content
   const focusAndSelectText = (selectedRange: { start: number; end: number } | null) => {
     // Use either the active selection or the stored selection from ref
     const selRange = selectedRange || previousSelectionRef.current;
     if (selRange && editorRef.current) {
+      // Focus the editor first
+      editorRef.current.focus();
+
       setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
+        if (!editorRef.current) return;
 
-          const selection = window.getSelection();
-          if (selection) {
-            const range = document.createRange();
-            const textNodes = getTextNodesIn(editorRef.current);
+        const selection = window.getSelection();
+        if (!selection) return;
 
-            // Find the correct text node and position
-            let currentPos = 0;
-            let startNode = textNodes[0];
-            let startOffset = selRange.start;
-            let endNode = textNodes[0];
-            let endOffset = selRange.end;
+        try {
+          // Clear any existing selection first
+          selection.removeAllRanges();
 
-            // Find start node and offset
-            for (const node of textNodes) {
-              if (currentPos + node.length > selRange.start) {
-                startNode = node;
-                startOffset = selRange.start - currentPos;
-                break;
-              }
-              currentPos += node.length;
+          const range = document.createRange();
+          const textNodes = getTextNodesIn(editorRef.current);
+
+          if (textNodes.length === 0) return;
+
+          // Find the correct text node and position with improved calculation
+          let currentPos = 0;
+          let startNode: Text | null = null;
+          let startOffset = 0;
+          let endNode: Text | null = null;
+          let endOffset = 0;
+
+          // Find start node and offset with better node traversal
+          for (const node of textNodes) {
+            if (currentPos + node.length > selRange.start) {
+              startNode = node;
+              startOffset = selRange.start - currentPos;
+              break;
             }
-
-            // Reset for end node search
-            currentPos = 0;
-
-            // Find end node and offset
-            for (const node of textNodes) {
-              if (currentPos + node.length > selRange.end) {
-                endNode = node;
-                endOffset = selRange.end - currentPos;
-                break;
-              }
-              currentPos += node.length;
-            }
-
-            // Set the range
-            try {
-              range.setStart(startNode, startOffset);
-              range.setEnd(endNode, endOffset);
-              selection.removeAllRanges();
-              selection.addRange(range);
-
-              // Ensure the selection is also reflected in the Redux state
-              if (!selectedRange) {
-                dispatch(setSelectedRange(selRange));
-                dispatch(setSelectedText(content.substring(selRange.start, selRange.end)));
-                dispatch(setIsTextSelected(true));
-              }
-            } catch (e) {
-              console.error("Error setting selection:", e);
-            }
+            currentPos += node.length;
           }
+
+          // Reset for end node search
+          currentPos = 0;
+
+          // Find end node and offset
+          for (const node of textNodes) {
+            if (currentPos + node.length > selRange.end) {
+              endNode = node;
+              endOffset = selRange.end - currentPos;
+              break;
+            }
+            currentPos += node.length;
+          }
+
+          if (startNode && endNode) {
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
+            selection.addRange(range);
+
+            // Update Redux state
+            dispatch(setSelectedRange(selRange));
+            dispatch(setSelectedText(content.substring(selRange.start, selRange.end)));
+            dispatch(setIsTextSelected(true));
+          }
+        } catch (e) {
+          console.error("Error setting selection:", e);
         }
-      }, 0);
+      }, 50);
     }
   };
 
@@ -192,6 +212,7 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
     handleTextSelection,
     handleSelectionChange,
     focusAndSelectText,
+    clearSelection,
     previousSelectionRef,
   };
 };

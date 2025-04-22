@@ -12,6 +12,9 @@ import {
   resetConfirmation,
   setUnderlineType,
   setIsFocused,
+  setSelectedText,
+  setSelectedRange,
+  setIsTextSelected,
 } from "@/redux/slices/aiTextarea.slice";
 
 // Import components
@@ -27,6 +30,8 @@ import { useTextSelection } from "./hooks/useTextSelection";
 import { useAIContent } from "./hooks/useAIContent";
 import { Check, CircleX, RefreshCcw, X, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ActionButtons from "./components/ActionButtons";
+import RefinePopover from "./components/RefinePopover";
 
 interface AIAssistantTextareaProps {
   content: string;
@@ -55,16 +60,14 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     showConfirmation,
     hashtags,
     generatedContent,
-    generatedRefineContent: generateRefineWithAI,
+    generatedRefineContent,
   } = useSelector(selectAITextarea);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const contentBackupRef = useRef<string>(content);
   const [showEditor, setShowEditor] = useState(true);
-  const [showSelectionMode, setShowSelectionMode] = useState(false);
-  const [contentHighlight, setContentHighlight] = useState(false);
-  const [showRefineOption, setShowRefineOption] = useState(false);
   const [showRefinePreview, setShowRefinePreview] = useState(false);
   const contentEditableRef = useRef<ContentEditable>(null);
 
@@ -106,86 +109,46 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     previousSelectionRef,
   });
 
+  // Keep a reference to the current content for selection calculations
+  useEffect(() => {
+    contentBackupRef.current = content;
+  }, [content]);
+
   // Update Redux store with initial content
   useEffect(() => {
     dispatch(setContent(content));
   }, [dispatch, content]);
 
-  // Toggle editor and div based on typing effect
+  // Toggle editor based on typing effect
   useEffect(() => {
     if (isTypingEffect) {
       setShowEditor(false);
     }
   }, [isTypingEffect]);
 
-  // Show brief highlight after typing effect completes
-  useEffect(() => {
-    if (showTypeControls && !contentHighlight) {
-      setContentHighlight(true);
-
-      // After 1 second, remove the highlight
-      const highlightTimeout = setTimeout(() => {
-        setContentHighlight(false);
-      }, 1500);
-
-      return () => clearTimeout(highlightTimeout);
-    }
-  }, [showTypeControls, contentHighlight]);
-
-  // Handle hovering over editor to show AI suggestions
-  const handleEditorMouseEnter = () => {
-    if (selectedRange || isTyping || !content.trim().length) return;
-    dispatch(setUnderlineType("completion"));
-  };
-
-  // Handle clicking the sparkle icon
-  const handleSparkleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(setShowAIOptions(!showAIOptions));
-
-    // Set underline type based on whether text is selected
-    dispatch(
-      setUnderlineType(
-        selectedRange && selectedText.trim().length > 0 ? "selection" : "completion",
-      ),
-    );
-
-    // Maintain text selection when opening AI options
-    if (selectedRange && editorRef.current) {
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-          const selection = window.getSelection();
-          if (selection) {
-            const range = document.createRange();
-
-            // Find the text node
-            const textNodes = getTextNodesIn(editorRef.current);
-            if (textNodes.length > 0) {
-              // Simple approach - assuming all text is in one text node
-              const textNode = textNodes[0];
-              range.setStart(textNode, selectedRange.start);
-              range.setEnd(textNode, selectedRange.end);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
-      }, 0);
-    }
+  // Helper function to get the text directly from the editor
+  const getEditorText = () => {
+    if (!editorRef.current) return content;
+    // Get plain text without HTML tags
+    return editorRef.current.innerText || content;
   };
 
   // Helper function to get text nodes in an element
   const getTextNodesIn = (node: Node): Text[] => {
     const textNodes: Text[] = [];
-    if (node.nodeType === Node.TEXT_NODE) {
-      textNodes.push(node as Text);
-    } else {
-      const childNodes = node.childNodes;
-      for (let i = 0; i < childNodes.length; i++) {
-        textNodes.push(...getTextNodesIn(childNodes[i]));
+
+    const collect = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textNodes.push(node as Text);
+      } else {
+        const childNodes = node.childNodes;
+        for (let i = 0; i < childNodes.length; i++) {
+          collect(childNodes[i]);
+        }
       }
-    }
+    };
+
+    collect(node);
     return textNodes;
   };
 
@@ -208,91 +171,52 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     };
   };
 
-  // Handle closing the AI options popup
-  const handleCloseOptions = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(setShowAIOptions(false));
+  // Modified function to detect and handle text selection
+  const detectTextSelection = () => {
+    if (!editorRef.current || isTyping) return;
 
-    // Restore text selection if we have a selected range
-    if (selectedRange && editorRef.current && underlineType === "selection") {
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-          const selection = window.getSelection();
-          if (selection) {
-            const range = document.createRange();
-            const textNodes = getTextNodesIn(editorRef.current);
-            if (textNodes.length > 0) {
-              const textNode = textNodes[0];
-              range.setStart(textNode, selectedRange.start);
-              range.setEnd(textNode, selectedRange.end);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
-      }, 0);
-    }
-  };
-
-  // Update how refine with AI works
-  const handleInlineRefineWithAI = () => {
-    setShowRefineOption(false);
-    setShowSelectionMode(false);
-    // Instead of starting a type effect, just show the preview
-    handleRefineWithAI(selectedRange);
-    setShowRefinePreview(true);
-  };
-
-  // Handle refine action directly
-  const handleRefineAction = (selectedRange: { start: number; end: number } | null) => {
-    if (!selectedRange) return;
-
-    const selRange = selectedRange || previousSelectionRef.current;
-    if (!selRange) return;
-
-    const beforeText = content.substring(0, selRange.start);
-    const afterText = content.substring(selRange.end);
-    const newContent = beforeText + generateRefineWithAI + afterText;
-
-    onContentChange(newContent);
-    dispatch(setContent(newContent));
-    setShowRefinePreview(false);
-    setShowSelectionMode(false);
-
-    // Reset text selection after replacing the text
-    dispatch(resetTextState());
-    previousSelectionRef.current = null;
-    setShowEditor(true);
-  };
-
-  // Update the handleSelectionChange function to clear selection when clicking elsewhere
-  const handleSelectionChange = (e: React.MouseEvent | React.KeyboardEvent) => {
-    // Get current selection
     const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
 
-    // If there's no selection or it's empty, and we had a previous selection
-    // This means user clicked elsewhere after selecting text
-    if ((!selection || selection.toString().trim() === "") && selectedText) {
-      // Clear the selection in Redux
+    const selectedText = selection.toString().trim();
+    if (!selectedText) {
       dispatch(resetTextState());
-
-      // Hide popover if showing
-      setShowRefinePreview(false);
+      return;
     }
 
-    // Proceed with the existing selection handling
-    if (editorRef.current) {
-      setTimeout(() => {
-        hookHandleSelectionChange();
-      }, 0);
-    }
+    // If we have selected text, store it
+    const range = selection.getRangeAt(0);
+    const editorContent = getEditorText();
+
+    // Find the position in the plain text content
+    const preSelectionRange = range.cloneRange();
+    preSelectionRange.selectNodeContents(editorRef.current);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    const start = preSelectionRange.toString().length;
+
+    const selectionRange = {
+      start,
+      end: start + selectedText.length,
+    };
+
+    dispatch(setSelectedText(selectedText));
+    dispatch(setSelectedRange(selectionRange));
   };
 
-  // Update the handleEditorInput to also clear any selection
+  // Handle text selection with the corrected approach
+  const handleUpdatedTextSelection = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (!editorRef.current || isTyping) return;
+
+    // Use a short timeout to ensure selection is complete
+    setTimeout(() => {
+      detectTextSelection();
+    }, 0);
+  };
+
+  // Handle editor input
   const handleEditorInput = (e: React.FormEvent<HTMLElement>) => {
     const newContent = e.currentTarget.innerHTML;
-    onContentChange(newContent); // Use the ContentEditable innerHTML property
+    onContentChange(newContent);
     dispatch(setContent(newContent));
     dispatch(setIsTyping(true));
     dispatch(setShowAIOptions(false));
@@ -309,25 +233,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     // Set timeout to mark user as not typing after 1 second of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       dispatch(setIsTyping(false));
-      hookHandleSelectionChange(); // Check for new selections or completion opportunities
+      // Check for new selections after user stops typing
+      detectTextSelection();
     }, 1000);
-  };
-
-  // Also add a click handler to the editor to clear selection when clicking outside of selected text
-  const handleEditorClick = (e: React.MouseEvent) => {
-    // Only handle if we have a selection
-    if (selectedRange && selectedText) {
-      const selection = window.getSelection();
-
-      // If clicked outside the current selection
-      if (!selection || selection.toString().trim() === "") {
-        dispatch(resetTextState());
-        setShowRefinePreview(false);
-      }
-    }
-
-    // Call the existing selection change handler
-    handleSelectionChange(e);
   };
 
   // When clicking outside editor, hide all popups
@@ -339,9 +247,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       ) {
         dispatch(setShowAIOptions(false));
         dispatch(resetTextState());
-        setShowRefineOption(false);
         setShowRefinePreview(false);
-        setShowSelectionMode(false);
       }
     };
 
@@ -354,44 +260,6 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     };
   }, [dispatch]);
 
-  // Focus and restore selection after components update
-  useEffect(() => {
-    if (selectedRange && editorRef.current && !isTyping && showEditor && !showSelectionMode) {
-      editorRef.current.focus();
-      const selection = window.getSelection();
-      if (selection) {
-        const range = document.createRange();
-        const textNodes = getTextNodesIn(editorRef.current);
-        if (textNodes.length > 0) {
-          const textNode = textNodes[0];
-          range.setStart(textNode, selectedRange.start);
-          range.setEnd(textNode, selectedRange.end);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }
-    }
-  }, [selectedRange, isTyping, showEditor, showSelectionMode]);
-
-  // Maintain selection when AI options are shown
-  useEffect(() => {
-    if (showAIOptions && selectedRange && editorRef.current && showEditor && !showSelectionMode) {
-      editorRef.current.focus();
-      const selection = window.getSelection();
-      if (selection) {
-        const range = document.createRange();
-        const textNodes = getTextNodesIn(editorRef.current);
-        if (textNodes.length > 0) {
-          const textNode = textNodes[0];
-          range.setStart(textNode, selectedRange.start);
-          range.setEnd(textNode, selectedRange.end);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }
-    }
-  }, [showAIOptions, selectedRange, showEditor, showSelectionMode]);
-
   // Check if editor has scrollbar
   useEffect(() => {
     if (editorRef.current) {
@@ -400,30 +268,122 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }
   }, [content, dispatch]);
 
-  // Maintain selection when confirmation dialog is shown
-  useEffect(() => {
-    if (showConfirmation && generateRefineWithAI.length > 0) {
-      // When showing confirmation for refined text, ensure selection is maintained
-      focusAndSelectText(selectedRange);
-    }
-  }, [showConfirmation, generateRefineWithAI]);
-
-  const confirmHashtags = () => {
-    // Add the hashtags to the existing content
-    const newContent = content + "\n" + fullContent;
-    onContentChange(newContent);
-    dispatch(setContent(newContent));
-    resetTypeEffect();
-    dispatch(resetTextState());
+  // Handle hovering over editor to show AI suggestions
+  const handleEditorMouseEnter = () => {
+    if (selectedRange || isTyping || !content.trim().length) return;
+    dispatch(setUnderlineType("completion"));
   };
 
-  const confirmGeneratedContent = () => {
-    // Add the generated content to the existing content
+  // Handle clicking the sparkle icon
+  const handleSparkleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatch(setShowAIOptions(!showAIOptions));
+
+    // Set underline type based on whether text is selected
+    dispatch(
+      setUnderlineType(
+        selectedRange && selectedText.trim().length > 0 ? "selection" : "completion",
+      ),
+    );
+  };
+
+  // Handle closing the AI options popup
+  const handleCloseOptions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatch(setShowAIOptions(false));
+  };
+
+  // Handle "Refine with AI" button click
+  const handleRefineWithAIClick = () => {
+    if (!selectedRange) return;
+
+    handleRefineWithAI(selectedRange);
+    setShowRefinePreview(true);
+  };
+
+  // Handle editor click to update selection
+  const handleEditorClick = (e: React.MouseEvent) => {
+    handleUpdatedTextSelection(e);
+  };
+
+  // Handle applying the refined text
+  const handleRefineAction = () => {
+    if (!selectedRange) return;
+
+    const beforeText = content.substring(0, selectedRange.start);
+    const afterText = content.substring(selectedRange.end);
+    const newContent = beforeText + generatedRefineContent + afterText;
+
+    // Apply the new content
+    onContentChange(newContent);
+    dispatch(setContent(newContent));
+    setShowRefinePreview(false);
+    setShowEditor(true);
+
+    // Use setTimeout to allow the DOM to update first
+    setTimeout(() => {
+      // Clear selection
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
+
+      // Simulate an input event to trigger handleEditorInput
+      if (editorRef.current) {
+        // Create and dispatch an input event
+        const inputEvent = new Event("input", { bubbles: true });
+        editorRef.current.dispatchEvent(inputEvent);
+      }
+    }, 50);
+  };
+
+  // Confirmation handlers for generated content
+  const confirmHashtags = () => {
     const newContent = content + " " + fullContent;
     onContentChange(newContent);
     dispatch(setContent(newContent));
     resetTypeEffect();
     dispatch(resetTextState());
+
+    // Use setTimeout to allow the DOM to update first
+    setTimeout(() => {
+      // Clear selection
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
+
+      // Simulate an input event to trigger handleEditorInput
+      if (editorRef.current) {
+        // Create and dispatch an input event
+        const inputEvent = new Event("input", { bubbles: true });
+        editorRef.current.dispatchEvent(inputEvent);
+      }
+    }, 50);
+  };
+
+  const confirmGeneratedContent = () => {
+    const newContent = content + " " + fullContent;
+    onContentChange(newContent);
+    dispatch(setContent(newContent));
+    resetTypeEffect();
+    dispatch(resetTextState());
+
+    // Use setTimeout to allow the DOM to update first
+    setTimeout(() => {
+      // Clear selection
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
+
+      // Simulate an input event to trigger handleEditorInput
+      if (editorRef.current) {
+        // Create and dispatch an input event
+        const inputEvent = new Event("input", { bubbles: true });
+        editorRef.current.dispatchEvent(inputEvent);
+      }
+    }, 50);
   };
 
   const handleConfirm = () => {
@@ -432,9 +392,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     } else if (contentType === "complete") {
       confirmGeneratedContent();
     } else if (contentType === "refine") {
-      if (selectedRange) {
-        handleRefineAction(selectedRange);
-      }
+      handleRefineAction();
     }
   };
 
@@ -443,17 +401,30 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       handleRegenerateHashtags();
     } else if (contentType === "complete") {
       handleRegenerateCompletion();
-    } else if (contentType === "refine") {
+    } else if (contentType === "refine" && selectedRange) {
       handleRegenerateRefinedText(selectedRange);
     }
   };
 
   const handleCancel = () => {
-    // Just reset the typing effect without changing the content
     resetTypeEffect();
-    dispatch(resetTextState());
-  };
+    setShowRefinePreview(false);
 
+    // Clear DOM selection
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+
+    // Simulate an input event if there's content
+    if (editorRef.current && content.trim()) {
+      const inputEvent = new Event("input", { bubbles: true });
+      editorRef.current.dispatchEvent(inputEvent);
+    } else {
+      // If no content, just reset the state
+      dispatch(resetTextState());
+    }
+  };
   // Add focus/blur handlers to the editor
   const handleEditorFocus = () => {
     dispatch(setIsFocused(true));
@@ -469,49 +440,65 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
   const handleEditorBlur = () => {
     dispatch(setIsFocused(false));
-    // Only hide options if click was outside the editor container
-    // We handle this in the click outside listener
-  };
-
-  const hasContent = content.trim().length > 0;
-
-  // Handle clicking anywhere in selection mode to return to editor
-  const handleSelectionModeClick = (e: React.MouseEvent) => {
-    // Don't exit selection mode if clicking on the refine button
-    if ((e.target as HTMLElement).closest(".refine-button")) {
-      return;
-    }
-
-    setShowSelectionMode(false);
-    setShowEditor(true);
-    // Focus the editor and restore selection
-    if (editorRef.current && selectedRange) {
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-          const selection = window.getSelection();
-          if (selection) {
-            const range = document.createRange();
-            const textNodes = getTextNodesIn(editorRef.current);
-            if (textNodes.length > 0) {
-              const textNode = textNodes[0];
-              range.setStart(textNode, selectedRange.start);
-              range.setEnd(textNode, selectedRange.end);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
-      }, 0);
-    }
   };
 
   // Paste as plain text handler
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
+
+    // Use insertText command for better cross-browser compatibility
     document.execCommand("insertText", false, text);
+
+    // Update content state after paste
+    const newContent = editorRef.current?.innerHTML || "";
+    onContentChange(newContent);
+    dispatch(setContent(newContent));
+
+    // Reset selection state and ensure we're not in "typing" mode
+    dispatch(resetTextState());
+
+    // Set typing to true temporarily to prevent unwanted selection behavior
+    dispatch(setIsTyping(true));
+
+    // Clear any existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // After a short delay, set typing to false to re-enable selection
+    typingTimeoutRef.current = setTimeout(() => {
+      dispatch(setIsTyping(false));
+    }, 100);
   };
+
+  // In your useEffect or existing keyup/mouseup handlers
+  useEffect(() => {
+    if (editorRef.current && content && !isTyping) {
+      const checkSelection = () => {
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed && selection.toString().trim().length > 0) {
+          handleTextSelection();
+        }
+      };
+
+      // Check selection after content changes
+      checkSelection();
+
+      // Add event listeners to handle selection changes
+      editorRef.current.addEventListener("mouseup", checkSelection);
+      editorRef.current.addEventListener("keyup", checkSelection);
+
+      return () => {
+        if (editorRef.current) {
+          editorRef.current.removeEventListener("mouseup", checkSelection);
+          editorRef.current.removeEventListener("keyup", checkSelection);
+        }
+      };
+    }
+  }, [content, isTyping]);
+
+  const hasContent = content.trim().length > 0;
 
   return (
     <>
@@ -536,10 +523,10 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           data-placeholder={placeholder}
           onChange={handleEditorInput}
           onMouseEnter={handleEditorMouseEnter}
-          onMouseUp={handleTextSelection}
-          onKeyUp={handleTextSelection}
+          onMouseUp={handleUpdatedTextSelection}
+          onKeyUp={handleUpdatedTextSelection}
           onClick={handleEditorClick}
-          onKeyDown={handleSelectionChange}
+          onKeyDown={handleUpdatedTextSelection}
           onFocus={handleEditorFocus}
           onBlur={handleEditorBlur}
           onPaste={handlePaste}
@@ -553,14 +540,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
               handleConfirm={handleConfirm}
               handleRegenerate={handleRegenerate}
               handleCancel={handleCancel}
-              isPendingContent={isPendingContent}
-              isPendingHashTags={isPendingHashTags}
+              isPending={isPendingContent || isPendingHashTags}
             />
           </div>
         )}
 
         {/* Show the Refine with AI button when text is selected */}
-        {selectedRange && selectedText && !isTyping && !isTypingEffect && (
+        {selectedRange && selectedText && !isTyping && !isTypingEffect && !showRefinePreview && (
           <div
             className="absolute z-50"
             style={{
@@ -569,7 +555,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             }}
           >
             <Button
-              onClick={handleInlineRefineWithAI}
+              onClick={handleRefineWithAIClick}
               className="refine-button flex items-center gap-1.5 px-2 py-1 mt-1 bg-green-50 border border-green-200 hover:bg-green-100 text-xs rounded-md shadow-sm"
               variant="ghost"
               size="sm"
@@ -581,7 +567,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         )}
 
         {/* Show AI response preview when requested */}
-        {showRefinePreview && generateRefineWithAI && (
+        {showRefinePreview && generatedRefineContent && selectedRange && (
           <div
             className="absolute z-50 bg-white rounded-md shadow-lg max-w-sm border border-gray-200"
             style={{
@@ -591,11 +577,12 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             }}
           >
             <RefinePopover
-              selectedRange={selectedRange}
-              generateRefineWithAI={generateRefineWithAI}
+              generatedRefineContent={generatedRefineContent}
               setShowRefinePreview={setShowRefinePreview}
               handleRefineAction={handleRefineAction}
-              handleRegenerateRefinedText={handleRegenerateRefinedText}
+              handleRegenerateRefinedText={() =>
+                selectedRange && handleRegenerateRefinedText(selectedRange)
+              }
               isPendingContent={isPendingContent}
             />
           </div>
@@ -648,81 +635,3 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 };
 
 export default AIAssistantTextarea;
-
-const ActionButtons = ({
-  handleConfirm,
-  handleRegenerate,
-  handleCancel,
-  isPendingContent,
-  isPendingHashTags,
-}: {
-  handleConfirm: () => void;
-  handleRegenerate: () => void;
-  handleCancel: () => void;
-  isPendingContent: boolean;
-  isPendingHashTags?: boolean;
-}) => {
-  return (
-    <span className="inline-flex space-x-1.5 ml-1 align-middle">
-      <button
-        className="h-6 w-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center"
-        onClick={handleConfirm}
-      >
-        <Check size={16} className="text-green-600" />
-      </button>
-      <button
-        className="h-6 w-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center"
-        onClick={handleRegenerate}
-        disabled={isPendingContent || isPendingHashTags}
-      >
-        {isPendingContent || isPendingHashTags ? (
-          <RefreshCcw size={16} className="text-blue-600 animate-spin" />
-        ) : (
-          <RefreshCcw size={16} className="text-blue-600" />
-        )}
-      </button>
-      <button
-        className="h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center"
-        onClick={handleCancel}
-      >
-        <X size={16} className="text-red-600" />
-      </button>
-    </span>
-  );
-};
-
-const RefinePopover = ({
-  selectedRange,
-  generateRefineWithAI,
-  setShowRefinePreview,
-  handleRefineAction,
-  handleRegenerateRefinedText,
-  isPendingContent,
-}: {
-  selectedRange: { start: number; end: number };
-  generateRefineWithAI: string;
-  setShowRefinePreview: (show: boolean) => void;
-  handleRefineAction: (selectedRange: { start: number; end: number }) => void;
-  handleRegenerateRefinedText: (selectedRange: { start: number; end: number }) => void;
-  isPendingContent: boolean;
-}) => {
-  return (
-    <div className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm">
-      {isPendingContent ? (
-        <p className="text-xs text-gray-600 mt-1">Refining...</p>
-      ) : (
-        <p className="text-xs text-green-600 mt-1">{generateRefineWithAI}</p>
-      )}
-      <div className="flex justify-end">
-        <ActionButtons
-          handleConfirm={() => handleRefineAction(selectedRange)}
-          handleRegenerate={() => handleRegenerateRefinedText(selectedRange)}
-          handleCancel={() => {
-            setShowRefinePreview(false);
-          }}
-          isPendingContent={isPendingContent}
-        />
-      </div>
-    </div>
-  );
-};

@@ -7,6 +7,7 @@ import {
   setHashtags,
   setShowAIOptions,
   setSelectedRange,
+  setIsTextSelected,
 } from "@/redux/slices/aiTextarea.slice";
 
 type ContentType = "refine" | "complete" | "hashtags";
@@ -64,14 +65,16 @@ export const useAIContent = ({
             dispatch(setGeneratedRefineContent(data.text));
             dispatch(setShowAIOptions(false));
 
-            // We're no longer using type effect for refine
-            // startTypeEffect(data.text, "refine");
-
             // Make sure we keep the selection range active
-            if (!selectedRange || previousSelectionRef.current) {
+            if (previousSelectionRef.current) {
               dispatch(setSelectedRange(previousSelectionRef.current));
+              dispatch(setIsTextSelected(true));
             }
-            focusAndSelectText();
+
+            // Always ensure the selection is preserved
+            setTimeout(() => {
+              focusAndSelectText();
+            }, 50);
           },
           onError: () => {
             toast({
@@ -151,6 +154,9 @@ export const useAIContent = ({
     // Clean selected text
     const cleanSelectedText = cleanContent(selText);
 
+    // Store the current selection to preserve it
+    previousSelectionRef.current = selRange;
+
     // Wrap selected text in <focus> tags
     const wholeText =
       content.substring(0, selStart) +
@@ -166,14 +172,14 @@ export const useAIContent = ({
         onSuccess: (data: { text: string }) => {
           dispatch(setGeneratedRefineContent(data.text));
 
-          // We're no longer using type effect for refine
-          // startTypeEffect(data.text, "refine");
-
           // Keep the selection range active
-          if (!selectedRange || previousSelectionRef.current) {
-            dispatch(setSelectedRange(previousSelectionRef.current));
-          }
-          focusAndSelectText();
+          dispatch(setSelectedRange(previousSelectionRef.current));
+          dispatch(setIsTextSelected(true));
+
+          // Ensure focus is maintained
+          setTimeout(() => {
+            focusAndSelectText();
+          }, 50);
         },
         onError: () => {
           toast({

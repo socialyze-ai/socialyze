@@ -75,7 +75,7 @@ const AIOptions: React.FC<AIOptionsProps> = ({
             onClick={handleButtonClick(handleCompleteWithAI)}
             className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
             variant="ghost"
-            disabled={isPendingContent}
+            disabled={isPendingContent || isPendingHashTags}
           >
             {isPendingContent ? (
               <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />
@@ -97,7 +97,7 @@ const AIOptions: React.FC<AIOptionsProps> = ({
             onClick={handleButtonClick(handleGenerateHashtags)}
             className="w-full justify-start text-left rounded-sm hover:bg-blue-50 p-1.5 h-auto"
             variant="ghost"
-            disabled={isPendingHashTags}
+            disabled={isPendingHashTags || isPendingContent}
           >
             {isPendingHashTags ? (
               <Loader2 className="h-3 w-3 text-blue-600 animate-spin mx-auto" />

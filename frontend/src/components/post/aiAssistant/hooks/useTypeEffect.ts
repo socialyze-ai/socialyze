@@ -12,7 +12,7 @@ interface UseTypeEffectReturn {
   resetTypeEffect: () => void;
 }
 
-export const useTypeEffect = (baseTypeSpeed = 20): UseTypeEffectReturn => {
+export const useTypeEffect = (baseTypeSpeed = 20, onComplete?: () => void): UseTypeEffectReturn => {
   const [isTypingEffect, setIsTypingEffect] = useState(false);
   const [typedContent, setTypedContent] = useState("");
   const [fullContent, setFullContent] = useState("");
@@ -57,6 +57,10 @@ export const useTypeEffect = (baseTypeSpeed = 20): UseTypeEffectReturn => {
     setFullContent("");
     setContentType(null);
     setShowTypeControls(false);
+
+    if (onComplete) {
+      onComplete();
+    }
   };
 
   return {
