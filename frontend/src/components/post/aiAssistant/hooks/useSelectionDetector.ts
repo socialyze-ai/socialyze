@@ -10,9 +10,14 @@ import {
 interface SelectionDetectorProps {
   editorRef: React.RefObject<HTMLDivElement>;
   isTyping: boolean;
+  onBeforeSelectionDetected?: () => void;
 }
 
-export const useSelectionDetector = ({ editorRef, isTyping }: SelectionDetectorProps) => {
+export const useSelectionDetector = ({
+  editorRef,
+  isTyping,
+  onBeforeSelectionDetected,
+}: SelectionDetectorProps) => {
   const dispatch = useDispatch();
 
   // Helper function to get the text directly from the editor
@@ -25,6 +30,11 @@ export const useSelectionDetector = ({ editorRef, isTyping }: SelectionDetectorP
   // Modified function to detect and handle text selection
   const detectTextSelection = useCallback(() => {
     if (!editorRef.current || isTyping) return null;
+
+    // Call the callback if provided
+    if (onBeforeSelectionDetected) {
+      onBeforeSelectionDetected();
+    }
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return null;
@@ -55,7 +65,7 @@ export const useSelectionDetector = ({ editorRef, isTyping }: SelectionDetectorP
     dispatch(setIsTextSelected(true));
 
     return { selectedText, selectionRange };
-  }, [editorRef, isTyping, dispatch, getEditorText]);
+  }, [editorRef, isTyping, dispatch, getEditorText, onBeforeSelectionDetected]);
 
   // Function to clear any text selection in the DOM
   const clearSelection = useCallback(() => {

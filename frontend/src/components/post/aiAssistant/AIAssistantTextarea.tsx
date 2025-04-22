@@ -106,7 +106,22 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   });
 
   const { getSelectionCoordinates } = useSelectionCoordinates(editorRef);
-  const { detectTextSelection, clearSelection } = useSelectionDetector({ editorRef, isTyping });
+  const { detectTextSelection, clearSelection: originalClearSelection } = useSelectionDetector({
+    editorRef,
+    isTyping,
+    onBeforeSelectionDetected: () => {
+      // Reset refine preview before detecting a new selection
+      if (showRefinePreview) {
+        setShowRefinePreview(false);
+      }
+    },
+  });
+
+  // Wrap the original clearSelection to also close refine preview
+  const clearSelection = () => {
+    setShowRefinePreview(false);
+    originalClearSelection();
+  };
 
   // Keep a reference to the current content for selection calculations
   useEffect(() => {
@@ -161,7 +176,11 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       ) {
         dispatch(setShowAIOptions(false));
         dispatch(resetTextState());
-        setShowRefinePreview(false);
+
+        // Explicitly reset refine preview state
+        if (showRefinePreview) {
+          setShowRefinePreview(false);
+        }
       }
     };
 
@@ -172,7 +191,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [dispatch]);
+  }, [dispatch, showRefinePreview]);
 
   // Handle editor input
   const handleEditorInput = (e: React.FormEvent<HTMLElement>) => {
@@ -202,6 +221,11 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   // Handle text selection with the corrected approach
   const handleUpdatedTextSelection = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (!editorRef.current || isTyping) return;
+
+    // If there's an active refine preview, close it first
+    if (showRefinePreview) {
+      setShowRefinePreview(false);
+    }
 
     // Use a short timeout to ensure selection is complete
     setTimeout(() => {
