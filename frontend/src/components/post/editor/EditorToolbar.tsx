@@ -52,13 +52,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
     const selectedRatio = editorState.selectedRatio;
 
     const handleRotateLeft = () => {
-      onStateChange({ rotation: state.rotation - 90 });
+      onStateChange({ rotation: state.rotation + 90 });
       // This will trigger a redraw immediately
       setTimeout(() => drawImage(), 0);
     };
 
     const handleRotateRight = () => {
-      onStateChange({ rotation: state.rotation + 90 });
+      onStateChange({ rotation: state.rotation - 90 });
       // This will trigger a redraw immediately
       setTimeout(() => drawImage(), 0);
     };

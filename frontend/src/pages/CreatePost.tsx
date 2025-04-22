@@ -198,7 +198,9 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent,
+        text: finalContent.includes("<br>")
+          ? finalContent.replace(/<br>/g, "")
+          : finalContent || "",
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
@@ -288,7 +290,9 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent,
+        text: finalContent.includes("<br>")
+          ? finalContent.replace(/<br>/g, "")
+          : finalContent || "",
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,

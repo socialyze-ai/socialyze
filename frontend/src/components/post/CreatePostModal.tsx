@@ -246,7 +246,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
       const postData = {
         channelId: channelId,
-        text: finalContent,
+        text: finalContent.includes("<br>")
+          ? finalContent.replace(/<br>/g, "")
+          : finalContent || "",
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
@@ -632,7 +634,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
               <div className="h-fit">
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
-                    content={contentByChannel[activeChannel] || ""}
+                    content={
+                      contentByChannel[activeChannel].includes("<br>")
+                        ? contentByChannel[activeChannel].replace(/<br>/g, "")
+                        : contentByChannel[activeChannel] || ""
+                    }
                     channel={getChannelById(activeChannel)!}
                     mediaUrls={mediaByChannel[activeChannel]?.map((media) => media.url) || []}
                   />

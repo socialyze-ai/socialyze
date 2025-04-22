@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Undo, Redo, X, Check } from "lucide-react";
+import { Undo, Redo, X, Check, Loader2 } from "lucide-react";
 import EditorToolbar from "./EditorToolbar";
 import EditorCanvas from "./EditorCanvas";
 import EditorControls from "./EditorControls";
@@ -26,6 +26,8 @@ import {
 } from "@/redux/slices/imageEditor.slice";
 import { ImageEditorState } from "./types";
 import { Media } from "../MediaUploader";
+import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import { v4 as uuidv4 } from "uuid";
 
 interface ImageEditorProps {
   selectedImage: Media;
@@ -37,6 +39,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
 
   // Redux hooks
   const dispatch = useDispatch();
@@ -590,13 +593,62 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
         setHasUnsavedChanges(false);
       }
 
-      // Then save the edited image
+      // Get the edited image as data URL
       const dataURL = canvasRef.current.toDataURL("image/png");
-      onSave(dataURL, selectedImage);
-      toast({
-        title: "Image edited",
-        description: "Your image has been edited successfully.",
-      });
+
+      // Convert data URL to Blob
+      const fetchResponse = fetch(dataURL);
+      fetchResponse
+        .then((res) => res.blob())
+        .then((blob) => {
+          // Create a File object from the blob
+          const file = new File([blob], `edited_image_${selectedImage.id}.png`, {
+            type: "image/png",
+          });
+
+          // Create FormData
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("postId", uuidv4());
+
+          // Upload the edited image
+          uploadMedia(formData, {
+            onSuccess: (response) => {
+              if (response?.data?.url) {
+                // Call the onSave with the server URL instead of data URL
+                onSave(response.data.url, selectedImage);
+                toast({
+                  title: "Image edited",
+                  description: "Your image has been edited and uploaded successfully.",
+                });
+              } else {
+                throw new Error("Invalid response format");
+              }
+            },
+            onError: (error) => {
+              console.error("Error uploading edited image:", error);
+              toast({
+                title: "Error uploading image",
+                description: "There was an error uploading your edited image.",
+                variant: "destructive",
+              });
+
+              // Fallback to local data URL if upload fails
+              onSave(dataURL, selectedImage);
+            },
+          });
+        })
+        .catch((error) => {
+          console.error("Error processing image:", error);
+          toast({
+            title: "Error processing image",
+            description: "There was an error processing your image.",
+            variant: "destructive",
+          });
+
+          // Fallback to local data URL if processing fails
+          onSave(dataURL, selectedImage);
+        });
     } catch (error) {
       toast({
         title: "Error saving image",
@@ -692,9 +744,17 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={!hasUnsavedChanges}>
-          <Check className="h-4 w-4 mr-1" />
-          Save Changes
+        <Button onClick={handleSave} disabled={!hasUnsavedChanges || isUploading}>
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            </>
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-1" />
+              Save Changes
+            </>
+          )}
         </Button>
       </div>
     </div>

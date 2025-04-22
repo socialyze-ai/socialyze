@@ -229,8 +229,6 @@ const HashtagModal = () => {
         );
       }
     }
-
-    dispatch(insertHashtagsFromGroup(groupId));
   };
 
   const displayGroups = hashtagManagers || hashtagGroups;

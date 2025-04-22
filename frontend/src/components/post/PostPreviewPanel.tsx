@@ -81,8 +81,14 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
 
         {selectedChannels.map((channelId) => {
           const channel = channels.find((c) => c.id === channelId);
+          const filterContent = getPreviewContent();
+
+          const contentToUse = filterContent.includes("<br>")
+            ? filterContent.replace(/<br>/g, "")
+            : filterContent;
+
           return channel && currentPreviewTab === channel.id ? (
-            <PostPreview key={channel.id} content={getPreviewContent()} channel={channel} />
+            <PostPreview key={channel.id} content={contentToUse} channel={channel} />
           ) : null;
         })}
       </CardContent>
