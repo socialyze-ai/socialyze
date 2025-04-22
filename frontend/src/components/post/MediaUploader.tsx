@@ -19,7 +19,7 @@ import {
   setMediaForChannel,
   selectMediaByChannel,
 } from "@/redux/slices/postCreation.slice";
-import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import { useUploadMedia, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "@/components/ui/use-toast";
 
 export interface Media {
@@ -522,12 +522,52 @@ const MediaModal = ({
             title="Unsplash"
             description="Add media to your post"
             triggerButtonText="Unsplash"
-            submitButtonText="Confirm"
-            onSubmit={handleConfirmSelection}
             children={
               <UnsplashMediaModalContent
                 selectedMediaContent={selectedMediaContent}
                 setSelectedMediaContent={setSelectedMediaContent}
+                onImageSelect={(newMedia) => {
+                  if (onMediaSelect) {
+                    onMediaSelect([...mediaUrls, newMedia]);
+                  } else {
+                    // Handle media update based on sync state and active channel
+                    const updatedMedia = [...mediaUrls, newMedia];
+
+                    // If we're in a specific channel context and unsynced
+                    if (channelId && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we have an active channel and not synced
+                    else if (activeChannel && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we're synced, use the sync action to update all channels
+                    else if (isContentSynced && activeChannel) {
+                      dispatch(
+                        syncMediaAcrossChannels({
+                          sourceChannelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // Fallback for global context
+                    else {
+                      dispatch(setMediaUrls(updatedMedia));
+                    }
+                  }
+                  setIsOpen(false);
+                }}
+                closeModal={() => setIsOpen(false)}
               />
             }
           />

@@ -1,9 +1,4 @@
-import {
-  BACKEND_URL,
-  UNSPALSH_ACCESS_KEY,
-  UNSPLASH_API_URL,
-  UNSPLASH_IMAGE_PER_PAGE,
-} from "@/config/config";
+import { BACKEND_URL } from "@/config/config";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HARD_CODED_TOKEN, makeRequest } from "./utils";
 
@@ -40,5 +35,21 @@ export const useGetImages = (filters?: GetImagesPayload) => {
       return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, HARD_CODED_TOKEN);
     },
     enabled: !!filters,
+  });
+};
+
+export const useUploadUnsplashMedia = () => {
+  const uploadUnsplashMedia = async (body: { url: string; postId: string }) => {
+    const { data } = await makeRequest(
+      BACKEND_URL + "media/uploadMediaForUnsplash",
+      "POST",
+      body,
+      HARD_CODED_TOKEN,
+    );
+    return data;
+  };
+
+  return useMutation({
+    mutationFn: uploadUnsplashMedia,
   });
 };
