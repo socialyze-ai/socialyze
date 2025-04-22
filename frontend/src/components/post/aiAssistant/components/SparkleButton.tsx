@@ -15,6 +15,7 @@ const SparkleButton: React.FC<SparkleButtonProps> = ({
   hasScrollbar,
   isPostModal,
 }) => {
+  if (isTextSelected) return null;
   return (
     <div
       className={cn(
