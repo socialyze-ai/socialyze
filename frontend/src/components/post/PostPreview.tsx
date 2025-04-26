@@ -1,31 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SocialChannel } from "@/context/PostsContext";
-import { formatContentWithHashtags } from "@/utils/formatContent";
-import {
-  ThumbsUp,
-  MessageCircle,
-  RefreshCw,
-  Send,
-  Heart,
-  MessageSquare,
-  Repeat,
-  Share,
-} from "lucide-react";
-import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
 import { useSelector } from "react-redux";
-
-// Define image upload limits per platform
-const MEDIA_UPLOAD_LIMITS = {
-  instagram: 20,
-  facebook: 80,
-  linkedin: 20,
-  twitter: 4,
-  default: 10,
-};
+import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { formatDate } from "@/utils/dateUtils";
+import { formatContentWithHashtags } from "@/utils/formatContent";
 
 interface PostPreviewProps {
   content: string;
   channel: SocialChannel;
+  mediaUrls?: string[];
   className?: string;
 }
 
@@ -35,18 +20,23 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
   // Maximum number of images to display in the grid
   const MAX_VISIBLE_IMAGES = 5;
 
+  const MEDIA_UPLOAD_LIMITS = {
+    instagram: 20,
+    facebook: 80,
+    linkedin: 20,
+    twitter: 4,
+    default: 10,
+  };
+
   // Get the maximum allowed images for this channel type
-  const maxAllowedImages =
-    MEDIA_UPLOAD_LIMITS[channelType] || MEDIA_UPLOAD_LIMITS.default;
+  const maxAllowedImages = MEDIA_UPLOAD_LIMITS[channelType] || MEDIA_UPLOAD_LIMITS.default;
 
   // Filter media to only include the allowed number for this platform
   const allowedMedia = mediaUrls.slice(0, maxAllowedImages);
 
   // Calculate how many additional images there are beyond what's shown
   const additionalImages =
-    allowedMedia.length > MAX_VISIBLE_IMAGES
-      ? allowedMedia.length - MAX_VISIBLE_IMAGES
-      : 0;
+    allowedMedia.length > MAX_VISIBLE_IMAGES ? allowedMedia.length - MAX_VISIBLE_IMAGES : 0;
 
   // Only show up to MAX_VISIBLE_IMAGES in the grid
   const visibleMedia = allowedMedia.slice(0, MAX_VISIBLE_IMAGES);
@@ -108,7 +98,7 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
       </div>
     );
   } else if (mediaCount === 4 && channelType === "twitter") {
-    // 4 images layout
+    // 4 images layout for Twitter
     return (
       <div className="grid grid-cols-6 gap-1 mt-3">
         <div className="col-span-3 aspect-video overflow-hidden">
@@ -150,32 +140,28 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
 
   // Helper function to render media items
   function renderMediaItem(media, index, totalItems, additionalImages) {
-    const isVideo = media.type === "video";
+    const isVideo =
+      (typeof media === "object" && media.type === "video") ||
+      (typeof media === "string" && (media.endsWith(".mp4") || media.includes("video")));
+    const url = typeof media === "object" ? media.url : media;
 
     // Check if this is the last visible item and there are additional images
-    const showOverlay =
-      index === MAX_VISIBLE_IMAGES - 1 && additionalImages > 0;
+    const showOverlay = index === MAX_VISIBLE_IMAGES - 1 && additionalImages > 0;
 
     return (
       <div className="relative w-full h-full">
         {isVideo ? (
           <video className="w-full h-full object-cover">
-            <source src={media.url} type="video/mp4" />
+            <source src={url} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         ) : (
-          <img
-            src={media.url}
-            alt="Post media"
-            className="w-full h-full object-cover"
-          />
+          <img src={url} alt="Post media" className="w-full h-full object-cover" />
         )}
 
         {showOverlay && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">
-              +{additionalImages}
-            </span>
+            <span className="text-white text-2xl font-bold">+{additionalImages}</span>
           </div>
         )}
       </div>
@@ -186,9 +172,14 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
 const PostPreview: React.FC<PostPreviewProps> = ({
   content,
   channel,
+  mediaUrls = [],
   className,
 }) => {
-  const { mediaUrls } = useSelector(selectPostCreation);
+  const { scheduledDate } = useSelector(selectPostCreation);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  // Always call useSelector unconditionally, then determine which media to use
+  const globalMediaUrls = useSelector(selectPostCreation).mediaUrls;
+  const mediaToUse = mediaUrls.length > 0 ? mediaUrls : globalMediaUrls;
 
   const renderTwitterPreview = () => (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden max-w-md">
@@ -196,19 +187,19 @@ const PostPreview: React.FC<PostPreviewProps> = ({
         <img
           src={channel.profileImage}
           alt={channel.name}
-          className="w-12 h-12 rounded-full mr-3"
+          className="w-10 h-10  rounded-full mr-3"
         />
         <div className="w-full">
           <div className="flex items-center">
             <span className="font-bold text-sm">{channel.name}</span>
             <span className="text-gray-500 text-sm ml-1">
-              @{channel.name.toLowerCase().replace(/\s/g, "")}
+              @{channel.username || channel.name.toLowerCase().replace(/\s/g, "")}
             </span>
             <span className="mx-1 text-gray-500">·</span>
-            <span className="text-gray-500 text-sm">Just now</span>
+            <span className="text-gray-500 text-sm">{formatDate(scheduledDate || new Date())}</span>
           </div>
-          <div className="mt-1">{formatContentWithHashtags(content)}</div>
-          <MediaGrid mediaUrls={mediaUrls} channelType="twitter" />
+          <div className="mt-1 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+          <MediaGrid mediaUrls={mediaToUse} channelType="twitter" />
           <div className="flex justify-between mt-3 text-gray-500 px-2">
             <button className="flex items-center gap-1 hover:text-blue-500">
               <MessageCircle size={18} />
@@ -233,41 +224,29 @@ const PostPreview: React.FC<PostPreviewProps> = ({
       <div className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img
-              src={channel.profileImage}
-              alt={channel.name}
-              className="w-10 h-10 rounded-full mr-2"
-            />
+            <Avatar className="w-10 h-10 rounded-full mr-2">
+              <AvatarImage src={channel.profileImage} />
+              <AvatarFallback className="capitalize font-semibold text-xl">
+                {channel.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+
             <div>
               <div className="font-medium">{channel.name}</div>
               <div className="text-xs text-gray-500">
-                Just Now · <span>🌎</span>
+                {formatDate(scheduledDate || new Date())} · <span>🌎</span>
               </div>
             </div>
           </div>
           <button className="text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="19" cy="12" r="1" />
-              <circle cx="5" cy="12" r="1" />
-            </svg>
+            <MoreHorizontal size={20} />
           </button>
         </div>
-        <div className="mt-3">{formatContentWithHashtags(content)}</div>
-        <MediaGrid mediaUrls={mediaUrls} channelType="facebook" />
+        <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+        <MediaGrid mediaUrls={mediaToUse} channelType="facebook" />
         <div className="border-t border-b border-gray-200 mt-3 py-1 flex justify-between text-gray-600">
           <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
-            <ThumbsUp size={18} /> Like
+            <Heart size={18} /> Like
           </button>
           <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
             <MessageCircle size={18} /> Comment
@@ -284,35 +263,22 @@ const PostPreview: React.FC<PostPreviewProps> = ({
     <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
       <div className="flex items-center justify-between p-2 border-b">
         <div className="flex items-center">
-          <img
-            src={channel.profileImage}
-            alt={channel.name}
-            className="w-8 h-8 rounded-full mr-2"
-          />
+          <Avatar className="w-10 h-10 rounded-full mr-2">
+            <AvatarImage src={channel.profileImage} />
+            <AvatarFallback className="capitalize font-semibold text-xl">
+              {channel.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
           <span className="font-medium text-sm">
-            {channel.name.toLowerCase().replace(/\s/g, "-")}
+            {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
           </span>
         </div>
         <button>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
+          <MoreHorizontal size={20} />
         </button>
       </div>
 
-      <MediaGrid mediaUrls={mediaUrls} channelType="instagram" />
+      <MediaGrid mediaUrls={mediaToUse} channelType="instagram" />
 
       <div className="p-3">
         <div className="flex justify-between mb-2">
@@ -346,10 +312,11 @@ const PostPreview: React.FC<PostPreviewProps> = ({
 
         <div className="text-sm">
           <span className="font-medium mr-2">
-            {channel.name.toLowerCase().replace(/\s/g, "-")}
+            {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
           </span>
           {formatContentWithHashtags(content)}
         </div>
+        <p className="text-gray-500 text-xs mt-1">{formatDate(scheduledDate || new Date())}</p>
       </div>
     </div>
   );
@@ -362,42 +329,28 @@ const PostPreview: React.FC<PostPreviewProps> = ({
             <img
               src={channel.profileImage}
               alt={channel.name}
-              className="w-12 h-12 rounded-full mr-3"
+              className="w-10 h-10  rounded-full mr-3"
             />
             <div>
               <div className="font-medium">{channel.name}</div>
               <div className="text-xs text-gray-500">
-                1h · <span>🌎</span>
+                {formatDate(scheduledDate || new Date())} · <span>🌎</span>
               </div>
             </div>
           </div>
           <button className="text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="19" cy="12" r="1" />
-              <circle cx="5" cy="12" r="1" />
-            </svg>
+            <MoreHorizontal size={20} />
           </button>
         </div>
-        <div className="mt-3">{formatContentWithHashtags(content)}</div>
-        <MediaGrid mediaUrls={mediaUrls} channelType="linkedin" />
+        <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+        <MediaGrid mediaUrls={mediaToUse} channelType="linkedin" />
         <div className="mt-3 flex justify-between text-gray-600 border-t pt-2">
           <button className="flex flex-col items-center">
-            <ThumbsUp size={18} />
+            <Heart size={18} />
             <span className="text-xs">Like</span>
           </button>
           <button className="flex flex-col items-center">
-            <MessageSquare size={18} />
+            <MessageCircle size={18} />
             <span className="text-xs">Comment</span>
           </button>
           <button className="flex flex-col items-center">
@@ -413,7 +366,6 @@ const PostPreview: React.FC<PostPreviewProps> = ({
     </div>
   );
 
-  // For cases not specifically handled
   const renderDefaultPreview = () => (
     <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-md">
       <div className="flex items-center space-x-3 mb-2">
@@ -426,12 +378,12 @@ const PostPreview: React.FC<PostPreviewProps> = ({
         </div>
         <div>
           <p className="font-medium">{channel.name}</p>
-          <p className="text-xs text-gray-500">Just now</p>
+          <p className="text-xs text-gray-500">{formatDate(scheduledDate || new Date())}</p>
         </div>
       </div>
 
-      <div className="mt-3 mb-3">{formatContentWithHashtags(content)}</div>
-      <MediaGrid mediaUrls={mediaUrls} channelType="default" />
+      <div className="mt-3 mb-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+      <MediaGrid mediaUrls={mediaToUse} channelType="default" />
     </div>
   );
 
@@ -450,7 +402,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
     }
   };
 
-  return <div className={className}>{renderPreviewByType()}</div>;
+  return <div className={`preview ${className || ""}`}>{renderPreviewByType()}</div>;
 };
 
 export default PostPreview;

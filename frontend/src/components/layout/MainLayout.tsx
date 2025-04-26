@@ -19,9 +19,7 @@ const ComingSoon = () => {
     <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center h-full w-full bg-white/80 backdrop-blur-sm">
       <div className="flex flex-col items-center justify-center">
         <p className="text-2xl font-bold">Coming Soon</p>
-        <p className="text-sm text-muted-foreground">
-          This feature is coming soon.
-        </p>
+        <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
       </div>
     </div>
   );
@@ -36,16 +34,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, title }) => {
   const location = useLocation();
 
   // Restricted paths that are not yet implemented
-  const comingSoonPaths = [
-    "/calendar",
-    "/analytics",
-    "/settings",
-    "/dashboard",
-  ];
+  const comingSoonPaths = ["/calendar", "/analytics", "/settings"];
 
-  const showComingSoon = comingSoonPaths.some((path) =>
-    location.pathname.includes(path)
-  );
+  const showComingSoon = comingSoonPaths.some((path) => location.pathname.includes(path));
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -80,10 +71,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, title }) => {
       ) : (
         // Desktop layout
         <div className="flex h-screen overflow-hidden">
-          <Sidebar
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={toggleSidebar}
-          />
+          <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
           <div className="flex flex-col flex-1 overflow-hidden">
             <Header title={title} user={user} />
             <main className="relative flex-1 overflow-y-auto p-6">

@@ -1,53 +1,110 @@
-import { useGetUnsplashMedia } from "@/api/apiHooks/useMedia";
+import { useGetImages, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect } from "react";
 import { DebounceInput } from "react-debounce-input";
-import { useSelector } from "react-redux";
-import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 
 import { Media } from "../MediaUploader";
+import { toast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+
+interface UnsplashImage {
+  url: string;
+  download_location: string;
+  username: string;
+  profile_url: string;
+  alt_description: string;
+  width: number;
+  height: number;
+}
+
 const UnsplashMediaModalContent = ({
   selectedMediaContent,
   setSelectedMediaContent,
+  onImageSelect,
+  closeModal,
 }: {
   selectedMediaContent: Media[];
   setSelectedMediaContent: (media: Media[]) => void;
+  onImageSelect?: (image: Media) => void;
+  closeModal?: () => void;
 }) => {
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<UnsplashImage[]>([]);
   const [page, setPage] = useState(1);
   const [searchKeyword, setSearchKeyword] = useState("trending");
-  const { data: unsplashData } = useGetUnsplashMedia(searchKeyword, page);
+  const [isSelecting, setIsSelecting] = useState(false);
 
-  const { mediaUrls } = useSelector(selectPostCreation);
+  const { mutate: generateGCSUrl, isPending: isGenerateGCSUrlPending } = useUploadUnsplashMedia();
+
+  const {
+    data: unsplashData,
+    isLoading: isLoadingUnsplash,
+    isError: isErrorUnsplash,
+  } = useGetImages({
+    provider: "unsplash",
+    search: searchKeyword,
+    page: page,
+    limit: 10,
+    order: "latest",
+  });
 
   useEffect(() => {
-    if (unsplashData && unsplashData.data.results) {
-      setImages((prevImages) => [...prevImages, ...unsplashData.data.results]);
+    if (unsplashData?.data?.media) {
+      setImages((prevImages) => [...prevImages, ...unsplashData.data.media]);
     }
-
-    setSelectedMediaContent(mediaUrls);
   }, [unsplashData]);
 
   const loadMoreImages = () => {
     setPage((prevPage) => prevPage + 1);
   };
 
-  const toggleImageSelection = (imageUrl: string) => {
-    const isSelected = selectedMediaContent.some(
-      (media) => media.url === imageUrl
-    );
-    const updatedMediaUrls = isSelected
-      ? selectedMediaContent.filter((media) => media.url !== imageUrl)
-      : [
-          ...selectedMediaContent,
-          {
-            id: uuidv4(),
-            url: imageUrl,
+  const handleSelectImage = (image: UnsplashImage) => {
+    setIsSelecting(true);
+
+    const postId = uuidv4();
+
+    generateGCSUrl(
+      { url: image.download_location, postId },
+      {
+        onSuccess: (data) => {
+          const newMedia: Media = {
+            id: postId,
+            url: data.url || image.url, // Use the returned URL or fallback to the preview URL
             type: "image" as const,
-          },
-        ];
-    setSelectedMediaContent(updatedMediaUrls);
+          };
+
+          // If there's a direct selection handler, use it
+          if (onImageSelect) {
+            onImageSelect(newMedia);
+          } else {
+            // Otherwise update the selection state
+            setSelectedMediaContent([newMedia]);
+          }
+
+          if (closeModal) {
+            closeModal();
+          }
+
+          toast({
+            title: "Success",
+            description: "Unsplash image selected successfully",
+          });
+        },
+        onError: (error) => {
+          console.error("Error uploading Unsplash image:", error);
+          setIsSelecting(false);
+
+          toast({
+            title: "Error",
+            description: "Failed to select Unsplash image",
+            variant: "destructive",
+          });
+        },
+        onSettled: () => {
+          setIsSelecting(false);
+        },
+      },
+    );
   };
 
   return (
@@ -60,34 +117,74 @@ const UnsplashMediaModalContent = ({
         placeholder="Search for images"
         className="p-2 border rounded"
       />
-      <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
-        <div className="grid grid-cols-3 gap-2">
-          {images.map((image: any) => {
-            const isSelected = selectedMediaContent.some(
-              (media) => media.url === image.urls.small
-            );
+      <div className="flex flex-col gap-2 min-h-[20dvh] max-h-[60vh] overflow-y-auto">
+        {isLoadingUnsplash || isSelecting || isGenerateGCSUrlPending ? (
+          <div className="flex flex-col items-center justify-center my-10">
+            <Loader2 className="animate-spin text-blue-500" size={32} />
+            <p className="mt-2 text-lg font-semibold text-gray-700">
+              {isGenerateGCSUrlPending ? "Processing selected Image..." : "Loading..."}
+            </p>
+          </div>
+        ) : isErrorUnsplash ? (
+          <div className="text-center text-red-500">Error loading images</div>
+        ) : (
+          <div className="columns-3 gap-4 p-2">
+            {images.map((image) => {
+              const aspectRatio = (image.height / image.width) * 100;
 
-            return (
-              <img
-                key={image.id}
-                src={image.urls.small}
-                alt={image.alt_description}
-                className={cn(
-                  "cursor-pointer rounded-md",
-                  isSelected && "border-4 border-blue-500"
-                )}
-                onClick={() => toggleImageSelection(image.urls.small)}
-              />
-            );
-          })}
-        </div>
+              return (
+                <div key={image.url} className="mb-4 break-inside-avoid">
+                  <div
+                    className="relative w-full"
+                    style={{
+                      paddingBottom: `${aspectRatio}%`,
+                    }}
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.alt_description}
+                      className="absolute top-0 left-0 w-full h-full object-cover cursor-pointer rounded-md hover:ring-2 hover:ring-sky-500"
+                      onClick={() => handleSelectImage(image)}
+                    />
+                  </div>
 
-        <button
-          onClick={loadMoreImages}
-          className="self-center mt-4 p-2 bg-blue-500 text-white rounded text-sm"
-        >
-          Load More
-        </button>
+                  <div className="flex items-center gap-1 text-xs group mt-1">
+                    <a
+                      href={image.profile_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-700 flex items-center gap-1"
+                    >
+                      <span className="underline">{image.username}</span>
+                    </a>
+
+                    <div className="items-center transition-opacity duration-1000 ease-in-out opacity-0 group-hover:opacity-100">
+                      <span className="mr-1">for</span>
+
+                      <a
+                        href={image.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        Unsplash
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!isLoadingUnsplash && !isSelecting && !isGenerateGCSUrlPending && (
+          <button
+            onClick={loadMoreImages}
+            className="self-center mt-4 p-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+          >
+            Load More
+          </button>
+        )}
       </div>
     </div>
   );

@@ -14,12 +14,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import CreatePostModal from "../post/CreatePostModal";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SidebarProps {
@@ -44,11 +39,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: "Dashboard",
       href: "/dashboard",
     },
-    {
-      icon: PlusCircle,
-      label: "Create",
-      href: "/create",
-    },
+    ...(isMobile
+      ? [
+          {
+            icon: PlusCircle,
+            label: "Create",
+            href: "/create",
+          },
+        ]
+      : []),
     {
       icon: Calendar,
       label: "Calendar",
@@ -88,23 +87,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div
         className={cn(
           "h-full flex flex-col bg-white border-r transition-all duration-300",
-          isMobile ? "w-full" : collapsed ? "w-20" : "w-52"
+          isMobile ? "w-full" : collapsed ? "w-20" : "w-52",
         )}
       >
         <div className="relative p-4">
           <Link to="/dashboard" onClick={handleNavClick}>
-            <div
-              className={cn(
-                "flex items-center space-x-2 mb-6",
-                collapsed && "justify-center"
-              )}
-            >
+            <div className={cn("flex items-center space-x-2 mb-6", collapsed && "justify-center")}>
               <div className="h-8 w-8 rounded-md bg-buffer-blue flex items-center justify-center text-white font-bold">
                 S
               </div>
-              {!collapsed && (
-                <span className="text-xl font-bold">Socialyze</span>
-              )}
+              {!collapsed && <span className="text-xl font-bold">Socialyze</span>}
             </div>
           </Link>
 
@@ -148,30 +140,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                       currentPath === item.href
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      collapsed && "justify-center px-2"
+                      collapsed && "justify-center px-2",
                     )}
                   >
-                    <item.icon
-                      className={cn("h-5 w-5", !collapsed && "mr-3")}
-                    />
+                    <item.icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
                     {!collapsed && item.label}
                   </Link>
                 </TooltipTrigger>
-                {collapsed && (
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                )}
+                {collapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
               </Tooltip>
             ))}
           </nav>
         </div>
 
         <div className="mt-auto p-4 border-t">
-          <div
-            className={cn(
-              "flex items-center",
-              collapsed ? "justify-center" : "space-x-3"
-            )}
-          >
+          <div className={cn("flex items-center", collapsed ? "justify-center" : "space-x-3")}>
             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-sm font-medium">JD</span>
             </div>
@@ -184,10 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <CreatePostModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-        />
+        <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
       </div>
     </TooltipProvider>
   );

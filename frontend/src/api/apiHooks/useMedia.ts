@@ -1,32 +1,15 @@
-import {
-  UNSPALSH_ACCESS_KEY,
-  UNSPLASH_API_URL,
-  UNSPLASH_IMAGE_PER_PAGE,
-} from "@/config/config";
+import { BACKEND_URL } from "@/config/config";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { makeRequest } from "./utils";
-
-interface ApiResponse {
-  status: number;
-  data: any;
-  error: string | null;
-}
-
-interface UploadMediaData {
-  files: File[];
-}
+import { HARD_CODED_TOKEN, makeRequest } from "./utils";
 
 export const useUploadMedia = () => {
-  return useMutation<ApiResponse, unknown, UploadMediaData>({
-    mutationFn: async (data) => {
-      const formData = new FormData();
-      data.files.forEach((file) => {
-        formData.append("file", file);
-      });
+  return useMutation({
+    mutationFn: async (data: any) => {
       const response = await makeRequest(
-        `${UNSPLASH_API_URL}?client_id=${UNSPALSH_ACCESS_KEY}`,
+        BACKEND_URL + "media/uploadMedia",
         "POST",
-        formData
+        data,
+        HARD_CODED_TOKEN,
       );
       return {
         status: response.status,
@@ -37,42 +20,36 @@ export const useUploadMedia = () => {
   });
 };
 
-export const useGetUnsplashMedia = (
-  searchKeyword: string,
-  pageNumber: number
-) => {
-  return useQuery<ApiResponse>({
-    queryKey: ["unsplash-media", searchKeyword, pageNumber],
-    queryFn: async () => {
-      const response = await makeRequest(
-        `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET"
-      );
+interface GetImagesPayload {
+  provider: string;
+  search: string;
+  page: number;
+  limit: number;
+  order: string;
+}
 
-      return {
-        status: response.status,
-        data: response.data,
-        error: response.error || null,
-      };
+export const useGetImages = (filters?: GetImagesPayload) => {
+  return useQuery({
+    queryKey: ["media", filters],
+    queryFn: async () => {
+      return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, HARD_CODED_TOKEN);
     },
-    enabled: !!searchKeyword,
+    enabled: !!filters,
   });
 };
 
-export const useGetGiphyMedia = (searchKeyword: string, pageNumber: number) => {
-  return useQuery<ApiResponse>({
-    queryKey: ["giphy-media", searchKeyword, pageNumber],
-    queryFn: async () => {
-      const response = await makeRequest(
-        `${UNSPLASH_API_URL}?query=${searchKeyword}&page=${pageNumber}&per_page=${UNSPLASH_IMAGE_PER_PAGE}&client_id=${UNSPALSH_ACCESS_KEY}`,
-        "GET"
-      );
+export const useUploadUnsplashMedia = () => {
+  const uploadUnsplashMedia = async (body: { url: string; postId: string }) => {
+    const { data } = await makeRequest(
+      BACKEND_URL + "media/uploadMediaForUnsplash",
+      "POST",
+      body,
+      HARD_CODED_TOKEN,
+    );
+    return data;
+  };
 
-      return {
-        status: response.status,
-        data: response.data,
-        error: response.error || null,
-      };
-    },
+  return useMutation({
+    mutationFn: uploadUnsplashMedia,
   });
 };

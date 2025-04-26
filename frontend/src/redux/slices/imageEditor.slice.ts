@@ -1,94 +1,123 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {
-  ImageEditorState,
-  ImageEditHistory,
-} from "../../components/post/editor/types";
+import { ImageEditorState, ImageEditHistory } from "../../components/post/editor/types";
 import { RootState } from "../store";
 import { useSelector } from "react-redux";
 
 // Add the missing fields for crop position
-interface ExtendedImageEditorState extends ImageEditorState {
+export interface ExtendedImageEditorState extends ImageEditorState {
   cropX: number;
   cropY: number;
   selectedRatio: string;
+  originalImageUrl?: string; // Store the original image URL
+  croppedImageUrl?: string; // Store the cropped image URL
+  croppedWidth?: number; // Store the cropped image width
+  croppedHeight?: number; // Store the cropped image height
+}
+
+// Default editor state to use for new images
+export const defaultEditorState: ExtendedImageEditorState = {
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  rotation: 0,
+  zoom: 100,
+  flipHorizontal: false,
+  flipVertical: false,
+  blur: 0,
+  sharpen: 0,
+  grayscale: 0,
+  invert: 0,
+  enhance: 0,
+  cropMode: false,
+  cropStartX: 0,
+  cropStartY: 0,
+  cropEndX: 0,
+  cropEndY: 0,
+  isCropping: false,
+  activeTab: "adjust",
+  cropAspectRatio: undefined,
+  cropX: 0,
+  cropY: 0,
+  selectedRatio: "Free",
+  originalImageUrl: undefined,
+  croppedImageUrl: undefined,
+  croppedWidth: undefined,
+  croppedHeight: undefined,
+};
+
+// Store editor settings for each image by imageId
+interface ImageEditorSettings {
+  [imageId: string]: {
+    state: ExtendedImageEditorState;
+    history: {
+      states: ExtendedImageEditorState[];
+      canvasData: string[]; // To store canvas data URLs
+      index: number;
+    };
+    originalImageData: string | null;
+  };
 }
 
 // Initial state for the image editor
 const initialState: {
-  state: ExtendedImageEditorState;
-  history: {
-    states: ExtendedImageEditorState[];
-    canvasData: string[]; // To store canvas data URLs
-    index: number;
-  };
-  originalImageData: string | null;
+  currentImageId: string | null;
+  imageSettings: ImageEditorSettings;
 } = {
-  state: {
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    rotation: 0,
-    zoom: 100,
-    flipHorizontal: false,
-    flipVertical: false,
-    blur: 0,
-    sharpen: 0,
-    grayscale: 0,
-    invert: 0,
-    enhance: 0,
-    cropMode: false,
-    cropStartX: 0,
-    cropStartY: 0,
-    cropEndX: 0,
-    cropEndY: 0,
-    isCropping: false,
-    activeTab: "adjust",
-    cropAspectRatio: undefined,
-    // Additional fields for crop position
-    cropX: 0,
-    cropY: 0,
-    selectedRatio: "Free",
-  },
-  history: {
-    states: [], // Store full state objects for undo/redo
-    canvasData: [], // Store canvas data URLs
-    index: -1,
-  },
-  originalImageData: null,
+  currentImageId: null,
+  imageSettings: {},
 };
 
 const imageEditorSlice = createSlice({
   name: "imageEditor",
   initialState,
   reducers: {
-    updateEditorState: (
-      state,
-      action: PayloadAction<Partial<ExtendedImageEditorState>>
-    ) => {
-      state.state = { ...state.state, ...action.payload };
+    setCurrentImage: (state, action: PayloadAction<string>) => {
+      const imageId = action.payload;
+      state.currentImageId = imageId;
+
+      // Initialize state for this image if it doesn't exist
+      if (!state.imageSettings[imageId]) {
+        state.imageSettings[imageId] = {
+          state: { ...defaultEditorState },
+          history: {
+            states: [],
+            canvasData: [],
+            index: -1,
+          },
+          originalImageData: null,
+        };
+      }
+    },
+
+    updateEditorState: (state, action: PayloadAction<Partial<ExtendedImageEditorState>>) => {
+      if (!state.currentImageId) return;
+
+      state.imageSettings[state.currentImageId].state = {
+        ...state.imageSettings[state.currentImageId].state,
+        ...action.payload,
+      };
     },
 
     setOriginalImageData: (state, action: PayloadAction<string | null>) => {
-      state.originalImageData = action.payload;
+      if (!state.currentImageId) return;
+
+      state.imageSettings[state.currentImageId].originalImageData = action.payload;
     },
 
     // Save current state and canvas data to history
     saveToHistory: (state, action: PayloadAction<string>) => {
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
       // If we're not at the end of history, truncate future states
-      const newHistoryStates = state.history.states.slice(
-        0,
-        state.history.index + 1
-      );
-      const newHistoryCanvasData = state.history.canvasData.slice(
-        0,
-        state.history.index + 1
-      );
+      const newHistoryStates = settings.history.states.slice(0, settings.history.index + 1);
+      const newHistoryCanvasData = settings.history.canvasData.slice(0, settings.history.index + 1);
 
       // Add current state and canvas data to history
-      newHistoryStates.push({ ...state.state });
+      newHistoryStates.push({ ...settings.state });
       newHistoryCanvasData.push(action.payload);
 
-      state.history = {
+      settings.history = {
         states: newHistoryStates,
         canvasData: newHistoryCanvasData,
         index: newHistoryStates.length - 1,
@@ -97,19 +126,25 @@ const imageEditorSlice = createSlice({
 
     // Step back in history to undo
     undoEdit: (state) => {
-      if (state.history.index > 0) {
-        state.history.index -= 1;
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
+      if (settings.history.index > 0) {
+        settings.history.index -= 1;
         // Restore state from history
-        state.state = { ...state.history.states[state.history.index] };
+        settings.state = { ...settings.history.states[settings.history.index] };
       }
     },
 
     // Step forward in history to redo
     redoEdit: (state) => {
-      if (state.history.index < state.history.states.length - 1) {
-        state.history.index += 1;
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
+      if (settings.history.index < settings.history.states.length - 1) {
+        settings.history.index += 1;
         // Restore state from history
-        state.state = { ...state.history.states[state.history.index] };
+        settings.state = { ...settings.history.states[settings.history.index] };
       }
     },
 
@@ -119,10 +154,13 @@ const imageEditorSlice = createSlice({
       action: PayloadAction<{
         state: ExtendedImageEditorState;
         canvasData: string;
-      }>
+      }>,
     ) => {
-      state.state = action.payload.state;
-      state.history = {
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
+      settings.state = action.payload.state;
+      settings.history = {
         states: [action.payload.state],
         canvasData: [action.payload.canvasData],
         index: 0,
@@ -130,8 +168,11 @@ const imageEditorSlice = createSlice({
     },
 
     resetEditor: (state) => {
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
       const resetState = {
-        ...state.state,
+        ...settings.state,
         brightness: 100,
         contrast: 100,
         saturation: 100,
@@ -146,13 +187,16 @@ const imageEditorSlice = createSlice({
         enhance: 0,
       };
 
-      state.state = resetState;
+      settings.state = resetState;
       // We don't save to history here - that will be done after drawing
     },
 
     resetCropMode: (state) => {
-      state.state = {
-        ...state.state,
+      if (!state.currentImageId) return;
+
+      const settings = state.imageSettings[state.currentImageId];
+      settings.state = {
+        ...settings.state,
         cropMode: false,
         cropStartX: 0,
         cropStartY: 0,
@@ -165,20 +209,57 @@ const imageEditorSlice = createSlice({
     },
 
     setSelectedRatio: (state, action: PayloadAction<string>) => {
-      state.state.selectedRatio = action.payload;
+      if (!state.currentImageId) return;
+
+      state.imageSettings[state.currentImageId].state.selectedRatio = action.payload;
+    },
+
+    // Add a new action to store the original image URL
+    setOriginalImageUrl: (state, action: PayloadAction<string>) => {
+      if (!state.currentImageId) return;
+
+      state.imageSettings[state.currentImageId].state.originalImageUrl = action.payload;
     },
   },
 });
 
-// Create a selector to get the current canvas data
+// Create selectors to get the current state
+export const getCurrentEditorState = (state: RootState): ExtendedImageEditorState => {
+  const imageId = state.imageEditor.currentImageId;
+  if (!imageId || !state.imageEditor.imageSettings[imageId]) {
+    return defaultEditorState;
+  }
+  return state.imageEditor.imageSettings[imageId].state;
+};
+
+export const getCurrentHistory = (state: RootState) => {
+  const imageId = state.imageEditor.currentImageId;
+  if (!imageId || !state.imageEditor.imageSettings[imageId]) {
+    return { states: [], canvasData: [], index: -1 };
+  }
+  return state.imageEditor.imageSettings[imageId].history;
+};
+
+export const getCurrentOriginalImageData = (state: RootState): string | null => {
+  const imageId = state.imageEditor.currentImageId;
+  if (!imageId || !state.imageEditor.imageSettings[imageId]) {
+    return null;
+  }
+  return state.imageEditor.imageSettings[imageId].originalImageData;
+};
+
 export const getCurrentCanvasData = (state: RootState): string | null => {
-  return (
-    state.imageEditor.history.canvasData[state.imageEditor.history.index] ||
-    null
-  );
+  const imageId = state.imageEditor.currentImageId;
+  if (!imageId || !state.imageEditor.imageSettings[imageId]) {
+    return null;
+  }
+
+  const history = state.imageEditor.imageSettings[imageId].history;
+  return history.canvasData[history.index] || null;
 };
 
 export const {
+  setCurrentImage,
   updateEditorState,
   setOriginalImageData,
   saveToHistory,
@@ -188,6 +269,7 @@ export const {
   resetEditor,
   resetCropMode,
   setSelectedRatio,
+  setOriginalImageUrl,
 } = imageEditorSlice.actions;
 
 export default imageEditorSlice.reducer;

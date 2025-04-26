@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   updateEditorState,
   setSelectedRatio,
+  getCurrentEditorState,
 } from "@/redux/slices/imageEditor.slice";
 import { RootState } from "@/redux/store";
 import {
@@ -47,9 +48,8 @@ const aspectRatios = [
 const EditorToolbar: React.FC<EditorToolbarProps> = memo(
   ({ state, onStateChange, onCrop, onCancelCrop, drawImage }) => {
     const dispatch = useDispatch();
-    const selectedRatio = useSelector(
-      (state: RootState) => state.imageEditor.state.selectedRatio
-    );
+    const editorState = useSelector(getCurrentEditorState);
+    const selectedRatio = editorState.selectedRatio;
 
     const handleRotateLeft = () => {
       onStateChange({ rotation: state.rotation - 90 });
@@ -77,10 +77,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
       }, 0);
     };
 
-    const handleAspectRatioChange = (
-      name: string,
-      ratio: number | undefined
-    ) => {
+    const handleAspectRatioChange = (name: string, ratio: number | undefined) => {
       dispatch(setSelectedRatio(name));
       onStateChange({
         cropAspectRatio: ratio,
@@ -116,22 +113,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
                 <span className="ml-1 text-xs">Crop</span>
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2"
-                onClick={handleRotateLeft}
-              >
+              <Button variant="ghost" size="sm" className="p-2" onClick={handleRotateLeft}>
                 <RotateCcw className="h-5 w-5" />
                 <span className="ml-1 text-xs">Rotate Left</span>
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2"
-                onClick={handleRotateRight}
-              >
+              <Button variant="ghost" size="sm" className="p-2" onClick={handleRotateRight}>
                 <RotateCw className="h-5 w-5" />
                 <span className="ml-1 text-xs">Rotate Right</span>
               </Button>
@@ -170,9 +157,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
                     {aspectRatios.map((ratio) => (
                       <DropdownMenuItem
                         key={ratio.name}
-                        onClick={() =>
-                          handleAspectRatioChange(ratio.name, ratio.value)
-                        }
+                        onClick={() => handleAspectRatioChange(ratio.name, ratio.value)}
                       >
                         {ratio.name}
                       </DropdownMenuItem>
@@ -181,22 +166,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2"
-                onClick={handleCancelCrop}
-              >
+              <Button variant="ghost" size="sm" className="p-2" onClick={handleCancelCrop}>
                 <X className="h-5 w-5" />
                 <span className="ml-1 text-xs">Cancel</span>
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2"
-                onClick={onCrop}
-              >
+              <Button variant="ghost" size="sm" className="p-2" onClick={onCrop}>
                 <Check className="h-5 w-5" />
                 <span className="ml-1 text-xs">Apply</span>
               </Button>
@@ -205,7 +180,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 EditorToolbar.displayName = "EditorToolbar";

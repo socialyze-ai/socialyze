@@ -1,13 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { usePosts, SocialChannel } from "@/context/PostsContext";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,21 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  LogOut,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BACKEND_URL } from "@/config/config";
-import { useMessageListener } from "@/api/apiHooks/useChannel";
-import { useChannel } from "@/api/apiHooks/useChannel";
-import { addChannels } from "@/redux/slices/channels.slice";
-import { useDispatch } from "react-redux";
+import { useChannelAuth } from "@/api/apiHooks/useChannel";
+
 const Channels = () => {
   const { channels, addChannel, updateChannel, deleteChannel } = usePosts();
   const { toast } = useToast();
@@ -54,17 +37,7 @@ const Channels = () => {
     connected: true,
   });
 
-  const dispatch = useDispatch();
-  const { mutate: handleChannelAuth } = useChannel();
-  const { data: channelsData, isLoading } = useMessageListener();
-
-  console.log("channelsData", channelsData);
-
-  useEffect(() => {
-    if (channelsData) {
-      dispatch(addChannels(channelsData.data));
-    }
-  }, [channelsData]);
+  const { mutate: handleChannelAuth } = useChannelAuth();
 
   const handleChannelAuthMutation = (handle: string) => {
     handleChannelAuth(
@@ -72,11 +45,7 @@ const Channels = () => {
       {
         onSuccess: (data) => {
           console.log(data);
-          const authWindow = window.open(
-            data.url,
-            "_blank",
-            "width=600,height=600"
-          );
+          const authWindow = window.open(data.url, "_blank", "width=600,height=600");
 
           if (!authWindow) {
             toast({
@@ -90,9 +59,10 @@ const Channels = () => {
           toast({
             title: "Error",
             description: error.message,
+            variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -209,9 +179,7 @@ const Channels = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Your Channels</CardTitle>
-                <CardDescription>
-                  Connect and manage your social media accounts
-                </CardDescription>
+                <CardDescription>Connect and manage your social media accounts</CardDescription>
               </div>
               <DialogTrigger asChild>
                 <Button>Connect Channel</Button>
@@ -237,8 +205,7 @@ const Channels = () => {
                           <div className="flex items-center text-sm text-muted-foreground">
                             {getSocialIcon(channel.type)}
                             <span className="ml-1">
-                              {channel.type.charAt(0).toUpperCase() +
-                                channel.type.slice(1)}
+                              {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
                             </span>
                           </div>
                         </div>
@@ -273,9 +240,7 @@ const Channels = () => {
                           variant="ghost"
                           size="sm"
                           className="text-destructive"
-                          onClick={() =>
-                            handleDeleteChannel(channel.id, channel.name)
-                          }
+                          onClick={() => handleDeleteChannel(channel.id, channel.name)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Disconnect
@@ -287,9 +252,7 @@ const Channels = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  No channels connected yet
-                </p>
+                <p className="text-muted-foreground mb-4">No channels connected yet</p>
                 <DialogTrigger asChild>
                   <Button>Connect Your First Channel</Button>
                 </DialogTrigger>
@@ -314,8 +277,7 @@ const Channels = () => {
 
             <TabsContent value="existing" className="pt-4 space-y-4">
               <p className="text-sm text-muted-foreground">
-                Choose a platform to connect. You'll be redirected to authorize
-                Socialyze.
+                Choose a platform to connect. You'll be redirected to authorize Socialyze.
               </p>
 
               <div className="grid grid-cols-2 gap-4">
@@ -388,9 +350,7 @@ const Channels = () => {
                     id="channel-name"
                     placeholder="e.g. My Personal Twitter"
                     value={newChannel.name}
-                    onChange={(e) =>
-                      setNewChannel({ ...newChannel, name: e.target.value })
-                    }
+                    onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
                   />
                 </div>
               </div>
@@ -409,9 +369,7 @@ const Channels = () => {
       <Card>
         <CardHeader>
           <CardTitle>Available Social Networks</CardTitle>
-          <CardDescription>
-            Socialyze supports posting to these social networks
-          </CardDescription>
+          <CardDescription>Socialyze supports posting to these social networks</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -450,8 +408,7 @@ const Channels = () => {
                     <Instagram className="h-8 w-8 text-pink-600" />
                     <h3 className="font-semibold text-lg">Instagram</h3>
                     <p className="text-sm text-muted-foreground">
-                      Schedule posts, stories, and manage your Instagram
-                      presence.
+                      Schedule posts, stories, and manage your Instagram presence.
                     </p>
                   </div>
                 </div>
@@ -477,11 +434,7 @@ const Channels = () => {
                 <ComingSoonTag />
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <svg
-                      className="h-8 w-8 text-red-600"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
+                    <svg className="h-8 w-8 text-red-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 0a12 12 0 0 0-12 12 12 12 0 0 0 12 12 12 12 0 0 0 12-12 12 12 0 0 0-12-12zm0 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm2.5-14.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm-7 8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm7-2.23c-.65-.86-1.68-1.45-2.5-1.87-.48-.25-1.4-.68-2-.9.54 1.07 1.32 2.42 1.5 3.5.52-.17 2.4-.78 3-1.5V13c0 .2-.1.27 0 .27z" />
                     </svg>
                     <h3 className="font-semibold text-lg">Pinterest</h3>
@@ -498,11 +451,7 @@ const Channels = () => {
                 <ComingSoonTag />
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <svg
-                      className="h-8 w-8"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
+                    <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
                     </svg>
                     <h3 className="font-semibold text-lg">TikTok</h3>

@@ -2,7 +2,7 @@ import React, { forwardRef, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { ImageEditorState } from "./types";
 import { useDispatch, useSelector } from "react-redux";
-import { updateEditorState } from "@/redux/slices/imageEditor.slice";
+import { updateEditorState, getCurrentEditorState } from "@/redux/slices/imageEditor.slice";
 import { RootState } from "@/redux/store";
 
 interface EditorCanvasProps {
@@ -15,9 +15,7 @@ interface EditorCanvasProps {
 const EditorCanvas = forwardRef<HTMLCanvasElement, EditorCanvasProps>(
   ({ state, onStateChange, drawImage, imageUrl }, ref) => {
     const dispatch = useDispatch();
-    const editorState = useSelector(
-      (state: RootState) => state.imageEditor.state
-    );
+    const editorState = useSelector(getCurrentEditorState);
 
     // Instead of local state, use the values from Redux
     const crop = { x: editorState.cropX || 0, y: editorState.cropY || 0 };
@@ -29,17 +27,17 @@ const EditorCanvas = forwardRef<HTMLCanvasElement, EditorCanvasProps>(
           updateEditorState({
             cropX: newCrop.x,
             cropY: newCrop.y,
-          })
+          }),
         );
       },
-      [dispatch]
+      [dispatch],
     );
 
     const onZoomChange = useCallback(
       (newZoom: number) => {
         onStateChange({ zoom: newZoom * 100 });
       },
-      [onStateChange]
+      [onStateChange],
     );
 
     const onCropComplete = useCallback(
@@ -52,7 +50,7 @@ const EditorCanvas = forwardRef<HTMLCanvasElement, EditorCanvasProps>(
           cropEndY: croppedAreaPixels.y + croppedAreaPixels.height,
         });
       },
-      [onStateChange]
+      [onStateChange],
     );
 
     // Add this effect to ensure canvas updates when state changes
@@ -87,17 +85,14 @@ const EditorCanvas = forwardRef<HTMLCanvasElement, EditorCanvasProps>(
                 },
               }}
             />
-            <canvas
-              ref={ref}
-              className="max-w-full max-h-full object-contain"
-            />
+            <canvas ref={ref} className="max-w-full max-h-full object-contain" />
           </div>
         ) : (
           <canvas ref={ref} className="max-w-full max-h-full object-contain" />
         )}
       </div>
     );
-  }
+  },
 );
 
 EditorCanvas.displayName = "EditorCanvas";

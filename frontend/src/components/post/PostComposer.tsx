@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import LinkEmbed from "./LinkEmbed";
 import EmojiPicker from "./EmojiPicker";
 import Mentions from "./Mentions";
 import MediaUploader, { Media } from "./MediaUploader";
-import { useSelector } from "react-redux";
-import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { useDispatch, useSelector } from "react-redux";
+import { selectPostCreation, setIsAIAssistantOpen } from "@/redux/slices/postCreation.slice";
 import HashtagModal from "./HashtagModal";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { Wand2 } from "lucide-react";
+import AIAssistantTextarea from "./aiAssistant/AIAssistantTextarea";
 
 interface PostComposerProps {
   isPostModal?: boolean;
@@ -17,7 +19,9 @@ interface PostComposerProps {
   hashtags: string[];
   onHashtagsChange: (hashtags: string[]) => void;
   onMediaUrlsChange: (urls: Media[]) => void;
+  channelMedia?: Media[];
   className?: string;
+  channelId?: string;
 }
 
 const PostComposer: React.FC<PostComposerProps> = ({
@@ -27,51 +31,46 @@ const PostComposer: React.FC<PostComposerProps> = ({
   hashtags,
   onHashtagsChange,
   onMediaUrlsChange,
+  channelMedia,
   className,
+  channelId,
 }) => {
-  const [embeddedLink, setEmbeddedLink] = useState<
+  const [embeddedLink, setEmbeddedLink] = React.useState<
     { url: string; title: string } | undefined
   >(undefined);
-  const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(
-    null
-  );
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { mediaUrls } = useSelector(selectPostCreation);
+  const dispatch = useDispatch();
+  const { mediaUrls, isAIAssistantOpen } = useSelector(selectPostCreation);
 
+  // Use channelMedia if provided, otherwise use global mediaUrls
+  const mediaToUse = channelMedia || mediaUrls;
+
+  // Handle inserting content
   const handleInsertEmoji = (emoji: string) => {
     onContentChange(content + emoji);
-    textareaRef?.focus();
   };
 
   const handleMention = (username: string) => {
     onContentChange(`${content}@${username} `);
-    textareaRef?.focus();
   };
-
-  const suggestedHashtags = [
-    "marketing",
-    "socialmedia",
-    "contentcreator",
-    "smm",
-  ];
 
   return (
     <Card className={className}>
-      <CardContent className={cn(isPostModal ? "p-3" : "pt-6")}>
-        <Textarea
-          placeholder="What would you like to share?"
-          className={cn(
-            "min-h-[150px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-transparent",
-            isPostModal ? "text-base" : "text-lg"
-          )}
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          ref={setTextareaRef}
+      <CardContent className="p-3">
+        <AIAssistantTextarea
+          content={content}
+          onContentChange={onContentChange}
+          isPostModal={isPostModal}
         />
 
-        {mediaUrls.length > 0 && (
+        {mediaToUse.length > 0 && (
           <div className="mt-4">
-            <MediaUploader />
+            <MediaUploader
+              mediaUrls={mediaToUse}
+              onMediaChange={onMediaUrlsChange}
+              channelId={channelId}
+            />
           </div>
         )}
 
@@ -86,7 +85,9 @@ const PostComposer: React.FC<PostComposerProps> = ({
         )} */}
 
         <div className="flex items-center mt-4 space-x-2 border-t pt-4">
-          {mediaUrls.length === 0 && <MediaUploader />}
+          {mediaToUse.length === 0 && (
+            <MediaUploader onMediaChange={onMediaUrlsChange} channelId={channelId} />
+          )}
 
           <HashtagModal />
 
@@ -95,7 +96,20 @@ const PostComposer: React.FC<PostComposerProps> = ({
               onLinkAdd={(url, title) => setEmbeddedLink({ url, title })}
             />
           )} */}
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => dispatch(setIsAIAssistantOpen(!isAIAssistantOpen))}
+            className={cn(
+              isAIAssistantOpen && "bg-blue-600 text-white hover:bg-blue-400 hover:text-white",
+            )}
+          >
+            <Wand2 className="h-4 w-4" />
+          </Button>
+
           <EmojiPicker onEmojiSelect={handleInsertEmoji} />
+
           <Mentions onMention={handleMention} />
         </div>
       </CardContent>
