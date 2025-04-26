@@ -56,7 +56,6 @@ export class ChannelService {
     try {
       let { authCode, state } = connectChannelDto;
 
-      console.log(userId, state);
       const oauthSession = await this.oauthSessionModel.findOne({
         user: new Types.ObjectId(userId),
         state,
