@@ -34,8 +34,11 @@ interface PostListViewProps {
 const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
   const { posts = [], channels = [] } = usePosts();
 
-  const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
-  const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
+  const getTagsFromContent = (content: string): string[] => {
+    const regex = /#(\w+)/g;
+    const matches = content.match(regex);
+    return matches ? matches.map((tag) => tag.substring(1)) : [];
+  };
 
   const filteredPosts = (posts || []).filter((post) => {
     if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
@@ -56,40 +59,6 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
     const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(b.createdAt);
     return dateB.getTime() - dateA.getTime();
   });
-
-  const getTagsFromContent = (content: string): string[] => {
-    const regex = /#(\w+)/g;
-    const matches = content.match(regex);
-    return matches ? matches.map((tag) => tag.substring(1)) : [];
-  };
-
-  const formatPostDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-    }).format(new Date(date));
-  };
-
-  const openPostPreview = (post: Post, channelId: string) => {
-    const channel = channels.find((c) => c.id === channelId);
-    if (channel) {
-      setSelectedPost(post);
-      setSelectedChannel(channel);
-    }
-  };
-
-  const getChannelIcon = (channelType: string) => {
-    switch (channelType) {
-      case "twitter":
-        return <Repeat className="h-4 w-4" />;
-      case "instagram":
-        return <Heart className="h-4 w-4" />;
-      default:
-        return <MessageCircle className="h-4 w-4" />;
-    }
-  };
 
   return (
     <div className="space-y-4 flex flex-col justify-center items-center w-full">

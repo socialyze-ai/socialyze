@@ -40,6 +40,12 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
   const { posts = [], channels = [] } = usePosts();
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
+  const getTagsFromContent = (content: string): string[] => {
+    const regex = /#(\w+)/g;
+    const matches = content.match(regex);
+    return matches ? matches.map((tag) => tag.substring(1)) : [];
+  };
+
   const filteredPosts = (posts || []).filter((post) => {
     if (!post.scheduledAt) return false;
     if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
@@ -56,12 +62,6 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
 
     return true;
   });
-
-  const getTagsFromContent = (content: string): string[] => {
-    const regex = /#(\w+)/g;
-    const matches = content.match(regex);
-    return matches ? matches.map((tag) => tag.substring(1)) : [];
-  };
 
   const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];

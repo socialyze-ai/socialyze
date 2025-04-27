@@ -1,16 +1,13 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { usePosts, PostStatus } from "@/context/PostsContext";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
 import ActiveChannels from "@/components/dashboard/ActiveChannels";
 import LayoutSelector, { LayoutType } from "@/components/dashboard/LayoutSelector";
 import PostStatusSelector, { StatusFilter } from "@/components/dashboard/PostStatusSelector";
-import FilterSelectors from "@/components/dashboard/FilterSelectors";
 import PostListView from "@/components/dashboard/PostListView";
 import PostGridView from "@/components/dashboard/PostGridView";
 import PostCalendarView from "@/components/dashboard/PostCalendarView";
+import FilterSelectors from "@/components/dashboard/FilterSelectors";
 
 const Dashboard = () => {
   const { posts = [] } = usePosts();
@@ -19,7 +16,7 @@ const Dashboard = () => {
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
   const [activeStatuses, setActiveStatuses] = useState<StatusFilter>([]);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [timezone, setTimezone] = useState<string>("UTC");
 
   // Count posts by status
@@ -49,10 +46,10 @@ const Dashboard = () => {
           <div className="lg:col-span-3 flex flex-col gap-3">
             <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
             <FilterSelectors
-              selectedChannels={selectedChannels}
+              selectedChannels={selectedChannels || []}
               onChannelFilterChange={setSelectedChannels}
-              selectedTags={selectedTags}
-              onTagFilterChange={setSelectedTags}
+              selectedLabels={selectedLabels || []}
+              onLabelFilterChange={setSelectedLabels}
               timezone={timezone}
               onTimezoneChange={setTimezone}
             />
@@ -65,7 +62,7 @@ const Dashboard = () => {
             <PostListView
               statusFilter={activeStatuses}
               channelFilter={selectedChannels}
-              tagFilter={selectedTags}
+              tagFilter={selectedLabels}
             />
           )}
 
@@ -73,7 +70,7 @@ const Dashboard = () => {
             <PostGridView
               statusFilter={activeStatuses}
               channelFilter={selectedChannels}
-              tagFilter={selectedTags}
+              tagFilter={selectedLabels}
             />
           )}
 
@@ -81,7 +78,7 @@ const Dashboard = () => {
             <PostCalendarView
               statusFilter={activeStatuses}
               channelFilter={selectedChannels}
-              tagFilter={selectedTags}
+              tagFilter={selectedLabels}
               timezone={timezone}
             />
           )}

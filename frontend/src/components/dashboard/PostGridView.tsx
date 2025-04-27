@@ -18,6 +18,12 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
   const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
   const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
 
+  const getTagsFromContent = (content: string): string[] => {
+    const regex = /#(\w+)/g;
+    const matches = content.match(regex);
+    return matches ? matches.map((tag) => tag.substring(1)) : [];
+  };
+
   const filteredPosts = (posts || []).filter((post) => {
     // Filter by status
     if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
@@ -44,12 +50,6 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
     const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(b.createdAt);
     return dateB.getTime() - dateA.getTime();
   });
-
-  const getTagsFromContent = (content: string): string[] => {
-    const regex = /#(\w+)/g;
-    const matches = content.match(regex);
-    return matches ? matches.map((tag) => tag.substring(1)) : [];
-  };
 
   const formatPostDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {

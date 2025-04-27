@@ -6,10 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { PostsProvider } from "@/context/PostsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { addChannels } from "@/redux/slices/posts.slice";
-import { useGetChannel } from "@/api/apiHooks/useChannel";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -20,34 +16,9 @@ import Channels from "./pages/Channels";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicRoute from "./components/PublicRoute";
+import InitialDataLoader from "./components/InitialDataLoader";
 
 const queryClient = new QueryClient();
-
-// Add a component to load initial data
-const InitialDataLoader = () => {
-  const dispatch = useDispatch();
-  const { data: channelsData } = useGetChannel();
-
-  useEffect(() => {
-    if (channelsData?.data?.length) {
-      const channels = channelsData.data.map((channel: any) => ({
-        id: channel._id,
-        type: channel.handle,
-        name: channel.channelName,
-        username: channel.channelName,
-        description: "",
-        profileImage: channel.channelPicture,
-        connected: true,
-        workspace: channel.workspace,
-        channelId: channel.channelId,
-      }));
-
-      dispatch(addChannels(channels));
-    }
-  }, [channelsData, dispatch]);
-
-  return null;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
