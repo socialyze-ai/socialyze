@@ -32,11 +32,11 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {/* Top section with filters and controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
           {/* Left column with channels and status filters */}
-          <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="lg:col-span-4 flex flex-col gap-3">
             <ActiveChannels />
             <PostStatusSelector
               activeStatuses={activeStatuses}
@@ -46,7 +46,7 @@ const Dashboard = () => {
           </div>
 
           {/* Right column with layout selector and other filters */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 flex flex-col gap-3">
             <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
             <FilterSelectors
               selectedChannels={selectedChannels}
@@ -60,7 +60,7 @@ const Dashboard = () => {
         </div>
 
         {/* Content area */}
-        <div className="shadow rounded-lg overflow-y-scroll bg-white h-[calc(100vh-16rem)]">
+        <div className="rounded-lg overflow-y-scroll h-[calc(100vh-21rem)]">
           {activeLayout === "list" && (
             <PostListView
               statusFilter={activeStatuses}

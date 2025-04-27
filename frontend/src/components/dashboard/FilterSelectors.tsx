@@ -112,7 +112,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
             <div className="space-y-2">
               <div className="font-medium text-sm mb-2">Filter by channel</div>
               <div className="grid gap-1.5">
-                {channels.map((channel) => (
+                {(channels || []).map((channel) => (
                   <Button
                     key={channel.id}
                     variant="ghost"
@@ -166,7 +166,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               <CommandGroup>
                 <ScrollArea className="h-64">
                   <div className="p-2 space-y-1">
-                    {allTags.map((tag) => (
+                    {(allTags || []).map((tag) => (
                       <CommandItem
                         key={tag}
                         onSelect={() => toggleTag(tag)}
@@ -208,7 +208,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               />
               <CommandEmpty>No timezone found.</CommandEmpty>
               <CommandGroup heading="Suggestions">
-                {timezones
+                {(timezones || [])
                   .filter(
                     (tz) =>
                       tz.name.toLowerCase().includes(timezoneSearch.toLowerCase()) ||

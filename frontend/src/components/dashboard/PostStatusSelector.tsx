@@ -38,7 +38,7 @@ const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({
       <CardContent className="p-3 pt-2 flex flex-wrap gap-2">
         <Badge
           variant={activeStatuses.includes("scheduled") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-primary/90 flex items-center gap-1 px-3 py-1"
+          className="cursor-pointer hover:bg-primary/90 hover:text-white flex items-center gap-1 px-3 py-1"
           onClick={() => toggleStatus("scheduled" as PostStatus)}
         >
           <Clock className="h-3 w-3" />
@@ -46,7 +46,7 @@ const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({
         </Badge>
         <Badge
           variant={activeStatuses.includes("sent") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-primary/90 flex items-center gap-1 px-3 py-1"
+          className="cursor-pointer hover:bg-primary/90 hover:text-white flex items-center gap-1 px-3 py-1"
           onClick={() => toggleStatus("sent" as PostStatus)}
         >
           <CheckCircle2 className="h-3 w-3" />
@@ -54,7 +54,7 @@ const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({
         </Badge>
         <Badge
           variant={activeStatuses.includes("draft") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-primary/90 flex items-center gap-1 px-3 py-1"
+          className="cursor-pointer hover:bg-primary/90 hover:text-white flex items-center gap-1 px-3 py-1"
           onClick={() => toggleStatus("draft" as PostStatus)}
         >
           <FileText className="h-3 w-3" />
@@ -62,7 +62,7 @@ const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({
         </Badge>
         <Badge
           variant={activeStatuses.includes("failed") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-primary/90 flex items-center gap-1 px-3 py-1"
+          className="cursor-pointer hover:bg-primary/90 hover:text-white flex items-center gap-1 px-3 py-1"
           onClick={() => toggleStatus("failed" as PostStatus)}
         >
           <AlertCircle className="h-3 w-3" />
