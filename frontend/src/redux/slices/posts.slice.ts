@@ -31,38 +31,6 @@ interface PostsState {
   channels: SocialChannel[];
 }
 
-// Mock initial data
-// const initialChannels: SocialChannel[] = [
-//   {
-//     id: "1",
-//     type: "twitter",
-//     name: "My Twitter",
-//     profileImage: "https://randomuser.me/api/portraits/men/0.jpg",
-//     connected: true,
-//   },
-//   {
-//     id: "2",
-//     type: "facebook",
-//     name: "My Facebook Page",
-//     profileImage: "https://randomuser.me/api/portraits/men/0.jpg",
-//     connected: true,
-//   },
-//   {
-//     id: "3",
-//     type: "instagram",
-//     name: "My Instagram",
-//     profileImage: "https://randomuser.me/api/portraits/men/0.jpg",
-//     connected: true,
-//   },
-//   {
-//     id: "4",
-//     type: "linkedin",
-//     name: "My LinkedIn",
-//     profileImage: "https://randomuser.me/api/portraits/men/0.jpg",
-//     connected: true,
-//   },
-// ];
-
 const initialPosts: Post[] = [
   {
     id: "1",
