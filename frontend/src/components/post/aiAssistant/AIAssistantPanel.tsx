@@ -403,7 +403,7 @@ const AIAssistantEditor = () => {
                 <TabsTrigger value="suggestion2">Option 3</TabsTrigger>
               </TabsList>
 
-              {suggestions.map((suggestion, index) => (
+              {suggestions?.map((suggestion, index) => (
                 <TabsContent key={index} value={`suggestion${index}`} className="mt-0">
                   <div className="bg-gray-50 p-3 rounded-md">
                     <p className="text-sm text-gray-700">{suggestion}</p>

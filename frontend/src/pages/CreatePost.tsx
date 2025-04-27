@@ -198,7 +198,7 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
@@ -290,7 +290,7 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,

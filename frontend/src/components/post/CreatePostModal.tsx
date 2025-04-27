@@ -122,6 +122,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [isSyncAlertOpen, setIsSyncAlertOpen] = useState(false);
+  const [isCloseAlertOpen, setIsCloseAlertOpen] = useState(false);
 
   // Initialize content by channel when modal opens
   useEffect(() => {
@@ -265,7 +266,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
@@ -317,18 +318,32 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       description: `Your post has been ${statusText}.`,
     });
 
-    onClose();
-    resetForm();
+    handleClose();
   };
 
   const resetForm = () => {
     dispatch(resetPostCreation());
   };
 
-  const handleOpenAdvanced = () => {
-    onClose();
-    resetForm();
-    navigate("/create");
+  const handleOpenAlert = () => {
+    setIsCloseAlertOpen(true);
+  };
+
+  const handleClose = () => {
+    // Check if there's content or media before closing
+    const hasContent = selectedChannels.some(
+      (channelId) =>
+        contentByChannel[channelId]?.trim() !== "" ||
+        (mediaByChannel[channelId] && mediaByChannel[channelId].length > 0),
+    );
+
+    if (hasContent) {
+      setIsCloseAlertOpen(true);
+    } else {
+      onClose();
+      resetForm();
+      setIsCloseAlertOpen(false);
+    }
   };
 
   const getChannelById = (id: string): SocialChannel | undefined => {
@@ -373,7 +388,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
         <DialogContent
           className={cn(
             "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
@@ -661,7 +676,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={
-                      contentByChannel[activeChannel].includes("<br>")
+                      contentByChannel[activeChannel]?.includes("<br>")
                         ? contentByChannel[activeChannel].replace(/<br>/g, "")
                         : contentByChannel[activeChannel] || ""
                     }
@@ -711,6 +726,31 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSync}>Sync</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog for Close Confirmation */}
+      <AlertDialog open={isCloseAlertOpen} onOpenChange={setIsCloseAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to close? Your unsaved changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsCloseAlertOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                // setIsCloseAlertOpen(false);
+                // onClose();
+                // resetForm();
+                handleClose();
+              }}
+            >
+              Discard
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

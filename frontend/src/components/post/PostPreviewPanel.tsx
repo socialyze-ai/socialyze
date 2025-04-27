@@ -83,7 +83,7 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
           const channel = channels.find((c) => c.id === channelId);
           const filterContent = getPreviewContent();
 
-          const contentToUse = filterContent.includes("<br>")
+          const contentToUse = filterContent?.includes("<br>")
             ? filterContent.replace(/<br>/g, "")
             : filterContent;
 
