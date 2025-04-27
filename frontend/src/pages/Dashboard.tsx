@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { usePosts } from "@/context/PostsContext";
+import { usePosts, PostStatus } from "@/context/PostsContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -24,39 +24,30 @@ const Dashboard = () => {
 
   // Count posts by status
   const postCounts = {
-    scheduled: posts.filter((post) => post.status === "scheduled").length,
-    sent: posts.filter((post) => post.status === "sent").length,
+    scheduled: posts.filter((post) => post.status === ("scheduled" as PostStatus)).length,
+    sent: posts.filter((post) => post.status === ("sent" as PostStatus)).length,
     draft: posts.filter((post) => post.status === "draft").length,
     failed: posts.filter((post) => post.status === "failed").length,
   };
 
   return (
     <MainLayout title="Dashboard">
-      <div className="flex flex-col gap-2">
-        {/* Top row with active channels and layout selector */}
-
-        <div className="flex justify-between gap-2">
-          <div className="flex flex-col gap-2 flex-1">
-            {/* <div className="lg:col-span-8"> */}
+      <div className="flex flex-col gap-4">
+        {/* Top section with filters and controls */}
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+          {/* Left column with channels and status filters */}
+          <div className="lg:col-span-4 flex flex-col gap-4">
             <ActiveChannels />
-            {/* </div> */}
-
-            {/* <div className="lg:col-span-8"> */}
             <PostStatusSelector
               activeStatuses={activeStatuses}
               onStatusChange={setActiveStatuses}
               counts={postCounts}
             />
-            {/* </div> */}
           </div>
 
-          {/* Second row with post status selector and filters */}
-          <div className="flex flex-col gap-2">
-            {/* <div className="lg:col-span-3"> */}
+          {/* Right column with layout selector and other filters */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
             <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
-            {/* </div> */}
-
-            {/* <div className="lg:col-span-4"> */}
             <FilterSelectors
               selectedChannels={selectedChannels}
               onChannelFilterChange={setSelectedChannels}
@@ -65,12 +56,11 @@ const Dashboard = () => {
               timezone={timezone}
               onTimezoneChange={setTimezone}
             />
-            {/* </div> */}
           </div>
         </div>
 
         {/* Content area */}
-        <div className="lg:col-span-12 overflow-y-scroll h-[65dvh]">
+        <div className="shadow rounded-lg overflow-y-scroll bg-white h-[calc(100vh-16rem)]">
           {activeLayout === "list" && (
             <PostListView
               statusFilter={activeStatuses}

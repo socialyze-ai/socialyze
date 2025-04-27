@@ -13,7 +13,7 @@ export type SocialChannel = {
   channelId?: string;
 };
 
-export type PostStatus = "draft" | "schedule" | "postnow" | "failed";
+export type PostStatus = "draft" | "schedule" | "postnow" | "failed" | "scheduled" | "sent";
 
 export type Post = {
   id: string;
