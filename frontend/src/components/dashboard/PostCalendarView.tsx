@@ -46,7 +46,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;
     const matches = content.match(regex);
-    return matches ? matches.map((tag) => tag.substring(1)) : [];
+    return matches ? matches?.map((tag) => tag.substring(1)) : [];
   };
 
   const filteredPosts = (posts || []).filter((post) => {

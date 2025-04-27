@@ -80,6 +80,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
 import LabelSelector from "./LabelSelector";
+import { reset } from "@/redux/slices/aiAssistant.slice";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -127,7 +128,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   // Initialize content by channel when modal opens
   useEffect(() => {
     if (channels.length > 0) {
-      dispatch(initializeChannelContent(channels.map((channel) => channel.id)));
+      dispatch(initializeChannelContent(channels?.map((channel) => channel.id)));
     }
   }, [channels, dispatch]);
 
@@ -270,7 +271,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
-        label: selectedLabels.map((label) => label.id),
+        label: selectedLabels?.map((label) => label.id),
         media: mediaUrls,
         postType: status, // "postnow" | "schedule" | "draft"
         postStatus: "queued",
@@ -362,7 +363,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     if (activeChannel) {
       // Update media for the active channel
       const channelMedia = [...(mediaByChannel[activeChannel] || [])];
-      const updatedChannelMedia = channelMedia.map((media) =>
+      const updatedChannelMedia = channelMedia?.map((media) =>
         media.id === editedMediaId ? { ...media, url: editedMediaUrl } : media,
       );
       dispatch(setMediaForChannel({ channelId: activeChannel, media: updatedChannelMedia }));
@@ -442,7 +443,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             {channels.length === 0 ? (
               <div
                 className="flex items-center justify-between my-2 p-2 border border-gray-400 text-gray-600 text-sm rounded hover:bg-blue-600 hover:text-white hover:font-semibold hover:cursor-pointer"
-                onClick={() => navigate("/channels")}
+                onClick={() => {
+                  handleOpenAlert();
+                  navigate("/channels");
+                }}
               >
                 <span>No channels available. Please add channels to create a post.</span>
                 <Button
@@ -456,7 +460,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             ) : (
               <div className="flex justify-between items-center my-4">
                 <div className="flex gap-3 flex-wrap">
-                  {channels.map((channel) => {
+                  {channels?.map((channel) => {
                     console.log("selectedChannels", channel);
 
                     return (
@@ -498,7 +502,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                       Select channels to create your post
                     </div>
                   ) : (
-                    selectedChannels.map((channelId) => {
+                    selectedChannels?.map((channelId) => {
                       const channel = getChannelById(channelId);
                       if (!channel) return null;
 
@@ -647,7 +651,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   onChange={(e) => dispatch(setActiveChannel(e.target.value))}
                   className="border border-gray-300 rounded-md p-2 w-full mt-5 text-sm"
                 >
-                  {selectedChannels.map((channelId) => {
+                  {selectedChannels?.map((channelId) => {
                     const channel = getChannelById(channelId);
                     return channel ? (
                       <option key={channel.id} value={channel.id}>
@@ -743,10 +747,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             <AlertDialogCancel onClick={() => setIsCloseAlertOpen(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                // setIsCloseAlertOpen(false);
-                // onClose();
-                // resetForm();
-                handleClose();
+                onClose();
+                resetForm();
+                dispatch(reset());
+                setIsCloseAlertOpen(false);
               }}
             >
               Discard
