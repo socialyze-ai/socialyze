@@ -21,6 +21,7 @@ import Channels from "./pages/Channels";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicRoute from "./components/PublicRoute";
+import { Authenticate } from "./pages/Authenticate";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/authenticate"
+                element={
+                  <ProtectedRoute>
+                    <Authenticate />
                   </ProtectedRoute>
                 }
               />
