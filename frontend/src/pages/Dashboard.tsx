@@ -1,233 +1,100 @@
-import React from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { usePosts } from "@/context/PostsContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart2, Calendar, Clock, PenTool, Send, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import SelectedChannels from "@/components/post/SelectedChannels";
+import { Plus } from "lucide-react";
+import ActiveChannels from "@/components/dashboard/ActiveChannels";
+import LayoutSelector, { LayoutType } from "@/components/dashboard/LayoutSelector";
+import PostStatusSelector, { StatusFilter } from "@/components/dashboard/PostStatusSelector";
+import FilterSelectors from "@/components/dashboard/FilterSelectors";
+import PostListView from "@/components/dashboard/PostListView";
+import PostGridView from "@/components/dashboard/PostGridView";
+import PostCalendarView from "@/components/dashboard/PostCalendarView";
 
 const Dashboard = () => {
-  const { posts, channels } = usePosts();
+  const { posts } = usePosts();
 
-  const scheduledPosts = posts?.filter((post) => post?.status === "schedule") || [];
-  const draftPosts = posts?.filter((post) => post?.status === "draft") || [];
-  const sentPosts = posts?.filter((post) => post?.status === "postnow") || [];
+  // State for filters and layout
+  const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
+  const [activeStatuses, setActiveStatuses] = useState<StatusFilter>([]);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [timezone, setTimezone] = useState<string>("UTC");
 
-  const stats = [
-    {
-      label: "Scheduled Posts",
-      value: scheduledPosts.length,
-      icon: Clock,
-      color: "text-amber-500",
-    },
-    { label: "Connected Channels", value: channels.length, icon: Send, color: "text-green-500" },
-    { label: "Draft Posts", value: draftPosts.length, icon: PenTool, color: "text-blue-500" },
-    { label: "Posts Sent", value: sentPosts.length, icon: BarChart2, color: "text-purple-500" },
-  ];
-
-  const formatPostDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-    }).format(new Date(date));
+  // Count posts by status
+  const postCounts = {
+    scheduled: posts.filter((post) => post.status === "scheduled").length,
+    sent: posts.filter((post) => post.status === "sent").length,
+    draft: posts.filter((post) => post.status === "draft").length,
+    failed: posts.filter((post) => post.status === "failed").length,
   };
 
   return (
     <MainLayout title="Dashboard">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <div className="flex flex-col gap-2">
+        {/* Top row with active channels and layout selector */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card className="h-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Posts</CardTitle>
-                <Link to="/create">
-                  <Button size="sm">Create New</Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="scheduled">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                  <TabsTrigger value="postnow">Post Now</TabsTrigger>
-                  <TabsTrigger value="draft">Drafts</TabsTrigger>
-                </TabsList>
-                <TabsContent value="scheduled">
-                  {scheduledPosts.length > 0 ? (
-                    <div className="space-y-4">
-                      {scheduledPosts.slice(0, 5).map((post) => (
-                        <div
-                          key={post.id}
-                          className="border rounded-lg p-4 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="line-clamp-2">{post.content}</p>
-                              <div className="flex items-center mt-2 space-x-2">
-                                {post.channels.map((channelId) => {
-                                  const channel = channels.find((c) => c.id === channelId);
-                                  if (!channel) return null;
-                                  return (
-                                    <div
-                                      key={channelId}
-                                      className={`flex items-center text-xs text-muted-foreground social-icon-${channel.type}`}
-                                    >
-                                      <span>{channel.name}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center space-x-1 text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                <span className="text-xs">
-                                  {post.scheduledAt && formatPostDate(post.scheduledAt)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No scheduled posts</p>
-                      <Link to="/create">
-                        <Button variant="link">Create your first post</Button>
-                      </Link>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="postnow">
-                  {sentPosts.length > 0 ? (
-                    <div className="space-y-4">
-                      {sentPosts.slice(0, 5).map((post) => (
-                        <div
-                          key={post.id}
-                          className="border rounded-lg p-4 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="line-clamp-2">{post.content}</p>
-                              <div className="flex items-center mt-2 space-x-2">
-                                {post.channels.map((channelId) => {
-                                  const channel = channels.find((c) => c.id === channelId);
-                                  if (!channel) return null;
-                                  return (
-                                    <div
-                                      key={channelId}
-                                      className={`flex items-center text-xs text-muted-foreground social-icon-${channel.type}`}
-                                    >
-                                      <span>{channel.name}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center space-x-1 text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                <span className="text-xs">{formatPostDate(post.createdAt)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No sent posts</p>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="draft">
-                  {draftPosts.length > 0 ? (
-                    <div className="space-y-4">
-                      {draftPosts.slice(0, 5).map((post) => (
-                        <div
-                          key={post.id}
-                          className="border rounded-lg p-4 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="line-clamp-2">{post.content}</p>
-                              <div className="flex items-center mt-2 space-x-2">
-                                {post.channels.map((channelId) => {
-                                  const channel = channels.find((c) => c.id === channelId);
-                                  if (!channel) return null;
-                                  return (
-                                    <div
-                                      key={channelId}
-                                      className={`flex items-center text-xs text-muted-foreground social-icon-${channel.type}`}
-                                    >
-                                      <span>{channel.name}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center space-x-1 text-muted-foreground">
-                                <PenTool className="h-3 w-3" />
-                                <span className="text-xs">Draft</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No draft posts</p>
-                      <Link to="/create">
-                        <Button variant="link">Create a draft</Button>
-                      </Link>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+        <div className="flex justify-between gap-2">
+          <div className="flex flex-col gap-2 flex-1">
+            {/* <div className="lg:col-span-8"> */}
+            <ActiveChannels />
+            {/* </div> */}
+
+            {/* <div className="lg:col-span-8"> */}
+            <PostStatusSelector
+              activeStatuses={activeStatuses}
+              onStatusChange={setActiveStatuses}
+              counts={postCounts}
+            />
+            {/* </div> */}
+          </div>
+
+          {/* Second row with post status selector and filters */}
+          <div className="flex flex-col gap-2">
+            {/* <div className="lg:col-span-3"> */}
+            <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
+            {/* </div> */}
+
+            {/* <div className="lg:col-span-4"> */}
+            <FilterSelectors
+              selectedChannels={selectedChannels}
+              onChannelFilterChange={setSelectedChannels}
+              selectedTags={selectedTags}
+              onTagFilterChange={setSelectedTags}
+              timezone={timezone}
+              onTimezoneChange={setTimezone}
+            />
+            {/* </div> */}
+          </div>
         </div>
 
-        <div>
-          <Card className="h-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg ">Connected Channels</CardTitle>
+        {/* Content area */}
+        <div className="lg:col-span-12 overflow-y-scroll h-[65dvh]">
+          {activeLayout === "list" && (
+            <PostListView
+              statusFilter={activeStatuses}
+              channelFilter={selectedChannels}
+              tagFilter={selectedTags}
+            />
+          )}
 
-                <Link to="/channels">
-                  <Button variant="outline" size="icon">
-                    <Settings />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <SelectedChannels isDashboard />
-            </CardContent>
-          </Card>
+          {activeLayout === "grid" && (
+            <PostGridView
+              statusFilter={activeStatuses}
+              channelFilter={selectedChannels}
+              tagFilter={selectedTags}
+            />
+          )}
+
+          {activeLayout === "calendar" && (
+            <PostCalendarView
+              statusFilter={activeStatuses}
+              channelFilter={selectedChannels}
+              tagFilter={selectedTags}
+              timezone={timezone}
+            />
+          )}
         </div>
       </div>
     </MainLayout>
