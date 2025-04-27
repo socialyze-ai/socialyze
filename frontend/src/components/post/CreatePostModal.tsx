@@ -84,6 +84,23 @@ interface CreatePostModalProps {
   onClose: () => void;
 }
 
+export const getSocialIcon = (type: string, size: number = 24) => {
+  switch (type) {
+    case "facebook":
+      return <Facebook size={size} className="text-[#1877F2]" />;
+    case "twitter":
+      return <Twitter size={size} className="text-[#1DA1F2]" />;
+    case "instagram":
+      return <Instagram size={size} className="text-[#E4405F]" />;
+    case "linkedin":
+      return <Linkedin size={size} className="text-[#0A66C2]" />;
+    case "youtube":
+      return <Youtube size={size} className="text-[#FF0000]" />;
+    default:
+      return <X size={size} className="text-[#1DA1F2]" />;
+  }
+};
+
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
   const { channels, addPost } = usePosts();
   const dispatch = useDispatch();
@@ -350,23 +367,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     }
 
     setIsEditDialogOpen(false);
-  };
-
-  const getSocialIcon = (type: string, size: number = 24) => {
-    switch (type) {
-      case "facebook":
-        return <Facebook size={size} className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter size={size} className="text-[#1DA1F2]" />;
-      case "instagram":
-        return <Instagram size={size} className="text-[#E4405F]" />;
-      case "linkedin":
-        return <Linkedin size={size} className="text-[#0A66C2]" />;
-      case "youtube":
-        return <Youtube size={size} className="text-[#FF0000]" />;
-      default:
-        return <X size={size} className="text-[#1DA1F2]" />;
-    }
   };
 
   return (

@@ -1,16 +1,12 @@
 import React from "react";
-import { SocialChannel, usePosts } from "@/context/PostsContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePosts } from "@/context/PostsContext";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import PostPreview from "@/components/post/PostPreview";
+import { cn } from "@/lib/utils";
+import { getSocialIcon } from "../post/CreatePostModal";
 
 const ActiveChannels: React.FC = () => {
   const { channels, posts } = usePosts();
@@ -19,7 +15,7 @@ const ActiveChannels: React.FC = () => {
     return posts.find(
       (post) =>
         post.channels.includes(channelId) &&
-        (post.status === "scheduled" || post.status === "sent")
+        (post.status === "scheduled" || post.status === "sent"),
     );
   };
 
@@ -58,65 +54,25 @@ const ActiveChannels: React.FC = () => {
       <CardContent className="p-3">
         <div className="flex gap-3 items-center">
           {channels.map((channel) => (
-            <HoverCard key={channel.id} openDelay={200} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <div className="cursor-pointer relative">
-                  <Avatar className="h-10 w-10 border-2 hover:border-primary">
-                    <AvatarImage
-                      src={channel.profileImage}
-                      alt={channel.name}
-                    />
-                    <AvatarFallback>
-                      {channel.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {renderSocialIcon(channel.type)}
-                </div>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-80">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={channel.profileImage}
-                        alt={channel.name}
-                      />
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold">{channel.name}</h4>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {channel.type}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-2">
-                    {getRecentPostForChannel(channel.id) ? (
-                      <PostPreview
-                        content={
-                          getRecentPostForChannel(channel.id)?.content || ""
-                        }
-                        channel={channel}
-                        mediaUrl={
-                          getRecentPostForChannel(channel.id)?.mediaUrls?.[0]
-                        }
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No recent posts
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
+            <div key={channel.id} className={"relative rounded-full p-1.5"}>
+              <Avatar className="w-10 h-10 rounded-full">
+                <AvatarImage src={channel.profileImage} />
+                <AvatarFallback className="capitalize font-semibold text-xl">
+                  {channel.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className={cn(
+                  "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
+                )}
+              >
+                {getSocialIcon(channel.type, 16)}
+              </div>
+            </div>
           ))}
 
           <Link to="/channels">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full h-10 w-10"
-            >
+            <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
               <Plus className="h-5 w-5" />
               <span className="sr-only">Add channel</span>
             </Button>
