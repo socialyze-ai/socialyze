@@ -49,11 +49,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         ]
       : []),
     {
-      icon: Calendar,
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
       icon: BarChart2,
       label: "Analytics",
       href: "/analytics",

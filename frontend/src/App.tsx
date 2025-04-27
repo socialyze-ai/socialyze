@@ -15,7 +15,6 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CreatePost from "./pages/CreatePost";
-import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
 import Channels from "./pages/Channels";
 import Settings from "./pages/Settings";
@@ -94,14 +93,6 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <CreatePost />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/calendar"
-                element={
-                  <ProtectedRoute>
-                    <Calendar />
                   </ProtectedRoute>
                 }
               />
