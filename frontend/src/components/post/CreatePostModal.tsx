@@ -20,11 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   CalendarCheck2,
+  ChevronRight,
   Facebook,
   Info,
   Instagram,
   Linkedin,
   MoveRight,
+  Plus,
   Save,
   Twitter,
   Unlink,
@@ -422,41 +424,56 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
               </div>
             </DialogHeader>
 
-            <div className="flex justify-between items-center my-4">
-              <div className="flex gap-3 flex-wrap">
-                {channels.map((channel) => {
-                  console.log("selectedChannels", channel);
-
-                  return (
-                    <button
-                      key={channel.id}
-                      className={`relative rounded-full p-1.5 ${
-                        selectedChannels.includes(channel.id)
-                          ? // ? "ring-2 ring-primary"
-                            "shadow shadow-blue-500"
-                          : "opacity-60 hover:opacity-100"
-                      }`}
-                      onClick={() => handleChannelToggle(channel.id)}
-                    >
-                      <Avatar className="w-10 h-10 rounded-full">
-                        <AvatarImage src={channel.profileImage} />
-                        <AvatarFallback className="capitalize font-semibold text-xl">
-                          {channel.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={cn(
-                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
-                          selectedChannels.includes(channel.id) && "shadow-blue-500",
-                        )}
-                      >
-                        {getSocialIcon(channel.type, 16)}
-                      </div>
-                    </button>
-                  );
-                })}
+            {channels.length === 0 ? (
+              <div
+                className="flex items-center justify-between my-2 p-2 border border-gray-400 text-gray-600 text-sm rounded hover:bg-blue-600 hover:text-white hover:font-semibold hover:cursor-pointer"
+                onClick={() => navigate("/channels")}
+              >
+                <span>No channels available. Please add channels to create a post.</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="rounded-full text-blue-500 w-6 h-6"
+                >
+                  <ChevronRight />
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-between items-center my-4">
+                <div className="flex gap-3 flex-wrap">
+                  {channels.map((channel) => {
+                    console.log("selectedChannels", channel);
+
+                    return (
+                      <button
+                        key={channel.id}
+                        className={`relative rounded-full p-1.5 ${
+                          selectedChannels.includes(channel.id)
+                            ? "shadow shadow-blue-500"
+                            : "opacity-60 hover:opacity-100"
+                        }`}
+                        onClick={() => handleChannelToggle(channel.id)}
+                      >
+                        <Avatar className="w-10 h-10 rounded-full">
+                          <AvatarImage src={channel.profileImage} />
+                          <AvatarFallback className="capitalize font-semibold text-xl">
+                            {channel.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={cn(
+                            "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
+                            selectedChannels.includes(channel.id) && "shadow-blue-500",
+                          )}
+                        >
+                          {getSocialIcon(channel.type, 16)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {isCustomContent ? (
               <>
@@ -539,57 +556,66 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
               </div>
             )}
 
-            {selectedChannels.length !== 0 && activeChannel && (
-              <div className="flex justify-between mt-2">
+            <div className="flex justify-between mt-2">
+              <Button
+                onClick={handleToggleContentSync}
+                className="text-sm flex justify-center items-center gap-2 ring-1 ring-blue-600"
+                variant="outline"
+                disabled={selectedChannels.length === 0 || !activeChannel}
+              >
+                {isCustomContent ? (
+                  <>
+                    Sync content
+                    <Unlink />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info />
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs w-64 h-fit text-wrap p-2 rounded-md bg-white">
+                          Sync content across all selected channels
+                          <br />
+                          Note: first channel content will be consider for syncing content
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                ) : (
+                  <>
+                    Customize for each network
+                    <MoveRight />
+                  </>
+                )}
+              </Button>
+
+              <div className="flex gap-2">
                 <Button
-                  onClick={handleToggleContentSync}
-                  className="text-sm flex justify-center items-center gap-2 ring-1 ring-blue-600"
+                  onClick={handleDraftSave}
                   variant="outline"
+                  size="icon"
+                  disabled={selectedChannels.length === 0 || !activeChannel}
                 >
-                  {isCustomContent ? (
-                    <>
-                      Sync content
-                      <Unlink />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info />
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs w-64 h-fit text-wrap p-2 rounded-md bg-white">
-                            Sync content across all selected channels
-                            <br />
-                            Note: first channel content will be consider for syncing content
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </>
-                  ) : (
-                    <>
-                      Customize for each network
-                      <MoveRight />
-                    </>
-                  )}
+                  <Save />
                 </Button>
 
-                <div className="flex gap-2">
-                  <Button onClick={handleDraftSave} variant="outline" size="icon">
-                    <Save />
-                  </Button>
+                <Button
+                  onClick={() => dispatch(setScheduleModalOpen(true))}
+                  variant="outline"
+                  size="icon"
+                  disabled={selectedChannels.length === 0 || !activeChannel}
+                >
+                  <CalendarCheck2 />
+                </Button>
 
-                  <Button
-                    onClick={() => dispatch(setScheduleModalOpen(true))}
-                    variant="outline"
-                    size="icon"
-                  >
-                    <CalendarCheck2 />
-                  </Button>
-
-                  <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
-                    Post
-                  </Button>
-                </div>
+                <Button
+                  onClick={handlePostNow}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={selectedChannels.length === 0 || !activeChannel}
+                >
+                  Post
+                </Button>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Preview Section */}
