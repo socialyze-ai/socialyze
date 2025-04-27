@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, addDays, startOfToday } from "date-fns";
+import { format, addDays, startOfToday, isBefore, startOfDay } from "date-fns";
 import moment from "moment";
 import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
 import { StatusFilter } from "./PostStatusSelector";
@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import PostPreview from "@/components/post/PostPreview";
 import { Plus } from "lucide-react";
+import CreatePostModal from "@/components/post/CreatePostModal";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -39,6 +40,8 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
 }) => {
   const { posts = [], channels = [] } = usePosts();
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;
@@ -187,24 +190,34 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
     const postsForDate = events.filter((event) => format(event.start, "yyyy-MM-dd") === dateStr);
     const remainingCount = postsForDate.length - 5;
 
-    const handleAddPost = (value: any) => {
-      console.log("add post", value);
+    // Check if the date is current or future
+    const today = startOfDay(new Date());
+    const cellDate = startOfDay(new Date(value));
+    const isCurrentOrFuture = !isBefore(cellDate, today);
+
+    const handleAddPost = (date: Date) => {
+      setSelectedDate(date);
+      setIsCreateModalOpen(true);
     };
 
     return (
-      <div className="relative h-full group">
+      <div className="relative group w-full h-full">
         {children}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddPost(value);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+
+        {isCurrentOrFuture && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 bottom-1 hidden group-hover:flex h-6 w-6 p-0 hover:flex"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddPost(value);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
+
         {postsForDate.length > 5 && !expandedDates.includes(dateStr) && (
           <Button
             variant="ghost"
@@ -230,24 +243,27 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
   };
 
   return (
-    <Card className="p-2 h-[600px]">
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: "100%" }}
-        views={["month"]}
-        // views={["month", "week", "day"]}
-        defaultView="month"
-        eventPropGetter={eventStyleGetter}
-        components={{
-          event: EventComponent,
-          dateCellWrapper: DateCellWrapper,
-        }}
-        popup
-      />
-    </Card>
+    <>
+      <Card className="p-2 h-[600px]">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: "100%" }}
+          views={["month"]}
+          defaultView="month"
+          eventPropGetter={eventStyleGetter}
+          components={{
+            event: EventComponent,
+            dateCellWrapper: DateCellWrapper,
+          }}
+          popup
+        />
+      </Card>
+
+      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+    </>
   );
 };
 

@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BookMarked, Check, Clock, Filter, Users } from "lucide-react";
-import { SocialChannel, usePosts } from "@/context/PostsContext";
+import { BookMarked, Check, Users } from "lucide-react";
+import { usePosts } from "@/context/PostsContext";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
 import { selectLabels } from "@/redux/slices/labelManager.slice";
-import { Command, CommandEmpty, CommandGroup, CommandInput } from "../ui/command";
 
 interface FilterSelectorsProps {
   selectedChannels: string[];
@@ -28,23 +26,12 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   timezone,
   onTimezoneChange,
 }) => {
-  const { channels, posts } = usePosts();
+  const { channels } = usePosts();
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
 
   const labels = useSelector(selectLabels);
-
-  // Available timezones (simplified)
-  // const timezones = [
-  //   "UTC",
-  //   "America/New_York",
-  //   "America/Los_Angeles",
-  //   "Europe/London",
-  //   "Europe/Paris",
-  //   "Asia/Tokyo",
-  //   "Australia/Sydney",
-  // ];
 
   const timezones = [
     { name: "Kolkata", offset: "(GMT+5:30)" },
