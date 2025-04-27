@@ -57,7 +57,6 @@ const Channels = () => {
             return;
           }
           const handleMessage = (repsponse: MessageEvent) => {
-            console.log("Hereee");
             queryClient.invalidateQueries({ queryKey: ["channels"] });
           };
 

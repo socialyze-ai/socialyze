@@ -6,7 +6,7 @@ export const UNSPLASH_API_URL = "https://api.unsplash.com/search/photos";
 export const UNSPLASH_IMAGE_PER_PAGE = 5;
 
 // export const BACKEND_URL = "http://localhost:3000/";
-export const BACKEND_URL = "http://localhost:3000/";
+export const BACKEND_URL = "https://staging-backend.socialyze.co.in/";
 export const FRONTEND_URL = "http://localhost:5173/";
 export const WEBSITE_URL = "https://socialyze.co.in/";
 export const POST = "post";
