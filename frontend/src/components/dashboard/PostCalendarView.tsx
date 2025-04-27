@@ -6,11 +6,7 @@ import moment from "moment";
 import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
 import { StatusFilter } from "./PostStatusSelector";
 import { Card } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import PostPreview from "@/components/post/PostPreview";
 import { Plus } from "lucide-react";
@@ -41,13 +37,12 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
   tagFilter,
   timezone,
 }) => {
-  const { posts, channels } = usePosts();
+  const { posts = [], channels = [] } = usePosts();
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
-  const filteredPosts = posts.filter((post) => {
+  const filteredPosts = (posts || []).filter((post) => {
     if (!post.scheduledAt) return false;
-    if (statusFilter.length > 0 && !statusFilter.includes(post.status))
-      return false;
+    if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
     if (
       channelFilter.length > 0 &&
       !post.channels.some((channelId) => channelFilter.includes(channelId))
@@ -55,7 +50,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
       return false;
 
     if (tagFilter.length > 0) {
-      const postTags = getTagsFromContent(post.content);
+      const postTags = getTagsFromContent(post.content || "");
       if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
     }
 
@@ -83,9 +78,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
             calendarEvents.push({
               id: `${post.id}-${channelId}`,
               title:
-                post.content.length > 30
-                  ? post.content.substring(0, 30) + "..."
-                  : post.content,
+                post.content.length > 30 ? post.content.substring(0, 30) + "..." : post.content,
               start: startDate,
               end: endDate,
               post,
@@ -138,9 +131,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
 
   const toggleDateExpansion = (dateStr: string) => {
     setExpandedDates((prev) =>
-      prev.includes(dateStr)
-        ? prev.filter((d) => d !== dateStr)
-        : [...prev, dateStr]
+      prev.includes(dateStr) ? prev.filter((d) => d !== dateStr) : [...prev, dateStr],
     );
   };
 
@@ -150,9 +141,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
     const timeStr = format(event.start, "hh:mm a");
     const isExpanded = expandedDates.includes(dateStr);
 
-    const postsForDate = events.filter(
-      (e) => format(e.start, "yyyy-MM-dd") === dateStr
-    );
+    const postsForDate = events.filter((e) => format(e.start, "yyyy-MM-dd") === dateStr);
 
     return (
       <Popover>
@@ -185,7 +174,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
             <PostPreview
               content={event.post.content}
               channel={channel}
-              mediaUrl={event.post.mediaUrls?.[0]}
+              mediaUrls={event.post.mediaUrls}
             />
           )}
         </PopoverContent>
@@ -195,9 +184,7 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({
 
   const DateCellWrapper = ({ children, value }: any) => {
     const dateStr = format(value, "yyyy-MM-dd");
-    const postsForDate = events.filter(
-      (event) => format(event.start, "yyyy-MM-dd") === dateStr
-    );
+    const postsForDate = events.filter((event) => format(event.start, "yyyy-MM-dd") === dateStr);
     const remainingCount = postsForDate.length - 5;
 
     const handleAddPost = (value: any) => {

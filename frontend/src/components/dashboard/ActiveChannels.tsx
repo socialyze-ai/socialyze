@@ -10,10 +10,10 @@ import { getSocialIcon } from "../post/CreatePostModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ActiveChannels: React.FC = () => {
-  const { channels, posts } = usePosts();
+  const { channels = [], posts = [] } = usePosts();
 
   const getRecentPostForChannel = (channelId: string) => {
-    return posts.find(
+    return (posts || []).find(
       (post) =>
         post.channels.includes(channelId) &&
         (post.status === "scheduled" || post.status === "sent"),
@@ -59,7 +59,7 @@ const ActiveChannels: React.FC = () => {
       </CardHeader>
       <CardContent className="p-3 pt-2">
         <div className="flex gap-3 items-center flex-wrap">
-          {channels.map((channel) => (
+          {(channels || []).map((channel) => (
             <TooltipProvider key={channel.id}>
               <Tooltip>
                 <TooltipTrigger asChild>

@@ -1,12 +1,11 @@
-
-import React from 'react';
-import { Post, SocialChannel, usePosts } from '@/context/PostsContext';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Calendar, Clock, PenTool } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { StatusFilter } from './PostStatusSelector';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import PostPreview from '@/components/post/PostPreview';
+import React from "react";
+import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Calendar, Clock, PenTool } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { StatusFilter } from "./PostStatusSelector";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import PostPreview from "@/components/post/PostPreview";
 
 interface PostGridViewProps {
   statusFilter: StatusFilter;
@@ -15,23 +14,27 @@ interface PostGridViewProps {
 }
 
 const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
-  const { posts, channels } = usePosts();
+  const { posts = [], channels = [] } = usePosts();
   const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
   const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
-  
-  const filteredPosts = posts.filter(post => {
+
+  const filteredPosts = (posts || []).filter((post) => {
     // Filter by status
     if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
-    
+
     // Filter by channel
-    if (channelFilter.length > 0 && !post.channels.some(channelId => channelFilter.includes(channelId))) return false;
-    
+    if (
+      channelFilter.length > 0 &&
+      !post.channels.some((channelId) => channelFilter.includes(channelId))
+    )
+      return false;
+
     // Filter by tag
     if (tagFilter.length > 0) {
-      const postTags = getTagsFromContent(post.content);
-      if (!tagFilter.some(tag => postTags.includes(tag))) return false;
+      const postTags = getTagsFromContent(post.content || "");
+      if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
     }
-    
+
     return true;
   });
 
@@ -41,24 +44,24 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
     const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(b.createdAt);
     return dateB.getTime() - dateA.getTime();
   });
-  
+
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;
     const matches = content.match(regex);
-    return matches ? matches.map(tag => tag.substring(1)) : [];
+    return matches ? matches.map((tag) => tag.substring(1)) : [];
   };
-  
+
   const formatPostDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric' 
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     }).format(new Date(date));
   };
 
   const openPostPreview = (post: Post, channelId: string) => {
-    const channel = channels.find(c => c.id === channelId);
+    const channel = channels.find((c) => c.id === channelId);
     if (channel) {
       setSelectedPost(post);
       setSelectedChannel(channel);
@@ -68,17 +71,17 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {sortedPosts.length > 0 ? (
-        sortedPosts.map(post => (
+        sortedPosts.map((post) => (
           <Card key={post.id} className="flex flex-col h-full hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex-1">
               <div className="space-y-2">
                 <p className="text-sm line-clamp-3">{post.content}</p>
-                
+
                 {post.mediaUrls && post.mediaUrls.length > 0 && (
                   <div className="mt-2 aspect-video w-full rounded-md overflow-hidden bg-muted">
-                    <img 
-                      src={post.mediaUrls[0]} 
-                      alt="Post media" 
+                    <img
+                      src={post.mediaUrls[0]}
+                      alt="Post media"
                       className="h-full w-full object-cover"
                     />
                     {post.mediaUrls.length > 1 && (
@@ -88,25 +91,32 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
                     )}
                   </div>
                 )}
-                
+
                 <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-                  <span className={`
+                  <span
+                    className={`
                     px-2 py-0.5 rounded-full
-                    ${post.status === 'scheduled' ? 'bg-amber-100 text-amber-800' : 
-                      post.status === 'sent' ? 'bg-green-100 text-green-800' : 
-                      post.status === 'draft' ? 'bg-blue-100 text-blue-800' :
-                      'bg-red-100 text-red-800'}
-                  `}>
+                    ${
+                      post.status === "scheduled"
+                        ? "bg-amber-100 text-amber-800"
+                        : post.status === "sent"
+                        ? "bg-green-100 text-green-800"
+                        : post.status === "draft"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-red-100 text-red-800"
+                    }
+                  `}
+                  >
                     {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
                   </span>
-                  
+
                   <div className="flex items-center">
-                    {post.status === 'scheduled' ? (
+                    {post.status === "scheduled" ? (
                       <>
                         <Calendar className="h-3 w-3 mr-1" />
                         <span>{post.scheduledAt && formatPostDate(post.scheduledAt)}</span>
                       </>
-                    ) : post.status === 'draft' ? (
+                    ) : post.status === "draft" ? (
                       <>
                         <PenTool className="h-3 w-3 mr-1" />
                         <span>Draft</span>
@@ -121,15 +131,15 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
                 </div>
               </div>
             </CardContent>
-            
+
             <CardFooter className="p-4 pt-0 border-t">
               <div className="flex flex-wrap gap-1 w-full">
-                {post.channels.map(channelId => {
-                  const channel = channels.find(c => c.id === channelId);
+                {post.channels.map((channelId) => {
+                  const channel = channels.find((c) => c.id === channelId);
                   return channel ? (
                     <Dialog key={channelId}>
                       <DialogTrigger asChild>
-                        <button 
+                        <button
                           className="flex items-center gap-1 bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded-full text-xs"
                           onClick={() => openPostPreview(post, channelId)}
                         >
@@ -144,10 +154,10 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
                         {selectedPost && selectedChannel && (
                           <div className="py-4">
                             <h3 className="font-medium mb-4">Post Preview</h3>
-                            <PostPreview 
+                            <PostPreview
                               content={selectedPost.content}
                               channel={selectedChannel}
-                              mediaUrl={selectedPost.mediaUrls?.[0]}
+                              mediaUrls={selectedPost.mediaUrls}
                             />
                           </div>
                         )}

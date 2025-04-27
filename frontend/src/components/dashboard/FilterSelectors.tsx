@@ -52,7 +52,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   timezone,
   onTimezoneChange,
 }) => {
-  const { channels, posts } = usePosts();
+  const { channels, posts = [] } = usePosts();
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isTagOpen, setIsTagOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
@@ -61,10 +61,10 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   // Extract all unique hashtags from posts
   const allTags = Array.from(
     new Set(
-      posts.flatMap((post) => {
+      (posts || []).flatMap((post) => {
         // Extract hashtags from content
         const regex = /#(\w+)/g;
-        const matches = post.content.match(regex);
+        const matches = post.content ? post.content.match(regex) : null;
         return matches ? matches.map((tag) => tag.substring(1)) : [];
       }),
     ),

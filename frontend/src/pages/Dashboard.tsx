@@ -13,7 +13,7 @@ import PostGridView from "@/components/dashboard/PostGridView";
 import PostCalendarView from "@/components/dashboard/PostCalendarView";
 
 const Dashboard = () => {
-  const { posts } = usePosts();
+  const { posts = [] } = usePosts();
 
   // State for filters and layout
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
@@ -24,10 +24,10 @@ const Dashboard = () => {
 
   // Count posts by status
   const postCounts = {
-    scheduled: posts.filter((post) => post.status === ("scheduled" as PostStatus)).length,
-    sent: posts.filter((post) => post.status === ("sent" as PostStatus)).length,
-    draft: posts.filter((post) => post.status === "draft").length,
-    failed: posts.filter((post) => post.status === "failed").length,
+    scheduled: (posts || []).filter((post) => post.status === ("scheduled" as PostStatus)).length,
+    sent: (posts || []).filter((post) => post.status === ("sent" as PostStatus)).length,
+    draft: (posts || []).filter((post) => post.status === "draft").length,
+    failed: (posts || []).filter((post) => post.status === "failed").length,
   };
 
   return (

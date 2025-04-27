@@ -1,11 +1,20 @@
-import React from 'react';
-import { Post, SocialChannel, usePosts } from '@/context/PostsContext';
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, BarChart2, Share2, MoreVertical, MessageCircle, RefreshCw, Heart } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { StatusFilter } from './PostStatusSelector';
-import { Button } from '@/components/ui/button';
-import { formatDistanceToNow } from 'date-fns';
+import React from "react";
+import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Calendar,
+  Clock,
+  BarChart2,
+  Share2,
+  MoreVertical,
+  MessageCircle,
+  RefreshCw,
+  Heart,
+} from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { StatusFilter } from "./PostStatusSelector";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,17 +29,21 @@ interface PostListViewProps {
 }
 
 const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
-  const { posts, channels } = usePosts();
-  
+  const { posts = [], channels = [] } = usePosts();
+
   const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
   const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
-  
-  const filteredPosts = posts.filter(post => {
+
+  const filteredPosts = (posts || []).filter((post) => {
     if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
-    if (channelFilter.length > 0 && !post.channels.some(channelId => channelFilter.includes(channelId))) return false;
+    if (
+      channelFilter.length > 0 &&
+      !post.channels.some((channelId) => channelFilter.includes(channelId))
+    )
+      return false;
     if (tagFilter.length > 0) {
-      const postTags = getTagsFromContent(post.content);
-      if (!tagFilter.some(tag => postTags.includes(tag))) return false;
+      const postTags = getTagsFromContent(post.content || "");
+      if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
     }
     return true;
   });
@@ -40,24 +53,24 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
     const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(b.createdAt);
     return dateB.getTime() - dateA.getTime();
   });
-  
+
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;
     const matches = content.match(regex);
-    return matches ? matches.map(tag => tag.substring(1)) : [];
+    return matches ? matches.map((tag) => tag.substring(1)) : [];
   };
-  
+
   const formatPostDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric' 
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     }).format(new Date(date));
   };
 
   const openPostPreview = (post: Post, channelId: string) => {
-    const channel = channels.find(c => c.id === channelId);
+    const channel = channels.find((c) => c.id === channelId);
     if (channel) {
       setSelectedPost(post);
       setSelectedChannel(channel);
@@ -66,13 +79,13 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
 
   return (
     <div className="space-y-6">
-      {sortedPosts.map(post => (
+      {sortedPosts.map((post) => (
         <Card key={post.id} className="overflow-visible">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4 flex-1">
-                {post.channels.map(channelId => {
-                  const channel = channels.find(c => c.id === channelId);
+                {post.channels.map((channelId) => {
+                  const channel = channels.find((c) => c.id === channelId);
                   return channel ? (
                     <Avatar key={channelId} className="w-10 h-10">
                       <AvatarImage src={channel.profileImage} alt={channel.name} />
@@ -83,10 +96,11 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
                 <div className="flex-1 space-y-4">
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      {post.status === 'scheduled' ? (
+                      {post.status === "scheduled" ? (
                         <span className="flex items-center gap-1.5">
                           <Calendar className="h-4 w-4" />
-                          {post.scheduledAt && formatDistanceToNow(post.scheduledAt, { addSuffix: true })}
+                          {post.scheduledAt &&
+                            formatDistanceToNow(post.scheduledAt, { addSuffix: true })}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1.5">
@@ -107,11 +121,11 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-4">
                     <div className="flex -space-x-2">
-                      {post.channels.map(channelId => {
-                        const channel = channels.find(c => c.id === channelId);
+                      {post.channels.map((channelId) => {
+                        const channel = channels.find((c) => c.id === channelId);
                         return channel ? (
                           <Avatar key={channelId} className="w-6 h-6 border-2 border-background">
                             <AvatarImage src={channel.profileImage} alt={channel.name} />
@@ -134,7 +148,7 @@ const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter
                   </div>
                 </div>
               </div>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
