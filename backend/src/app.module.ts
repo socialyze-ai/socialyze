@@ -11,6 +11,7 @@ import { HashtagManagerModule } from './modules/hashtagManager/hashtagManager.mo
 import { MediaModule } from './modules/media/media.module';
 import { AiModule } from './modules/ai/ai.module';
 import { LabelModule } from './modules/label/label.module';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { LabelModule } from './modules/label/label.module';
     MediaModule,
     LabelModule,
     AiModule,
+    PostModule,
   ],
   controllers: [AppController],
   providers: [AppService],
