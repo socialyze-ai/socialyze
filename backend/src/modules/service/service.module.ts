@@ -7,16 +7,18 @@ import {
   OAuthSession,
   OAuthSessionSchema,
 } from 'src/schema/oauthsession.schema';
+import { Post, PostSchema } from '../post/post.model';
+import { InstagramService } from './instagram.service';
+import { XService } from './x.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Channel.name, schema: ChannelSchema },
       { name: User.name, schema: UserSchema },
+      { name: Post.name, schema: PostSchema },
       { name: OAuthSession.name, schema: OAuthSessionSchema },
     ]),
   ],
-  providers: [FacebookService],
-  exports: [FacebookService],
 })
 export class ServiceModule {}

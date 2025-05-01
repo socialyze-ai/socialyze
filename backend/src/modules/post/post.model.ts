@@ -6,14 +6,21 @@ export class Post {
   @Prop({ type: Types.ObjectId, ref: 'Channel', required: true })
   channelId: Types.ObjectId;
 
+  @Prop({ type: String })
+  postId: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  createdBy: Types.ObjectId;
+
   @Prop({ type: String, required: true })
   text: string;
 
-  @Prop({ type: [Types.ObjectId], ref: 'Label', default: [] })
-  label: Types.ObjectId[];
-
-  @Prop({ type: [String], default: [] })
-  media: string[];
+  @Prop({
+    type: String,
+    enum: ['facebook', 'instagram', 'x', 'linkedin'],
+    required: true,
+  })
+  handle: 'facebook' | 'instagram' | 'x' | 'linkedin';
 
   @Prop({
     type: String,
@@ -29,30 +36,38 @@ export class Post {
   })
   postStatus: 'queued' | 'failed' | 'published' | 'draft';
 
-  @Prop({ type: String })
-  failedReason: string;
-
   @Prop({ type: Date })
   scheduledTime?: Date;
 
-  // Engagement Metrics
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: [String] })
+  media: string[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'Label' })
+  label: Types.ObjectId[];
+
+  @Prop({ type: String })
+  postUrl: string;
+
+  @Prop({ type: Number })
   likes: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   comments: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   retweets: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   impressions: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   clicks: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   engRate: number;
+
+  @Prop({ type: String })
+  failedReason: string;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

@@ -1,24 +1,29 @@
 import {
   IsArray,
   IsEnum,
+  IsISO8601,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
   ArrayNotEmpty,
-  IsISO8601,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { Types } from 'mongoose';
 
 export class PostDto {
   @IsString()
   @Matches(/^[0-9a-fA-F]{24}$/, {
     message: 'channelId must be a valid ObjectId',
   })
-  channelId: string;
+  channelId: Types.ObjectId;
 
   @IsString()
   @IsNotEmpty()
   text: string;
+
+  @IsEnum(['facebook', 'instagram', 'x', 'linkedin'])
+  handle: 'facebook' | 'instagram' | 'x' | 'linkedin';
 
   @IsArray()
   @ArrayNotEmpty()
@@ -26,7 +31,7 @@ export class PostDto {
     each: true,
     message: 'Each label must be a valid ObjectId',
   })
-  label: string[];
+  label: Types.ObjectId[];
 
   @IsArray()
   @IsString({ each: true })
@@ -40,5 +45,6 @@ export class PostDto {
 
   @IsOptional()
   @IsISO8601()
-  scheduledTime?: string;
+  @Transform(({ value }) => new Date(value))
+  scheduledTime?: Date;
 }

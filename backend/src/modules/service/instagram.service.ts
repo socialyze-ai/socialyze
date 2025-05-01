@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Channel } from '../channel/channel.model';
 import axios from 'axios';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
+import { Post } from '../post/post.model';
 
 @Injectable()
 export class InstagramService {
@@ -146,5 +147,138 @@ export class InstagramService {
       );
       throw new Error('Failed to fetch Instagram account');
     }
+  }
+
+  async delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async publish(post: Post) {
+    const channel = await this.channelModel.findById(post.channelId);
+    if (!channel) throw new Error('Channel not found');
+
+    if (channel.handle !== 'instagram')
+      throw new InternalServerErrorException({
+        success: false,
+        message: 'Not an Instagrem Channel Id',
+      });
+
+    const accessToken = channel.accesstoken;
+    const instagramAccountId = channel.channelId;
+
+    const mediaUrls = post.media || [];
+    const isSingle = mediaUrls.length === 1;
+    const message = post.text || '';
+    const isVideo = mediaUrls[0]?.endsWith('.mp4');
+
+    const uploadMedia = async (url: string, isFirst: boolean) => {
+      const isVideo = url.endsWith('.mp4');
+      const mediaType = isVideo ? 'VIDEO' : 'IMAGE';
+
+      const params: any = {
+        access_token: accessToken,
+        ...(isVideo ? { video_url: url } : { image_url: url }),
+      };
+
+      // Only add caption for the first media if single post
+      if (isFirst && isSingle) {
+        params.caption = message;
+      }
+
+      const { data } = await axios.post(
+        `https://graph.facebook.com/v20.0/${instagramAccountId}/media`,
+        null,
+        { params },
+      );
+
+      // Poll status until upload is complete
+      let status = 'IN_PROGRESS';
+      while (status === 'IN_PROGRESS') {
+        const { data: statusRes } = await axios.get(
+          `https://graph.facebook.com/v20.0/${data.id}`,
+          {
+            params: {
+              fields: 'status_code',
+              access_token: accessToken,
+            },
+          },
+        );
+        status = statusRes.status_code;
+        if (status === 'IN_PROGRESS') await this.delay(3000);
+      }
+
+      return data.id;
+    };
+
+    const mediaIds = await Promise.all(
+      mediaUrls.map((url, idx) => uploadMedia(url, idx === 0)),
+    );
+
+    let creationId = '';
+
+    if (mediaIds.length === 1) {
+      creationId = mediaIds[0];
+    } else {
+      // Create carousel container
+      const { data } = await axios.post(
+        `https://graph.facebook.com/v20.0/${instagramAccountId}/media`,
+        null,
+        {
+          params: {
+            media_type: 'CAROUSEL',
+            children: mediaIds.join(','),
+            caption: message,
+            access_token: accessToken,
+          },
+        },
+      );
+
+      // Wait for carousel container to be ready
+      let status = 'IN_PROGRESS';
+      while (status === 'IN_PROGRESS') {
+        const { data: statusRes } = await axios.get(
+          `https://graph.facebook.com/v20.0/${data.id}`,
+          {
+            params: {
+              fields: 'status_code',
+              access_token: accessToken,
+            },
+          },
+        );
+        status = statusRes.status_code;
+        if (status === 'IN_PROGRESS') await this.delay(3000);
+      }
+
+      creationId = data.id;
+    }
+
+    // Publish the media
+    const { data: publishRes } = await axios.post(
+      `https://graph.facebook.com/v20.0/${instagramAccountId}/media_publish`,
+      null,
+      {
+        params: {
+          creation_id: creationId,
+          access_token: accessToken,
+        },
+      },
+    );
+
+    // Get permalink
+    const { data: permalinkRes } = await axios.get(
+      `https://graph.facebook.com/v20.0/${publishRes.id}`,
+      {
+        params: {
+          fields: 'permalink',
+          access_token: accessToken,
+        },
+      },
+    );
+
+    return {
+      postId: publishRes.id,
+      postUrl: permalinkRes.permalink,
+      success: true,
+    };
   }
 }
