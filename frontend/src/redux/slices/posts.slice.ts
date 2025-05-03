@@ -3,7 +3,7 @@ import { RootState } from "../store";
 
 export type SocialChannel = {
   id: string;
-  type: "facebook" | "twitter" | "instagram" | "linkedin";
+  type: "facebook" | "twitter" | "instagram" | "linkedin" | "x";
   name: string;
   username?: string;
   description?: string;
@@ -20,10 +20,10 @@ export type Post = {
   content: string;
   mediaUrls?: string[];
   channels: string[]; // Channel IDs
-  scheduledAt?: Date;
+  scheduledAt?: string; // Store as ISO string instead of Date
   status: PostStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Store as ISO string instead of Date
+  updatedAt: string; // Store as ISO string instead of Date
 };
 
 interface PostsState {
@@ -36,10 +36,10 @@ const initialPosts: Post[] = [
     id: "1",
     content: "This is my first scheduled post! #excited",
     channels: ["1", "2"],
-    scheduledAt: new Date(Date.now() + 86400000), // Tomorrow
+    scheduledAt: new Date(Date.now() + 86400000).toISOString(), // Use ISO string
     status: "schedule",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(), // Use ISO string
+    updatedAt: new Date().toISOString(), // Use ISO string
   },
   {
     id: "2",
@@ -47,16 +47,16 @@ const initialPosts: Post[] = [
     mediaUrls: ["https://images.unsplash.com/photo-1519389950473-47ba0277781c"],
     channels: ["1", "3", "4"],
     status: "postnow",
-    createdAt: new Date(Date.now() - 86400000), // Yesterday
-    updatedAt: new Date(Date.now() - 86400000),
+    createdAt: new Date(Date.now() - 86400000).toISOString(), // Use ISO string
+    updatedAt: new Date(Date.now() - 86400000).toISOString(), // Use ISO string
   },
   {
     id: "3",
     content: "Working on our new product launch. Stay tuned!",
     channels: ["2", "4"],
     status: "draft",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date().toISOString(), // Use ISO string
+    updatedAt: new Date().toISOString(), // Use ISO string
   },
 ];
 
@@ -70,11 +70,12 @@ export const postsSlice = createSlice({
   initialState,
   reducers: {
     addPost: (state, action: PayloadAction<Omit<Post, "id" | "createdAt" | "updatedAt">>) => {
+      const now = new Date().toISOString();
       const newPost: Post = {
         ...action.payload,
         id: Date.now().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       };
       state.posts.push(newPost);
     },
@@ -85,7 +86,7 @@ export const postsSlice = createSlice({
         state.posts[postIndex] = {
           ...state.posts[postIndex],
           ...updates,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         };
       }
     },

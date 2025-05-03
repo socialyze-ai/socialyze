@@ -10,6 +10,8 @@ interface PostType {
   postStatus: "queued" | "sent" | "failed" | "published";
   scheduledTime?: string;
   handle?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface FilterType {

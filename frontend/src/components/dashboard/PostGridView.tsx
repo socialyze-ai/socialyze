@@ -2,21 +2,19 @@ import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Calendar, Clock, PenTool } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { StatusFilter } from "./PostStatusSelector";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import PostPreview from "@/components/post/PostPreview";
 import { useSelector } from "react-redux";
 import { Post, SocialChannel, selectChannels, selectPosts } from "@/redux/slices/posts.slice";
+import { RootState } from "@/redux/store";
 
-interface PostGridViewProps {
-  statusFilter: StatusFilter;
-  channelFilter: string[];
-  tagFilter: string[];
-}
-
-const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
+const PostGridView = () => {
   const posts = useSelector(selectPosts);
   const channels = useSelector(selectChannels);
+  const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
+  const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
+  const tagFilter = useSelector((state: RootState) => state.dashboardPosts.filters.label);
+
   const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
   const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
 
@@ -116,7 +114,11 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
                     {post.status === "scheduled" ? (
                       <>
                         <Calendar className="h-3 w-3 mr-1" />
-                        <span>{post.scheduledAt && formatPostDate(post.scheduledAt)}</span>
+                        <span>
+                          {post.scheduledAt
+                            ? formatPostDate(new Date(post.scheduledAt))
+                            : "Unknown date"}
+                        </span>
                       </>
                     ) : post.status === "draft" ? (
                       <>
@@ -126,7 +128,11 @@ const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter
                     ) : (
                       <>
                         <Clock className="h-3 w-3 mr-1" />
-                        <span>{formatPostDate(post.createdAt)}</span>
+                        <span>
+                          {post?.createdAt
+                            ? formatPostDate(new Date(post.createdAt))
+                            : "Unknown date"}
+                        </span>
                       </>
                     )}
                   </div>

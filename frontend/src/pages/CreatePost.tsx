@@ -214,7 +214,7 @@ const CreatePost = () => {
         addPost({
           content: finalContent,
           channels: [channelId],
-          scheduledAt,
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
           mediaUrls,
           status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
         }),
@@ -317,7 +317,7 @@ const CreatePost = () => {
         addPost({
           content: finalContent,
           channels: [channelId],
-          scheduledAt,
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
           mediaUrls,
           status: "schedule",
         }),

@@ -12,14 +12,12 @@ import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/post/CreatePostModal";
 import { useSelector } from "react-redux";
 import { Post, SocialChannel, selectPosts, selectChannels } from "@/redux/slices/posts.slice";
+import { RootState } from "@/redux/store";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
 
 interface PostCalendarViewProps {
-  statusFilter: StatusFilter;
-  channelFilter: string[];
-  tagFilter: string[];
   timezone: string;
 }
 
@@ -34,7 +32,7 @@ interface CalendarEvent {
 }
 
 // Mock data for posts
-const mockPosts: Post[] = [
+const mockPosts = [
   {
     id: "1",
     content: "Exciting news! Our latest product launch is here! #innovation #tech",
@@ -101,19 +99,16 @@ const mockChannels: SocialChannel[] = [
   },
 ];
 
-const PostCalendarView: React.FC<PostCalendarViewProps> = ({
-  statusFilter,
-  channelFilter,
-  tagFilter,
-  timezone,
-}) => {
-  // const { posts = [], channels = [] } = usePosts(); // Use mock data
+const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const posts = mockPosts;
-  const channels = mockChannels;
+  const posts = useSelector(selectPosts);
+  const channels = useSelector(selectChannels);
+  const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
+  const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
+  const tagFilter = useSelector((state: RootState) => state.dashboardPosts.filters.label);
 
   console.log("posts", posts);
 

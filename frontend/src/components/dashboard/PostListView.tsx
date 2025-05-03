@@ -1,41 +1,14 @@
-import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Calendar,
-  Clock,
-  BarChart2,
-  Share2,
-  MoreVertical,
-  MessageCircle,
-  RefreshCw,
-  Heart,
-  Eye,
-  Repeat,
-} from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { StatusFilter } from "./PostStatusSelector";
-import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
-import { selectChannels, selectPosts } from "@/redux/slices/posts.slice";
+import { selectPosts } from "@/redux/slices/posts.slice";
 import PostPreviewDemo from "./PostPreviewDemo";
+import { RootState } from "@/redux/store";
 
-interface PostListViewProps {
-  statusFilter: StatusFilter;
-  channelFilter: string[];
-  tagFilter: string[];
-}
-
-const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
+const PostListView = () => {
   const posts = useSelector(selectPosts);
-  const channels = useSelector(selectChannels);
+  const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
+  const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
+  const tagFilter = useSelector((state: RootState) => state.dashboardPosts.filters.label);
 
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;

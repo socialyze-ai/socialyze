@@ -43,6 +43,7 @@ const InitialDataLoader = () => {
     }
   }, [postsError, postsErrorDetails, dispatch]);
 
+  // Labels
   useEffect(() => {
     if (apiLabels && apiLabels.length > 0) {
       const formattedLabels: Label[] = apiLabels.map((label) => ({
@@ -55,39 +56,67 @@ const InitialDataLoader = () => {
     }
   }, [apiLabels, dispatch]);
 
+  // Channels
   useEffect(() => {
     if (channelsData?.data?.length) {
-      const channels = channelsData.data.map((channel: any) => ({
-        id: channel._id,
-        type: channel.handle,
-        name: channel.channelName,
-        username: channel.channelName,
-        description: "",
-        profileImage: channel.channelPicture,
-        connected: true,
-        workspace: channel.workspace,
-        channelId: channel.channelId,
-      }));
+      const channels = channelsData.data.map(
+        (channel: {
+          _id: string;
+          handle: string;
+          channelName: string;
+          channelPicture: string;
+          workspace: string;
+          channelId: string;
+        }) => ({
+          id: channel._id,
+          type: channel.handle,
+          name: channel.channelName,
+          username: channel.channelName,
+          description: "",
+          profileImage: channel.channelPicture,
+          connected: true,
+          workspace: channel.workspace,
+          channelId: channel.channelId,
+        }),
+      );
 
       dispatch(addChannels(channels));
       dispatch(addPostsChannels(channels));
     }
   }, [channelsData, dispatch]);
 
+  // Posts
   useEffect(() => {
-    if (postsData?.data) {
-      // Use the API response format directly, keeping only the necessary fields
-      const formattedPosts = postsData.data.map((post: any) => ({
-        _id: post._id,
-        channelId: post.channelId,
-        text: post.text,
-        label: post.label || [],
-        media: post.media || [],
-        postType: post.postType,
-        postStatus: post.postStatus,
-        scheduledTime: post.scheduledTime,
-        handle: post.handle,
-      }));
+    if (postsData?.data?.length) {
+      // Ensure we're using serializable data
+      const formattedPosts = postsData.data.map(
+        (post: {
+          _id: string;
+          channelId: string;
+          text: string;
+          label: string[];
+          media: string[];
+          postType: string;
+          postStatus: string;
+          scheduledTime: string;
+          handle: string;
+          createdAt: string;
+          updatedAt: string;
+        }) => ({
+          _id: post._id,
+          channelId: post.channelId,
+          text: post.text,
+          label: post.label || [],
+          media: post.media || [],
+          postType: post.postType,
+          postStatus: post.postStatus,
+          // Store dates as ISO strings instead of Date objects
+          scheduledTime: post.scheduledTime ? post.scheduledTime : null,
+          handle: post.handle,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        }),
+      );
 
       dispatch(setPosts(formattedPosts));
     }

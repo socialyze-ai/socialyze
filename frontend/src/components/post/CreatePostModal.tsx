@@ -330,7 +330,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           channels: [channelId],
           mediaUrls: mediaUrls,
           status,
-          scheduledAt,
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
         }),
       );
 

@@ -1,4 +1,8 @@
+import { useSelector } from "react-redux";
 import DashboardPostPreview, { SocialPlatform } from "./DashboardPostPreview";
+
+import { RootState } from "@/redux/store";
+import { selectChannels } from "@/redux/slices/posts.slice";
 
 const PostPreviewDemo = () => {
   const postData = [
@@ -60,26 +64,74 @@ const PostPreviewDemo = () => {
     },
   ];
 
+  // Get posts from Redux store
+  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
+  const channels = useSelector(selectChannels);
+
+  // Function to get platform from channel type
+  const getPlatform = (channelId: string): SocialPlatform => {
+    const channel = channels.find((ch) => ch.id === channelId || ch.channelId === channelId);
+    if (!channel) return "twitter"; // Default fallback
+
+    const type = channel.type.toLowerCase();
+    if (type.includes("facebook")) return "facebook";
+    if (type.includes("instagram")) return "instagram";
+    if (type.includes("linkedin")) return "linkedin";
+    return "twitter"; // Default fallback
+  };
+
+  // Function to calculate days ago
+  const calculateDaysAgo = (dateString: string | undefined): number => {
+    if (!dateString) return 0;
+    try {
+      const postDate = new Date(dateString);
+      const now = new Date();
+      const diffTime = now.getTime() - postDate.getTime();
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } catch (e) {
+      return 0;
+    }
+  };
+
   return (
     <div className="space-y-4 p-4 w-[70%] mx-auto">
-      {postData?.map((post) => (
-        <DashboardPostPreview
-          key={post.platform}
-          platform={post.platform as SocialPlatform}
-          displayName={post.displayName}
-          username={post.username}
-          date={post.date}
-          content={post.content}
-          imageUrl={post.imageUrl}
-          storyUrl={post.storyUrl}
-          likes={post.likes}
-          retweets={post.retweets}
-          comments={post.comments}
-          impressions={post.impressions}
-          engagementRate={post.engagementRate}
-          createdDaysAgo={post.createdDaysAgo}
-        />
-      ))}
+      {posts.length === 0 ? (
+        <div className="text-center text-muted-foreground">No posts found</div>
+      ) : (
+        posts.map((post) => {
+          console.log("postpostpostpost", post);
+
+          // Find associated channel
+          const channel = channels.find(
+            (ch) => ch.id === post.channelId || ch.channelId === post.channelId,
+          );
+
+          const isCustomSchedule = post.postType === "schedule"; // Assuming 'schedule' means manually scheduled
+
+          return (
+            <DashboardPostPreview
+              key={post._id || Math.random().toString()}
+              id={post._id}
+              platform={getPlatform(post.channelId)}
+              profileImage={channel?.profileImage || ""}
+              displayName={channel?.name || ""}
+              username={channel?.username || channel?.name || ""}
+              date={post.createdAt}
+              content={post.text || ""}
+              imageUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
+              storyUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
+              likes={0}
+              retweets={0}
+              comments={0}
+              impressions={0}
+              engagementRate={0}
+              createdDaysAgo={calculateDaysAgo(post.scheduledTime)}
+              isCustom={isCustomSchedule}
+              clicks={0}
+            />
+          );
+        })
+      )}
     </div>
   );
 };

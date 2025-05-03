@@ -29,8 +29,9 @@ import { cn } from "@/lib/utils";
 import { SocialChannel } from "@/redux/slices/posts.slice";
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { DropdownMenu } from "../ui/dropdown-menu";
+import { format } from "date-fns";
 
-export type SocialPlatform = "twitter" | "instagram" | "linkedin" | "facebook";
+export type SocialPlatform = "twitter" | "instagram" | "linkedin" | "facebook" | "x";
 
 interface DashboardPostPreviewProps {
   id?: string;
@@ -73,7 +74,7 @@ const DashboardPostPreview: React.FC<DashboardPostPreviewProps> = ({
   username,
   displayName,
   date,
-  // content,
+  content,
   imageUrl,
   storyUrl,
   likes = 0,
@@ -87,68 +88,125 @@ const DashboardPostPreview: React.FC<DashboardPostPreviewProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const content =
-    "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).";
+  // Function to format date
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+    try {
+      return format(new Date(dateString), "EEEE, MMMM d");
+    } catch (e) {
+      return "";
+    }
+  };
 
   const contentToDisplay =
     isExpanded || content.length <= 350 ? content : `${content.substring(0, 350)}...`;
 
-  const engagementRatings = [
-    {
-      id: 1,
-      name: "Likes",
-      value: likes,
-      icon: <Heart size={16} />,
-    },
-    {
-      id: 2,
-      name: "Retweets",
-      value: retweets,
-      icon: <Repeat size={16} />,
-    },
-    {
-      id: 3,
-      name: "Impressions",
-      value: impressions,
-      icon: <CircleFadingArrowUp size={16} />,
-    },
-    {
-      id: 4,
-      name: "Clicks",
-      value: clicks,
-      icon: <MousePointerClick size={16} />,
-    },
-    {
-      id: 5,
-      name: "Eng. Rate",
-      value: engagementRate,
-      icon: <LineChart size={16} />,
-    },
-  ];
+  const getEngagementRatings = () => {
+    // Common metrics for all platforms
+    const commonMetrics = [
+      {
+        id: 1,
+        name: "Likes",
+        value: likes,
+        icon: <Heart size={16} />,
+      },
+      {
+        id: 5,
+        name: "Eng. Rate",
+        value: engagementRate,
+        icon: <LineChart size={16} />,
+      },
+    ];
+
+    // Platform specific metrics
+    switch (platform) {
+      case "facebook":
+      case "instagram":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Comments",
+            value: comments,
+            icon: <MessageCircle size={16} />,
+          },
+        ];
+      case "twitter":
+      case "x":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Retweets",
+            value: retweets,
+            icon: <Repeat size={16} />,
+          },
+          {
+            id: 3,
+            name: "Impressions",
+            value: impressions,
+            icon: <CircleFadingArrowUp size={16} />,
+          },
+          {
+            id: 4,
+            name: "Clicks",
+            value: clicks,
+            icon: <MousePointerClick size={16} />,
+          },
+        ];
+      case "linkedin":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Comments",
+            value: comments,
+            icon: <MessageCircle size={16} />,
+          },
+          {
+            id: 3,
+            name: "Impressions",
+            value: impressions,
+            icon: <CircleFadingArrowUp size={16} />,
+          },
+        ];
+      default:
+        return commonMetrics;
+    }
+  };
+
+  const engagementRatings = getEngagementRatings();
+
+  console.log("datedatedate", date);
 
   return (
     <div className="w-[90%] mx-auto">
-      <div className="text-xl font-semibold text-gray-500 mb-3">{date}</div>
+      <div className="text-xl font-semibold text-gray-500 mb-3">{formatDate(date)}</div>
 
       <div className="flex gap-5">
         {/* Left Section */}
         <div className="flex flex-col gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild className="cursor-pointer text-sm text-gray-500 font-semibold">
-              <p>
-                {new Date(date).toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "numeric",
-                  hour12: true,
-                })}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs bg-gray-500 text-white w-60">
-              <p>
-                Channel Local Time: {new Date(date).toLocaleString([], { timeZoneName: "short" })}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          {date && (
+            <Tooltip>
+              <TooltipTrigger
+                asChild
+                className="cursor-pointer text-sm text-gray-500 font-semibold"
+              >
+                <p>
+                  {new Date(date).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: true,
+                  })}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs bg-gray-500 text-white w-60">
+                <p>
+                  Channel Local Time: {new Date(date).toLocaleString([], { timeZoneName: "short" })}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {isCustom && (
             <Tooltip>
@@ -159,7 +217,7 @@ const DashboardPostPreview: React.FC<DashboardPostPreviewProps> = ({
               </TooltipTrigger>
               <TooltipContent className="text-xs bg-gray-500 text-white w-60">
                 <p>
-                  Posting time was set manually and is not determined by the channel’s posting
+                  Posting time was set manually and is not determined by the channel's posting
                   schedule
                 </p>
               </TooltipContent>
