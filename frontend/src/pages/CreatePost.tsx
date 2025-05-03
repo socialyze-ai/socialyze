@@ -219,7 +219,16 @@ const CreatePost = () => {
       });
     });
 
-    console.log("finalData", finalData);
+    handleCreatePostApiCall(finalData, isDraft, scheduledAt, selectedChannels);
+  };
+
+  const handleCreatePostApiCall = (
+    finalData: any,
+    isDraft: boolean,
+    scheduledAt: Date,
+    selectedChannels: string[],
+  ) => {
+    if (selectedChannels?.length !== finalData?.length) return;
 
     addPostMutation(finalData, {
       onSuccess: () => {
@@ -309,25 +318,9 @@ const CreatePost = () => {
         mediaUrls,
         status: "schedule",
       });
-
-      addPostMutation(finalData, {
-        onSuccess: () => {
-          toast({
-            title: "Post scheduled",
-            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to schedule post",
-            variant: "destructive",
-          });
-        },
-      });
     });
 
-    console.log("finalData", finalData);
+    handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);
 
     toast({
       title: "Post scheduled",

@@ -2,6 +2,7 @@ import { useGetChannel } from "@/api/apiHooks/useChannel";
 import { useGetTagLabels } from "@/api/apiHooks/useTagLabel";
 import { addChannels } from "@/redux/slices/channels.slice";
 import { Label, setInitialLabels } from "@/redux/slices/labelManager.slice";
+import { addChannels as addPostsChannels } from "@/redux/slices/posts.slice";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 
@@ -37,6 +38,7 @@ const InitialDataLoader = () => {
       }));
 
       dispatch(addChannels(channels));
+      dispatch(addPostsChannels(channels));
     }
   }, [channelsData, dispatch]);
 

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import PostPreview from "@/components/post/PostPreview";
 import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/post/CreatePostModal";
+import { Channel } from "@/types/channel.type";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -32,16 +33,89 @@ interface CalendarEvent {
   channelType: string;
 }
 
+// Mock data for posts
+const mockPosts: Post[] = [
+  {
+    id: "1",
+    content: "Exciting news! Our latest product launch is here! #innovation #tech",
+    channels: ["1", "2"],
+    scheduledAt: new Date("2025-04-28T14:24:06.248Z"),
+    status: "scheduled",
+    createdAt: new Date("2025-04-28T13:24:06.248Z"),
+    updatedAt: new Date("2025-04-28T13:24:06.248Z"),
+    mediaUrls: [],
+  },
+  {
+    id: "1",
+    content: "Post about React #react",
+    channels: ["1", "2"],
+    scheduledAt: new Date(),
+    status: "scheduled",
+    createdAt: undefined,
+    updatedAt: undefined,
+    mediaUrls: [],
+  },
+  {
+    id: "2",
+    content: "Post about JavaScript #javascript",
+    scheduledAt: new Date("2023-10-01T12:00:00"),
+    status: "scheduled",
+    channels: ["1"],
+    mediaUrls: [],
+    createdAt: undefined,
+    updatedAt: undefined,
+  },
+  {
+    id: "3",
+    content: "Post about CSS #css",
+    scheduledAt: new Date("2023-10-02T09:00:00"),
+    status: "scheduled",
+    channels: ["2"],
+    mediaUrls: [],
+    createdAt: undefined,
+    updatedAt: undefined,
+  },
+];
+
+const mockChannels = [
+  {
+    id: "12",
+    type: "facebook",
+    name: "Facebook",
+    profileImage: "https://example.com/facebook.png",
+    connected: true,
+  },
+  {
+    id: "13",
+    type: "twitter",
+    name: "Twitter",
+    profileImage: "https://example.com/twitter.png",
+    connected: true,
+  },
+  {
+    id: "14",
+    type: "instagram",
+    name: "Instagram",
+    profileImage: "https://example.com/instagram.png",
+    connected: true,
+  },
+];
+
 const PostCalendarView: React.FC<PostCalendarViewProps> = ({
   statusFilter,
   channelFilter,
   tagFilter,
   timezone,
 }) => {
-  const { posts = [], channels = [] } = usePosts();
+  // const { posts = [], channels = [] } = usePosts(); // Use mock data
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const posts = mockPosts;
+  const channels = mockChannels;
+
+  console.log("posts", posts);
 
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;

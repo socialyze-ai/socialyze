@@ -75,7 +75,7 @@ import { TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
-import { selectSelectedLabels } from "@/redux/slices/labelManager.slice";
+import { selectSelectedLabels, unselectAllLabels } from "@/redux/slices/labelManager.slice";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
@@ -253,6 +253,49 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     submitPost(channelsToUse, "draft");
   };
 
+  const handleCreatePostApiCall = (
+    finalData: any,
+    isDraft: boolean,
+    scheduledAt: Date,
+    selectedChannels: string[],
+  ) => {
+    if (selectedChannels?.length !== finalData?.length) return;
+
+    addPostMutation(finalData, {
+      onSuccess: () => {
+        const statusText = isDraft
+          ? "saved as draft"
+          : postCreation.isScheduled
+          ? "scheduled"
+          : "sent";
+
+        toast({
+          title: isDraft
+            ? "Draft saved"
+            : postCreation.isScheduled
+            ? "Post scheduled"
+            : "Post sent",
+          description:
+            postCreation.isScheduled && scheduledAt
+              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+              : `Your post has been ${statusText}.`,
+        });
+
+        dispatch(unselectAllLabels());
+
+        navigate("/dashboard");
+        dispatch(resetPostCreation());
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to add post",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
   const submitPost = (
     channelIds: string[],
     status: "postnow" | "schedule" | "draft",
@@ -287,21 +330,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         scheduledAt,
       });
 
-      addPostMutation(finalData, {
-        onSuccess: () => {
-          toast({
-            title: "Post scheduled",
-            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to schedule post",
-            variant: "destructive",
-          });
-        },
-      });
+      handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });
 
     console.log("finalData", finalData);
