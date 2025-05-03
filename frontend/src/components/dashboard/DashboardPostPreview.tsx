@@ -53,7 +53,7 @@ interface DashboardPostPreviewProps {
   clicks?: number;
 }
 
-const getSocialIcon = (platform: SocialPlatform, size = 18) => {
+export const getSocialIcon = (platform: SocialPlatform, size = 18) => {
   switch (platform) {
     case "facebook":
       return <Facebook size={size} className="text-[#1877F2]" />;
