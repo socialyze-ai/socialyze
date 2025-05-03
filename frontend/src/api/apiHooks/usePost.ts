@@ -126,14 +126,21 @@ const mockPosts: PostType[] = [
   },
 ];
 
-export const useGetPost = (isMockData: boolean = true) => {
+export const useGetPost = ({
+  filters,
+}: {
+  filters: {
+    channel: string[];
+    postStatus: string[];
+    label: string[];
+    limit: number;
+    offset: number;
+  };
+}) => {
   const query = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
-      if (isMockData) {
-        return mockPosts;
-      }
-      return await makeRequest(BACKEND_URL + "post", "GET", "", HARD_CODED_TOKEN);
+      return await makeRequest(BACKEND_URL + "post/getPosts", "POST", filters, HARD_CODED_TOKEN);
     },
   });
 

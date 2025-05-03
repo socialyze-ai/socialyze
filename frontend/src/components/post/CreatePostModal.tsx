@@ -284,6 +284,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
 
         navigate("/dashboard");
         dispatch(resetPostCreation());
+        dispatch(reset());
       },
       onError: () => {
         toast({
@@ -351,7 +352,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       description: `Your post has been ${statusText}.`,
     });
 
-    handleClose();
+    onClose();
   };
 
   const resetForm = () => {

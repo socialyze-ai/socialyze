@@ -9,9 +9,21 @@ import PostCalendarView from "@/components/dashboard/PostCalendarView";
 import FilterSelectors from "@/components/dashboard/FilterSelectors";
 import { useSelector } from "react-redux";
 import { PostStatus, selectPosts } from "@/redux/slices/posts.slice";
+import { useGetPost } from "@/api/apiHooks/usePost";
 
 const Dashboard = () => {
   const posts = useSelector(selectPosts);
+  const { data: postssss } = useGetPost({
+    filters: {
+      channel: [],
+      postStatus: [],
+      label: [],
+      limit: 10,
+      offset: 0,
+    },
+  });
+
+  console.log("postsssspostssss", postssss);
 
   // State for filters and layout
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
