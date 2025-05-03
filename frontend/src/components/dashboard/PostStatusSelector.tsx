@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PostStatus } from "@/redux/slices/posts.slice";
 import { CheckCircle2, Clock, FileText, AlertCircle } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 
 export type StatusFilter = PostStatus[];
 
 interface PostStatusSelectorProps {
-  activeStatuses: StatusFilter;
-  onStatusChange: (statuses: StatusFilter) => void;
   counts: {
     scheduled: number;
     sent: number;
@@ -17,17 +18,26 @@ interface PostStatusSelectorProps {
   };
 }
 
-const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({
-  activeStatuses,
-  onStatusChange,
-  counts,
-}) => {
+const PostStatusSelector: React.FC<PostStatusSelectorProps> = ({ counts }) => {
+  const dispatch = useDispatch();
+  const activeStatuses = useSelector(
+    (state: RootState) => state.dashboardPosts.filters.postStatus,
+  ) as StatusFilter;
+
   const toggleStatus = (status: PostStatus) => {
+    let newStatuses: string[];
+
     if (activeStatuses.includes(status)) {
-      onStatusChange(activeStatuses.filter((s) => s !== status));
+      newStatuses = activeStatuses.filter((s) => s !== status);
     } else {
-      onStatusChange([...activeStatuses, status]);
+      newStatuses = [...activeStatuses, status];
     }
+
+    dispatch(
+      updateFilter({
+        postStatus: newStatuses,
+      }),
+    );
   };
 
   return (

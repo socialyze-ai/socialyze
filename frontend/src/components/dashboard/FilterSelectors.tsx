@@ -5,33 +5,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { BookMarked, Check, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectLabels } from "@/redux/slices/labelManager.slice";
 import { selectChannels } from "@/redux/slices/posts.slice";
+import { RootState } from "@/redux/store";
+import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 
 interface FilterSelectorsProps {
-  selectedChannels: string[];
-  onChannelFilterChange: (channels: string[]) => void;
-  selectedLabels: string[];
-  onLabelFilterChange: (labels: string[]) => void;
   timezone: string;
   onTimezoneChange: (timezone: string) => void;
 }
 
-const FilterSelectors: React.FC<FilterSelectorsProps> = ({
-  selectedChannels,
-  onChannelFilterChange,
-  selectedLabels,
-  onLabelFilterChange,
-  timezone,
-  onTimezoneChange,
-}) => {
+const FilterSelectors: React.FC<FilterSelectorsProps> = ({ timezone, onTimezoneChange }) => {
+  const dispatch = useDispatch();
   const channels = useSelector(selectChannels);
+  const labels = useSelector(selectLabels);
+
+  // Get filter values from the dashboard slice
+  const selectedChannels = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
+  const selectedLabels = useSelector((state: RootState) => state.dashboardPosts.filters.label);
+
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
-
-  const labels = useSelector(selectLabels);
 
   const timezones = [
     { name: "Kolkata", offset: "(GMT+5:30)" },
@@ -44,19 +40,35 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   ];
 
   const toggleChannel = (channelId: string) => {
+    let newChannels: string[];
+
     if (selectedChannels?.includes(channelId)) {
-      onChannelFilterChange(selectedChannels.filter((id) => id !== channelId));
+      newChannels = selectedChannels.filter((id) => id !== channelId);
     } else {
-      onChannelFilterChange([...selectedChannels, channelId]);
+      newChannels = [...selectedChannels, channelId];
     }
+
+    dispatch(
+      updateFilter({
+        channel: newChannels,
+      }),
+    );
   };
 
   const toggleLabel = (label: string) => {
+    let newLabels: string[];
+
     if (selectedLabels?.includes(label)) {
-      onLabelFilterChange(selectedLabels?.filter((l) => l !== label));
+      newLabels = selectedLabels?.filter((l) => l !== label);
     } else {
-      onLabelFilterChange([...selectedLabels, label]);
+      newLabels = [...selectedLabels, label];
     }
+
+    dispatch(
+      updateFilter({
+        label: newLabels,
+      }),
+    );
   };
 
   return (

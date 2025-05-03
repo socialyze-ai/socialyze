@@ -138,7 +138,7 @@ export const useGetPost = ({
   };
 }) => {
   const query = useQuery({
-    queryKey: ["posts"],
+    queryKey: ["posts", filters],
     queryFn: async () => {
       return await makeRequest(BACKEND_URL + "post/getPosts", "POST", filters, HARD_CODED_TOKEN);
     },
