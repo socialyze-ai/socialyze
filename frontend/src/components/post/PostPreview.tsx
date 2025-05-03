@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SocialChannel } from "@/context/PostsContext";
+import { SocialChannel } from "@/redux/slices/posts.slice";
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";

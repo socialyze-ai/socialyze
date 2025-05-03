@@ -3,7 +3,6 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, addDays, startOfToday, isBefore, startOfDay } from "date-fns";
 import moment from "moment";
-import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
 import { StatusFilter } from "./PostStatusSelector";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import PostPreview from "@/components/post/PostPreview";
 import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/post/CreatePostModal";
-import { Channel } from "@/types/channel.type";
+import { useSelector } from "react-redux";
+import { Post, SocialChannel, selectPosts, selectChannels } from "@/redux/slices/posts.slice";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -51,8 +51,8 @@ const mockPosts: Post[] = [
     channels: ["1", "2"],
     scheduledAt: new Date(),
     status: "scheduled",
-    createdAt: undefined,
-    updatedAt: undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     mediaUrls: [],
   },
   {
@@ -62,8 +62,8 @@ const mockPosts: Post[] = [
     status: "scheduled",
     channels: ["1"],
     mediaUrls: [],
-    createdAt: undefined,
-    updatedAt: undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: "3",
@@ -72,12 +72,12 @@ const mockPosts: Post[] = [
     status: "scheduled",
     channels: ["2"],
     mediaUrls: [],
-    createdAt: undefined,
-    updatedAt: undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ];
 
-const mockChannels = [
+const mockChannels: SocialChannel[] = [
   {
     id: "12",
     type: "facebook",

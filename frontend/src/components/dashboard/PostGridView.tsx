@@ -1,11 +1,12 @@
 import React from "react";
-import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Calendar, Clock, PenTool } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { StatusFilter } from "./PostStatusSelector";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import PostPreview from "@/components/post/PostPreview";
+import { useSelector } from "react-redux";
+import { Post, SocialChannel, selectChannels, selectPosts } from "@/redux/slices/posts.slice";
 
 interface PostGridViewProps {
   statusFilter: StatusFilter;
@@ -14,7 +15,8 @@ interface PostGridViewProps {
 }
 
 const PostGridView: React.FC<PostGridViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
-  const { posts = [], channels = [] } = usePosts();
+  const posts = useSelector(selectPosts);
+  const channels = useSelector(selectChannels);
   const [selectedPost, setSelectedPost] = React.useState<Post | null>(null);
   const [selectedChannel, setSelectedChannel] = React.useState<SocialChannel | null>(null);
 

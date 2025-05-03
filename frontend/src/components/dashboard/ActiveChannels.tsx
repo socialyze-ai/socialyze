@@ -1,5 +1,6 @@
 import React from "react";
-import { usePosts } from "@/context/PostsContext";
+import { useSelector } from "react-redux";
+import { selectChannels } from "@/redux/slices/posts.slice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -10,7 +11,7 @@ import { getSocialIcon } from "../post/CreatePostModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ActiveChannels: React.FC = () => {
-  const { channels = [] } = usePosts();
+  const channels = useSelector(selectChannels);
 
   return (
     <Card className="shadow-sm">

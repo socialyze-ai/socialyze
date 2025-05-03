@@ -1,15 +1,8 @@
 import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import EmojiPicker from "./EmojiPicker";
-import { SocialChannel } from "@/context/PostsContext";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Pencil,
-  Twitter,
-  X,
-} from "lucide-react";
+import { SocialChannel } from "@/redux/slices/posts.slice";
+import { Facebook, Instagram, Linkedin, Pencil, Twitter, X } from "lucide-react";
 import { DialogContent } from "../ui/dialog";
 import { Dialog } from "@radix-ui/react-dialog";
 import MediaUploader, { Media } from "./MediaUploader";
@@ -41,9 +34,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
   onChannelSelect,
   handleEditMedia,
 }) => {
-  const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(
-    null
-  );
+  const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(null);
   const dispatch = useDispatch();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -90,11 +81,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
 
   return (
     <>
-      <div
-        className={`border rounded-md ${
-          activeChannel === channel.id ? "bg-gray-100" : ""
-        }`}
-      >
+      <div className={`border rounded-md ${activeChannel === channel.id ? "bg-gray-100" : ""}`}>
         <div
           className="p-3 flex items-center gap-2 border-b cursor-pointer"
           onClick={() => onChannelSelect(channel.id)}
@@ -119,11 +106,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
               {mediaUrls.map((media) => (
                 <div key={media.id} className="relative m-1">
                   {media.type === "video" ? (
-                    <video
-                      src={media.url}
-                      controls
-                      className="h-20 w-20 rounded object-cover"
-                    />
+                    <video src={media.url} controls className="h-20 w-20 rounded object-cover" />
                   ) : (
                     <img
                       src={media.url}
@@ -145,11 +128,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
                       size="icon"
                       className="h-6 w-6 rounded-full"
                       onClick={() =>
-                        dispatch(
-                          setMediaUrls(
-                            mediaUrls.filter((m) => m.id !== media.id)
-                          )
-                        )
+                        dispatch(setMediaUrls(mediaUrls.filter((m) => m.id !== media.id)))
                       }
                     >
                       <X className="h-3 w-3" />
@@ -170,9 +149,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
               {characterLimit && (
                 <div
                   className={`text-xs ${
-                    characterCount > characterLimit
-                      ? "text-red-500 font-medium"
-                      : "text-gray-500"
+                    characterCount > characterLimit ? "text-red-500 font-medium" : "text-gray-500"
                   }`}
                 >
                   {characterCount} / {characterLimit}

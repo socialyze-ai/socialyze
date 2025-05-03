@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { usePosts } from "@/context/PostsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, Info, Unlink, MoveRight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -69,9 +68,10 @@ import { selectSelectedLabels, unselectAllLabels } from "@/redux/slices/labelMan
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
+import { addPost, selectChannels } from "@/redux/slices/posts.slice";
 
 const CreatePost = () => {
-  const { channels, addPost } = usePosts();
+  const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
   const selectedChannels = useSelector(selectSelectedChannels);
@@ -210,13 +210,15 @@ const CreatePost = () => {
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        scheduledAt,
-        mediaUrls,
-        status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          scheduledAt,
+          mediaUrls,
+          status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+        }),
+      );
     });
 
     handleCreatePostApiCall(finalData, isDraft, scheduledAt, selectedChannels);
@@ -311,13 +313,15 @@ const CreatePost = () => {
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        scheduledAt,
-        mediaUrls,
-        status: "schedule",
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          scheduledAt,
+          mediaUrls,
+          status: "schedule",
+        }),
+      );
     });
 
     handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);

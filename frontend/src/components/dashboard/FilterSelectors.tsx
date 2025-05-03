@@ -3,11 +3,11 @@ import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BookMarked, Check, Users } from "lucide-react";
-import { usePosts } from "@/context/PostsContext";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
 import { selectLabels } from "@/redux/slices/labelManager.slice";
+import { selectChannels } from "@/redux/slices/posts.slice";
 
 interface FilterSelectorsProps {
   selectedChannels: string[];
@@ -26,7 +26,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   timezone,
   onTimezoneChange,
 }) => {
-  const { channels } = usePosts();
+  const channels = useSelector(selectChannels);
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);

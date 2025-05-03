@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { SocialChannel } from "@/context/PostsContext";
+import { SocialChannel } from "@/redux/slices/posts.slice";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 // import { TiktokIcon } from "@/components/icons";
 import PostPreview from "./PostPreview";

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { usePosts, SocialChannel } from "@/context/PostsContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +24,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  SocialChannel,
+  addChannel,
+  deleteChannel,
+  updateChannel,
+  selectChannels,
+} from "@/redux/slices/posts.slice";
 
 const Channels = () => {
-  const { channels, addChannel, updateChannel, deleteChannel } = usePosts();
+  const channels = useSelector(selectChannels);
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newChannel, setNewChannel] = useState<Partial<SocialChannel>>({
@@ -128,7 +136,7 @@ const Channels = () => {
       return;
     }
 
-    addChannel(newChannel as Omit<SocialChannel, "id">);
+    dispatch(addChannel(newChannel as Omit<SocialChannel, "id">));
     toast({
       title: "Channel added",
       description: `${newChannel.name} has been added to your channels.`,
@@ -143,7 +151,7 @@ const Channels = () => {
   };
 
   const handleDeleteChannel = (id: string, name: string) => {
-    deleteChannel(id);
+    dispatch(deleteChannel(id));
     toast({
       title: "Channel disconnected",
       description: `${name} has been disconnected.`,

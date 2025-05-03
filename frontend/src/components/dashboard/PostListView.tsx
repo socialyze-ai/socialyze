@@ -1,5 +1,4 @@
 import React from "react";
-import { Post, SocialChannel, usePosts } from "@/context/PostsContext";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Calendar,
@@ -24,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useSelector } from "react-redux";
+import { selectChannels, selectPosts } from "@/redux/slices/posts.slice";
 import PostPreviewDemo from "./PostPreviewDemo";
 
 interface PostListViewProps {
@@ -33,7 +34,8 @@ interface PostListViewProps {
 }
 
 const PostListView: React.FC<PostListViewProps> = ({ statusFilter, channelFilter, tagFilter }) => {
-  const { posts = [], channels = [] } = usePosts();
+  const posts = useSelector(selectPosts);
+  const channels = useSelector(selectChannels);
 
   const getTagsFromContent = (content: string): string[] => {
     const regex = /#(\w+)/g;

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import PostPreview from "./PostPreview";
-import { SocialChannel } from "@/context/PostsContext";
+import { SocialChannel } from "@/redux/slices/posts.slice";
 import { addHashtagsToContent } from "@/utils/formatContent";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";

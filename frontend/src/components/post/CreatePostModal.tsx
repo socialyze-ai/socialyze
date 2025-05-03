@@ -34,15 +34,14 @@ import {
   X,
   Youtube,
 } from "lucide-react";
-import { usePosts } from "@/context/PostsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import ScheduleModal from "./ScheduleModal";
 import HashtagInput from "./HashtagInput";
 import { addHashtagsToContent } from "@/utils/formatContent";
-import { SocialChannel } from "@/context/PostsContext";
 import { useDispatch, useSelector } from "react-redux";
+import { SocialChannel, addPost, selectChannels } from "@/redux/slices/posts.slice";
 import {
   selectPostCreation,
   selectSelectedChannels,
@@ -105,7 +104,7 @@ export const getSocialIcon = (type: string, size: number = 24) => {
 };
 
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
-  const { channels, addPost } = usePosts();
+  const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
   const selectedChannels = useSelector(selectSelectedChannels);
@@ -307,6 +306,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       const content = contentByChannel[channelId] || "";
       const finalContent = addHashtagsToContent(content, postCreation.hashtags);
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+      const socialHandle = channels.find((channel) => channel.id === channelId)?.type;
 
       const postData = {
         channelId: channelId,
@@ -318,17 +318,20 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         media: mediaUrls,
         postType: status, // "postnow" | "schedule" | "draft"
         postStatus: "queued",
+        handle: socialHandle,
       };
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        mediaUrls: mediaUrls,
-        status,
-        scheduledAt,
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          mediaUrls: mediaUrls,
+          status,
+          scheduledAt,
+        }),
+      );
 
       handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });

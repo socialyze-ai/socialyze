@@ -1,6 +1,5 @@
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { usePosts, PostStatus } from "@/context/PostsContext";
 import ActiveChannels from "@/components/dashboard/ActiveChannels";
 import LayoutSelector, { LayoutType } from "@/components/dashboard/LayoutSelector";
 import PostStatusSelector, { StatusFilter } from "@/components/dashboard/PostStatusSelector";
@@ -8,9 +7,11 @@ import PostListView from "@/components/dashboard/PostListView";
 import PostGridView from "@/components/dashboard/PostGridView";
 import PostCalendarView from "@/components/dashboard/PostCalendarView";
 import FilterSelectors from "@/components/dashboard/FilterSelectors";
+import { useSelector } from "react-redux";
+import { PostStatus, selectPosts } from "@/redux/slices/posts.slice";
 
 const Dashboard = () => {
-  const { posts = [] } = usePosts();
+  const posts = useSelector(selectPosts);
 
   // State for filters and layout
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
@@ -21,8 +22,8 @@ const Dashboard = () => {
 
   // Count posts by status
   const postCounts = {
-    scheduled: (posts || []).filter((post) => post.status === ("scheduled" as PostStatus)).length,
-    sent: (posts || []).filter((post) => post.status === ("sent" as PostStatus)).length,
+    scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
+    sent: (posts || []).filter((post) => post.status === "sent").length,
     draft: (posts || []).filter((post) => post.status === "draft").length,
     failed: (posts || []).filter((post) => post.status === "failed").length,
   };
