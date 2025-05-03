@@ -1,18 +1,18 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, addDays, startOfToday, isBefore, startOfDay } from "date-fns";
+import { format, addDays, startOfToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import moment from "moment";
 import { StatusFilter } from "./PostStatusSelector";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import PostPreview from "@/components/post/PostPreview";
 import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/post/CreatePostModal";
 import { useSelector } from "react-redux";
-import { Post, SocialChannel, selectPosts, selectChannels } from "@/redux/slices/posts.slice";
+import { selectChannels } from "@/redux/slices/posts.slice";
 import { RootState } from "@/redux/store";
+import GridPostCard from "./GridPostCard";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -21,90 +21,38 @@ interface PostCalendarViewProps {
   timezone: string;
 }
 
+// Using the PostType interface from dashboardPosts slice
+interface PostType {
+  _id: string;
+  channelId: string;
+  text: string;
+  label: string[];
+  media: string[];
+  postType: "postnow" | "draft" | "schedule";
+  postStatus: "queued" | "sent" | "failed" | "published";
+  scheduledTime?: string;
+  handle?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
   start: Date;
   end: Date;
-  post: Post;
+  post: PostType;
   channelId: string;
   channelType: string;
 }
-
-// Mock data for posts
-const mockPosts = [
-  {
-    id: "1",
-    content: "Exciting news! Our latest product launch is here! #innovation #tech",
-    channels: ["1", "2"],
-    scheduledAt: new Date("2025-04-28T14:24:06.248Z"),
-    status: "scheduled",
-    createdAt: new Date("2025-04-28T13:24:06.248Z"),
-    updatedAt: new Date("2025-04-28T13:24:06.248Z"),
-    mediaUrls: [],
-  },
-  {
-    id: "1",
-    content: "Post about React #react",
-    channels: ["1", "2"],
-    scheduledAt: new Date(),
-    status: "scheduled",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    mediaUrls: [],
-  },
-  {
-    id: "2",
-    content: "Post about JavaScript #javascript",
-    scheduledAt: new Date("2023-10-01T12:00:00"),
-    status: "scheduled",
-    channels: ["1"],
-    mediaUrls: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    content: "Post about CSS #css",
-    scheduledAt: new Date("2023-10-02T09:00:00"),
-    status: "scheduled",
-    channels: ["2"],
-    mediaUrls: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockChannels: SocialChannel[] = [
-  {
-    id: "12",
-    type: "facebook",
-    name: "Facebook",
-    profileImage: "https://example.com/facebook.png",
-    connected: true,
-  },
-  {
-    id: "13",
-    type: "twitter",
-    name: "Twitter",
-    profileImage: "https://example.com/twitter.png",
-    connected: true,
-  },
-  {
-    id: "14",
-    type: "instagram",
-    name: "Instagram",
-    profileImage: "https://example.com/instagram.png",
-    connected: true,
-  },
-];
 
 const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  const posts = useSelector(selectPosts);
+  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
   const channels = useSelector(selectChannels);
   const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
   const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
@@ -118,47 +66,46 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
     return matches ? matches?.map((tag) => tag.substring(1)) : [];
   };
 
-  const filteredPosts = (posts || []).filter((post) => {
-    if (!post.scheduledAt) return false;
-    if (statusFilter.length > 0 && !statusFilter.includes(post.status)) return false;
-    if (
-      channelFilter.length > 0 &&
-      !post.channels.some((channelId) => channelFilter.includes(channelId))
-    )
-      return false;
+  const filteredPosts = useMemo(() => {
+    return (posts || []).filter((post) => {
+      if (!post.createdAt) return false;
+      if (statusFilter.length > 0 && !statusFilter.includes(post.postStatus)) return false;
 
-    if (tagFilter.length > 0) {
-      const postTags = getTagsFromContent(post.content || "");
-      if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
-    }
+      // Check channel filter - posts have a single channelId, not an array of channels
+      if (channelFilter.length > 0 && !channelFilter.includes(post.channelId)) return false;
 
-    return true;
-  });
+      if (tagFilter.length > 0) {
+        const postTags = getTagsFromContent(post.text || "");
+        if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
+      }
+
+      return true;
+    });
+  }, [posts, statusFilter, channelFilter, tagFilter]);
 
   const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];
 
     filteredPosts.forEach((post) => {
-      if (post.scheduledAt) {
-        post.channels.forEach((channelId) => {
-          const channel = channels.find((c) => c.id === channelId);
-          if (channel) {
-            const startDate = new Date(post.scheduledAt!);
-            const endDate = new Date(startDate);
-            endDate.setMinutes(startDate.getMinutes() + 30);
+      if (post.createdAt) {
+        const channelId = post.channelId;
+        const channel = channels.find((c) => c.id === channelId || c.channelId === channelId);
 
-            calendarEvents.push({
-              id: `${post.id}-${channelId}`,
-              title:
-                post.content.length > 30 ? post.content.substring(0, 30) + "..." : post.content,
-              start: startDate,
-              end: endDate,
-              post,
-              channelId,
-              channelType: channel.type,
-            });
-          }
-        });
+        if (channel) {
+          const startDate = new Date(post.createdAt);
+          const endDate = new Date(startDate);
+          endDate.setMinutes(startDate.getMinutes() + 30);
+
+          calendarEvents.push({
+            id: `${post._id}-${channelId}`,
+            title: post.text.length > 30 ? post.text.substring(0, 30) + "..." : post.text,
+            start: startDate,
+            end: endDate,
+            post,
+            channelId,
+            channelType: channel.type,
+          });
+        }
       }
     });
 
@@ -194,9 +141,15 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
       style: {
         backgroundColor: "transparent",
         borderRadius: "4px",
-        opacity: 0.95,
+        opacity: 0.8,
         color: "black",
-        border: "0px",
+        border: "1px solid lightgray",
+        display: "block",
+        width: "100%",
+        textOverflow: "ellipsis",
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        fontSize: "0.75rem",
       },
     };
   }, []);
@@ -207,48 +160,65 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
     );
   };
 
-  const EventComponent = ({ event }: { event: CalendarEvent }) => {
-    const channel = channels.find((c) => c.id === event.channelId);
-    const dateStr = format(event.start, "yyyy-MM-dd");
-    const timeStr = format(event.start, "hh:mm a");
-    const isExpanded = expandedDates.includes(dateStr);
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+  };
 
-    const postsForDate = events.filter((e) => format(e.start, "yyyy-MM-dd") === dateStr);
+  const EventComponent = ({ event }: { event: CalendarEvent }) => {
+    const channel = channels.find(
+      (c) => c.id === event.channelId || c.channelId === event.channelId,
+    );
+    const timeStr = format(event.post.createdAt, "hh:mm a");
 
     return (
       <Popover>
         <PopoverTrigger asChild>
-          {channel && (
-            <div className="flex justify-between cursor-pointer p-0.5 text-xs">
-              <div className="flex items-center gap-1">
-                <div className="h-5 w-5 rounded-full overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-1 cursor-pointer w-full">
+            {channel && (
+              <div className="flex justify-between items-center w-full">
+                <div className="flex gap-2 items-center">
+                  <div className="h-5 w-5 rounded-full overflow-hidden flex-shrink-0">
+                    <img
+                      src={channel.profileImage}
+                      alt={channel.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  <p className="text-xs font-medium">{timeStr}</p>
+                </div>
+
+                <div className="h-5 w-5 rounded overflow-hidden flex-shrink-0">
                   <img
-                    src={channel.profileImage}
+                    src={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
                     alt={channel.name}
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <div className="truncate">{timeStr}</div>
               </div>
-
-              <div className="h-5 w-5 rounded overflow-hidden flex-shrink-0">
-                <img
-                  src={channel.profileImage}
-                  alt={channel.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-0.5">
-          {channel && (
-            <PostPreview
-              content={event.post.content}
-              channel={channel}
-              mediaUrls={event.post.mediaUrls}
-            />
-          )}
+
+        <PopoverContent className="w-96 p-0.5">
+          <GridPostCard
+            key={`${event.post._id}-${channel.id}`}
+            platform={channel.type}
+            profileImage={channel.profileImage}
+            username={channel.username || channel.id}
+            displayName={channel.name}
+            date={event.post.createdAt}
+            content={event.post.text || ""}
+            imageUrl={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
+            likes={0}
+            retweets={0}
+            comments={0}
+            impressions={0}
+            engagementRate={0}
+            clicks={0}
+            createdDaysAgo={0}
+            isCustom={event.post.postType === "schedule"}
+          />
         </PopoverContent>
       </Popover>
     );
@@ -257,7 +227,8 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
   const DateCellWrapper = ({ children, value }: any) => {
     const dateStr = format(value, "yyyy-MM-dd");
     const postsForDate = events.filter((event) => format(event.start, "yyyy-MM-dd") === dateStr);
-    const remainingCount = postsForDate.length - 5;
+    const displayEvents = expandedDates.includes(dateStr) ? postsForDate : postsForDate.slice(0, 3);
+    const remainingCount = postsForDate.length - 3;
 
     // Check if the date is current or future
     const today = startOfDay(new Date());
@@ -270,41 +241,20 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
     };
 
     return (
-      <div className="relative group w-full h-full">
-        {children}
+      <div className="relative group w-full h-full flex flex-col">
+        <div className="flex-shrink-0">{children}</div>
 
         {isCurrentOrFuture && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-1 bottom-1 hidden group-hover:flex h-6 w-6 p-0 hover:flex"
+            className="absolute right-1 bottom-1 hidden group-hover:flex h-6 w-6 p-0"
             onClick={(e) => {
               e.stopPropagation();
               handleAddPost(value);
             }}
           >
             <Plus className="h-4 w-4" />
-          </Button>
-        )}
-
-        {postsForDate.length > 5 && !expandedDates.includes(dateStr) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-xs mt-1"
-            onClick={() => toggleDateExpansion(dateStr)}
-          >
-            +{remainingCount} more
-          </Button>
-        )}
-        {expandedDates.includes(dateStr) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-xs mt-1"
-            onClick={() => toggleDateExpansion(dateStr)}
-          >
-            Show less
           </Button>
         )}
       </div>
@@ -331,7 +281,53 @@ const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
         />
       </Card>
 
-      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      {/* Popover for selected event */}
+      {selectedEvent && (
+        <Popover open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+          <PopoverContent className="w-96 p-2" sideOffset={5}>
+            {(() => {
+              const channel = channels.find(
+                (c) => c.id === selectedEvent.channelId || c.channelId === selectedEvent.channelId,
+              );
+              if (!channel || !selectedEvent.post) return null;
+
+              return (
+                <GridPostCard
+                  platform={channel.type}
+                  profileImage={channel.profileImage}
+                  username={channel.username || channel.id}
+                  displayName={channel.name}
+                  date={selectedEvent.post.createdAt}
+                  content={selectedEvent.post.text || ""}
+                  imageUrl={
+                    selectedEvent.post.media && selectedEvent.post.media.length > 0
+                      ? selectedEvent.post.media[0]
+                      : ""
+                  }
+                  likes={0}
+                  retweets={0}
+                  comments={0}
+                  impressions={0}
+                  engagementRate={0}
+                  clicks={0}
+                  createdDaysAgo={
+                    selectedEvent.post.createdAt
+                      ? differenceInDays(new Date(), new Date(selectedEvent.post.createdAt))
+                      : 0
+                  }
+                  isCustom={selectedEvent.post.postType === "schedule"}
+                />
+              );
+            })()}
+          </PopoverContent>
+        </Popover>
+      )}
+
+      <CreatePostModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        // initialDate={selectedDate}
+      />
     </>
   );
 };

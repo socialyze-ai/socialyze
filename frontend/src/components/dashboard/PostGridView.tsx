@@ -12,14 +12,14 @@ const PostGridView = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {posts.length > 0 ? (
         posts.map((post) => {
-          console.log("postpostpostpost", post);
-
           // Find associated channel
           const channel = channels.find(
             (ch) => ch.id === post.channelId || ch.channelId === post.channelId,
           );
 
-          const isCustomSchedule = post.postType === "schedule"; // Assuming 'schedule' means manually scheduled
+          if (!channel) return null;
+
+          const isCustomSchedule = post.postType === "schedule";
 
           return (
             <GridPostCard
@@ -38,7 +38,7 @@ const PostGridView = () => {
               engagementRate={0}
               clicks={0}
               createdDaysAgo={0}
-              isCustom={false}
+              isCustom={isCustomSchedule}
             />
           );
         })
