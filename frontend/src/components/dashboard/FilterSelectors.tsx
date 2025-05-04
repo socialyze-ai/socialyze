@@ -2,32 +2,53 @@ import React, { useState } from "react";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BookMarked, Check, Users } from "lucide-react";
+import { BookMarked, Check, Users, FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSelector, useDispatch } from "react-redux";
 import { selectLabels } from "@/redux/slices/labelManager.slice";
-import { selectChannels } from "@/redux/slices/posts.slice";
+import { selectChannels, selectPosts } from "@/redux/slices/posts.slice";
 import { RootState } from "@/redux/store";
 import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
+import LayoutSelector, { LayoutType } from "./LayoutSelector";
 
 interface FilterSelectorsProps {
   timezone: string;
   onTimezoneChange: (timezone: string) => void;
+  setActiveLayout: (layout: LayoutType) => void;
+  activeLayout: LayoutType;
 }
 
-const FilterSelectors: React.FC<FilterSelectorsProps> = ({ timezone, onTimezoneChange }) => {
+const FilterSelectors: React.FC<FilterSelectorsProps> = ({
+  timezone,
+  onTimezoneChange,
+  setActiveLayout,
+  activeLayout,
+}) => {
   const dispatch = useDispatch();
   const channels = useSelector(selectChannels);
   const labels = useSelector(selectLabels);
+  const posts = useSelector(selectPosts);
 
   // Get filter values from the dashboard slice
   const selectedChannels = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
   const selectedLabels = useSelector((state: RootState) => state.dashboardPosts.filters.label);
+  const selectedStatuses = useSelector(
+    (state: RootState) => state.dashboardPosts.filters.postStatus,
+  );
 
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+
+  // Count posts by status
+  const postCounts = {
+    scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
+    sent: (posts || []).filter((post) => post.status === "sent").length,
+    draft: (posts || []).filter((post) => post.status === "draft").length,
+    failed: (posts || []).filter((post) => post.status === "failed").length,
+  };
 
   const timezones = [
     { name: "Kolkata", offset: "(GMT+5:30)" },
@@ -71,12 +92,25 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({ timezone, onTimezoneC
     );
   };
 
+  const toggleStatus = (status: string) => {
+    let newStatuses: string[];
+
+    if (selectedStatuses?.includes(status)) {
+      newStatuses = selectedStatuses.filter((s) => s !== status);
+    } else {
+      newStatuses = [...selectedStatuses, status];
+    }
+
+    dispatch(
+      updateFilter({
+        postStatus: newStatuses,
+      }),
+    );
+  };
+
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="px-3 py-2 pb-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
-      </CardHeader>
-      <CardContent className="flex gap-2 p-3 pt-2">
+    <div className="flex justify-between p-2 bg-white rounded-md shadow-sm border border-gray-200">
+      <div className="flex items-center gap-2 w-full">
         <Popover open={isChannelOpen} onOpenChange={setIsChannelOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -160,6 +194,83 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({ timezone, onTimezoneC
           </PopoverContent>
         </Popover>
 
+        {/* New Post Status Popover */}
+        <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 flex gap-1.5 items-center justify-between"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Post Status</span>
+              {selectedStatuses.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {selectedStatuses.length}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+            <Button
+              variant="ghost"
+              className={cn(
+                "justify-start font-normal",
+                selectedStatuses?.includes("scheduled") && "bg-muted",
+              )}
+              onClick={() => toggleStatus("scheduled")}
+            >
+              <div className="flex items-center space-x-2 w-full">
+                <Clock className="h-4 w-4" />
+                <span>Scheduled ({postCounts.scheduled})</span>
+                {selectedStatuses?.includes("scheduled") && <Check className="h-4 w-4 ml-auto" />}
+              </div>
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(
+                "justify-start font-normal",
+                selectedStatuses?.includes("sent") && "bg-muted",
+              )}
+              onClick={() => toggleStatus("sent")}
+            >
+              <div className="flex items-center space-x-2 w-full">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Posted ({postCounts.sent})</span>
+                {selectedStatuses?.includes("sent") && <Check className="h-4 w-4 ml-auto" />}
+              </div>
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(
+                "justify-start font-normal",
+                selectedStatuses?.includes("draft") && "bg-muted",
+              )}
+              onClick={() => toggleStatus("draft")}
+            >
+              <div className="flex items-center space-x-2 w-full">
+                <FileText className="h-4 w-4" />
+                <span>Drafts ({postCounts.draft})</span>
+                {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
+              </div>
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(
+                "justify-start font-normal",
+                selectedStatuses?.includes("failed") && "bg-muted",
+              )}
+              onClick={() => toggleStatus("failed")}
+            >
+              <div className="flex items-center space-x-2 w-full">
+                <AlertCircle className="h-4 w-4" />
+                <span>Failed ({postCounts.failed})</span>
+                {selectedStatuses?.includes("failed") && <Check className="h-4 w-4 ml-auto" />}
+              </div>
+            </Button>
+          </PopoverContent>
+        </Popover>
+
         <Popover open={isTimezoneOpen} onOpenChange={setIsTimezoneOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="w-full md:w-auto">
@@ -187,8 +298,12 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({ timezone, onTimezoneC
             ))}
           </PopoverContent>
         </Popover>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="flex justify-end items-center">
+        <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
+      </div>
+    </div>
   );
 };
 

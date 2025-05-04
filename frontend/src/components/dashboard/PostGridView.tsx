@@ -39,6 +39,7 @@ const PostGridView = () => {
               clicks={0}
               createdDaysAgo={0}
               isCustom={isCustomSchedule}
+              isGrid
             />
           );
         })

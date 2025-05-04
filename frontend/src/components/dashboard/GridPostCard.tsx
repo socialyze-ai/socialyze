@@ -54,6 +54,7 @@ interface GridPostCardProps {
   engagementRate?: number;
   createdDaysAgo?: number;
   isCustom?: boolean;
+  isGrid?: boolean;
   clicks?: number;
 }
 
@@ -90,6 +91,7 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   createdDaysAgo = 20,
   clicks = 0,
   isCustom = false,
+  isGrid = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -212,7 +214,9 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   const engagementRatings = getEngagementRatings();
 
   return (
-    <Card className="mb-4 overflow-hidden h-full hover:shadow-md transition-shadow">
+    <Card
+      className={cn("overflow-hidden h-full hover:shadow-md transition-shadow", isGrid && "mb-4")}
+    >
       <CardContent className="p-3">
         {/* Header with avatar and platform icon */}
         <div className="flex justify-between items-center mb-3">

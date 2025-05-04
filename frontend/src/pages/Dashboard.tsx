@@ -15,29 +15,29 @@ const Dashboard = () => {
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
   const [timezone, setTimezone] = useState<string>("UTC");
 
-  // Count posts by status
-  const postCounts = {
-    scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
-    sent: (posts || []).filter((post) => post.status === "sent").length,
-    draft: (posts || []).filter((post) => post.status === "draft").length,
-    failed: (posts || []).filter((post) => post.status === "failed").length,
-  };
+  // // Count posts by status
+  // const postCounts = {
+  //   scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
+  //   sent: (posts || []).filter((post) => post.status === "sent").length,
+  //   draft: (posts || []).filter((post) => post.status === "draft").length,
+  //   failed: (posts || []).filter((post) => post.status === "failed").length,
+  // };
 
   return (
     <MainLayout title="Dashboard">
       <div className="flex flex-col gap-3">
-        {/* Top section with filters and controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-          {/* Left column with channels and status filters */}
-          <div className="lg:col-span-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex-1 lg:flex-[4] flex flex-col gap-3">
             <ActiveChannels />
-            <PostStatusSelector counts={postCounts} />
           </div>
 
-          {/* Right column with layout selector and other filters */}
-          <div className="lg:col-span-3 flex flex-col gap-3">
-            <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
-            <FilterSelectors timezone={timezone} onTimezoneChange={setTimezone} />
+          <div className="flex-1 lg:flex-[3] flex flex-col gap-3">
+            <FilterSelectors
+              timezone={timezone}
+              onTimezoneChange={setTimezone}
+              activeLayout={activeLayout}
+              setActiveLayout={setActiveLayout}
+            />
           </div>
         </div>
 
