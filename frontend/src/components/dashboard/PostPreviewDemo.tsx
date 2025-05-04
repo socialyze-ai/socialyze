@@ -1,8 +1,9 @@
 import { useSelector } from "react-redux";
-import DashboardPostPreview, { SocialPlatform } from "./DashboardPostPreview";
+import { SocialPlatform } from "./DashboardPostPreview";
 
 import { RootState } from "@/redux/store";
 import { selectChannels } from "@/redux/slices/posts.slice";
+import ListPostCard from "./ListPostCard";
 
 const PostPreviewDemo = () => {
   const postData = [
@@ -94,44 +95,46 @@ const PostPreviewDemo = () => {
   };
 
   return (
-    <div className="space-y-4 p-4 w-[70%] mx-auto">
-      {posts.length === 0 ? (
-        <div className="text-center text-muted-foreground">No posts found</div>
-      ) : (
-        posts.map((post) => {
-          console.log("postpostpostpost", post);
+    <div className="w-full h-full bg-white shadow-2xl border border-gray-200 rounded-lg">
+      <div className="space-y-4 p-4 w-[50%] mx-auto">
+        {posts.length === 0 ? (
+          <div className="text-center text-muted-foreground">No posts found</div>
+        ) : (
+          posts.map((post) => {
+            console.log("postpostpostpost", post);
 
-          // Find associated channel
-          const channel = channels.find(
-            (ch) => ch.id === post.channelId || ch.channelId === post.channelId,
-          );
+            // Find associated channel
+            const channel = channels.find(
+              (ch) => ch.id === post.channelId || ch.channelId === post.channelId,
+            );
 
-          const isCustomSchedule = post.postType === "schedule"; // Assuming 'schedule' means manually scheduled
+            const isCustomSchedule = post.postType === "schedule"; // Assuming 'schedule' means manually scheduled
 
-          return (
-            <DashboardPostPreview
-              key={post._id || Math.random().toString()}
-              id={post._id}
-              platform={getPlatform(post.channelId)}
-              profileImage={channel?.profileImage || ""}
-              displayName={channel?.name || ""}
-              username={channel?.username || channel?.name || ""}
-              date={post.createdAt}
-              content={post.text || ""}
-              imageUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
-              storyUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
-              likes={0}
-              retweets={0}
-              comments={0}
-              impressions={0}
-              engagementRate={0}
-              createdDaysAgo={calculateDaysAgo(post.scheduledTime)}
-              isCustom={isCustomSchedule}
-              clicks={0}
-            />
-          );
-        })
-      )}
+            return (
+              <ListPostCard
+                key={post._id || Math.random().toString()}
+                id={post._id}
+                platform={getPlatform(post.channelId)}
+                profileImage={channel?.profileImage || ""}
+                displayName={channel?.name || ""}
+                username={channel?.username || channel?.name || ""}
+                date={post.createdAt}
+                content={post.text || ""}
+                imageUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
+                storyUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
+                likes={0}
+                retweets={0}
+                comments={0}
+                impressions={0}
+                engagementRate={0}
+                createdDaysAgo={calculateDaysAgo(post.scheduledTime)}
+                isCustom={isCustomSchedule}
+                clicks={0}
+              />
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

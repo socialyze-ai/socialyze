@@ -18,6 +18,11 @@ import {
   Instagram,
   Facebook,
   Twitter,
+  Link,
+  Copy,
+  Share,
+  SquareArrowOutUpRight,
+  AlignVerticalJustifyStartIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -130,8 +135,84 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
     );
   };
 
+  const getEngagementRatings = () => {
+    // Common metrics for all platforms
+    const commonMetrics = [
+      {
+        id: 1,
+        name: "Likes",
+        value: likes,
+        icon: <Heart size={16} />,
+      },
+      {
+        id: 5,
+        name: "Eng. Rate",
+        value: engagementRate,
+        icon: <LineChart size={16} />,
+      },
+    ];
+
+    // Platform specific metrics
+    switch (platform) {
+      case "facebook":
+      case "instagram":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Comments",
+            value: comments,
+            icon: <MessageCircle size={16} />,
+          },
+        ];
+      case "twitter":
+      case "x":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Retweets",
+            value: retweets,
+            icon: <Repeat size={16} />,
+          },
+          {
+            id: 3,
+            name: "Impressions",
+            value: impressions,
+            icon: <CircleFadingArrowUp size={16} />,
+          },
+          {
+            id: 4,
+            name: "Clicks",
+            value: clicks,
+            icon: <MousePointerClick size={16} />,
+          },
+        ];
+      case "linkedin":
+        return [
+          ...commonMetrics,
+          {
+            id: 2,
+            name: "Comments",
+            value: comments,
+            icon: <MessageCircle size={16} />,
+          },
+          {
+            id: 3,
+            name: "Impressions",
+            value: impressions,
+            icon: <CircleFadingArrowUp size={16} />,
+          },
+        ];
+      default:
+        return commonMetrics;
+    }
+  };
+
+  const engagementRatings = getEngagementRatings();
+
   return (
-    <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
+    <Card className="mb-4 overflow-hidden h-full hover:shadow-md transition-shadow">
       <CardContent className="p-3">
         {/* Header with avatar and platform icon */}
         <div className="flex justify-between items-center mb-3">
@@ -186,66 +267,82 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
           {isCustom && <span className="ml-2 text-xs italic">(Custom)</span>}
         </div>
 
-        {/* Engagement metrics */}
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Heart size={12} />
-            <span>{likes}</span>
+        <div className="flex justify-between items-center">
+          <div
+            className={cn(
+              "flex gap-2 flex-wrap justify-between text-gray-600",
+              engagementRatings?.length === 3 && "gap-5",
+            )}
+          >
+            {engagementRatings.map((item) => (
+              <PostSocialEngagement
+                key={item.id}
+                icon={item.icon}
+                text={item.name}
+                count={item.value}
+              />
+            ))}
           </div>
 
-          {(platform === "facebook" || platform === "instagram" || platform === "linkedin") && (
-            <div className="flex items-center gap-1">
-              <MessageCircle size={12} />
-              <span>{comments}</span>
-            </div>
-          )}
-
-          {(platform === "twitter" || platform === "x") && (
-            <>
-              <div className="flex items-center gap-1">
-                <Repeat size={12} />
-                <span>{retweets}</span>
-              </div>
-              {impressions > 0 && (
-                <div className="flex items-center gap-1">
-                  <CircleFadingArrowUp size={12} />
-                  <span>{impressions}</span>
-                </div>
-              )}
-              {clicks > 0 && (
-                <div className="flex items-center gap-1">
-                  <MousePointerClick size={12} />
-                  <span>{clicks}</span>
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="flex items-center gap-1">
-            <LineChart size={12} />
-            <span>{engagementRate}%</span>
-          </div>
+          {/* <Button variant="ghost" size="icon" className="border border-gray-300 h-10 w-10">
+            <AlignVerticalJustifyStartIcon />
+          </Button> */}
         </div>
       </CardContent>
 
-      <CardFooter className="p-3 pt-0 border-t flex justify-between items-center">
-        <p className="text-xs text-muted-foreground">{createdDaysAgo} days ago</p>
+      <CardFooter className="p-3 border-t flex justify-between items-center">
+        <Button variant="ghost" size="icon" className="border border-gray-300">
+          <Tags size={16} />
+        </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem className="text-xs">Edit Post</DropdownMenuItem>
-            <DropdownMenuItem className="text-xs">Duplicate</DropdownMenuItem>
-            <DropdownMenuItem className="text-xs">Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex gap-2">
+          <Button variant="outline" className="border border-gray-300 text-sm p-1.5 px-3">
+            <SquareArrowOutUpRight size={16} />
+            <p>View Post</p>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="border border-gray-300">
+                <MoreVertical size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="flex items-center gap-2">
+                <Link size={16} />
+                <p>Copy link</p>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2">
+                <Copy size={16} />
+                <p>Duplicate</p>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardFooter>
     </Card>
   );
 };
 
 export default GridPostCard;
+
+const PostSocialEngagement = ({
+  icon,
+  text,
+  count,
+}: {
+  icon: React.ReactNode;
+  text: string;
+  count: number;
+}) => {
+  return (
+    <div className="flex flex-col text-sm">
+      <div className="flex items-center gap-1">
+        {icon}
+        <p className="text-sm font-semibold">{text}</p>
+      </div>
+
+      <p className="text-sm font-semibold">{count}</p>
+    </div>
+  );
+};
