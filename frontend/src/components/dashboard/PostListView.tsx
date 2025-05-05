@@ -73,8 +73,8 @@ const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
   }, [posts, channels, getPlatform, calculateDaysAgo]);
 
   return (
-    <div className="w-full h-full bg-white shadow-2xl border border-gray-200 rounded-lg">
-      <div className="h-full space-y-4 p-4 w-full md:w-[80%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] mx-auto">
+    <div className="bg-white shadow-2xl border border-gray-200 rounded-lg">
+      <div className="space-y-4 p-4 w-full md:w-[80%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] mx-auto">
         {renderedPosts}
       </div>
     </div>
