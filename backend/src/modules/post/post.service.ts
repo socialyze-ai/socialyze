@@ -96,7 +96,8 @@ export class PostService {
   }
 
   async getPosts(getPostsRequestDto: GetPostsRequestDto) {
-    const { handle, postStatus, label, limit, offset } = getPostsRequestDto;
+    const { channel, handle, postStatus, label, limit, offset } =
+      getPostsRequestDto;
 
     if (
       limit === undefined ||
@@ -110,6 +111,10 @@ export class PostService {
     }
 
     const filter: any = {};
+
+    if (channel && channel.length > 0) {
+      filter.channelId = { $in: channel };
+    }
 
     if (handle && handle.length > 0) {
       filter.handle = { $in: handle };
@@ -130,25 +135,5 @@ export class PostService {
       .exec();
 
     return posts;
-
-    // return posts.map((post) => ({
-    //   channelId: post.channelId.toString(),
-    //   createdBy: post.createdBy.toString(),
-    //   handle: post.handle,
-    //   text: post.text,
-    //   postType: post.postType,
-    //   postStatus: post.postStatus,
-    //   scheduledTime: post.scheduledTime?.toISOString(),
-    //   media: post.media,
-    //   label: post.label.map((l) => l.toString()),
-    //   postUrl: post.postUrl,
-    //   likes: post.likes,
-    //   comments: post.comments,
-    //   retweets: post.retweets,
-    //   impressions: post.impressions,
-    //   clicks: post.clicks,
-    //   engRate: post.engRate,
-    //   failedReason: post.failedReason,
-    // }));
   }
 }

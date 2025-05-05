@@ -4,6 +4,11 @@ import { Type } from 'class-transformer';
 export class GetPostsRequestDto {
   @IsOptional()
   @IsArray()
+  @IsMongoId({ each: true })
+  channel?: string[];
+
+  @IsOptional()
+  @IsArray()
   @IsEnum(['facebook', 'instagram', 'x', 'linkedin'], { each: true })
   handle?: ('facebook' | 'instagram' | 'x' | 'linkedin')[];
 
