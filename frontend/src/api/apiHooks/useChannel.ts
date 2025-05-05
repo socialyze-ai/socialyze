@@ -40,11 +40,11 @@ const mockChannels = {
     },
     {
       _id: "103",
-      handle: "twitter",
+      handle: "x",
       user: "user123",
       workspace: "workspace1",
       channelId: "tw_channel_1",
-      channelName: "Twitter Account",
+      channelName: "X Account",
       channelPicture: "https://randomuser.me/api/portraits/men/3.jpg",
     },
     {

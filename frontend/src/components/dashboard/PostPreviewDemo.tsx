@@ -8,7 +8,7 @@ import ListPostCard from "./ListPostCard";
 const PostPreviewDemo = () => {
   const postData = [
     {
-      platform: "twitter",
+      platform: "x",
       displayName: "socialyze_ai",
       username: "socialyze_ai",
       date: "Saturday, April 26",
@@ -72,13 +72,13 @@ const PostPreviewDemo = () => {
   // Function to get platform from channel type
   const getPlatform = (channelId: string): SocialPlatform => {
     const channel = channels.find((ch) => ch.id === channelId || ch.channelId === channelId);
-    if (!channel) return "twitter"; // Default fallback
+    if (!channel) return "x"; // Default fallback
 
     const type = channel.type.toLowerCase();
     if (type.includes("facebook")) return "facebook";
     if (type.includes("instagram")) return "instagram";
     if (type.includes("linkedin")) return "linkedin";
-    return "twitter"; // Default fallback
+    return "x"; // Default fallback
   };
 
   // Function to calculate days ago
@@ -96,7 +96,7 @@ const PostPreviewDemo = () => {
 
   return (
     <div className="w-full h-full bg-white shadow-2xl border border-gray-200 rounded-lg">
-      <div className="space-y-4 p-4 w-[50%] mx-auto">
+      <div className="space-y-4 p-4 w-full md:w-[80%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] mx-auto">
         {posts.length === 0 ? (
           <div className="text-center text-muted-foreground">No posts found</div>
         ) : (

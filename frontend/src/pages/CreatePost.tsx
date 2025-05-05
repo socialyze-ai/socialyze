@@ -339,8 +339,8 @@ const CreatePost = () => {
     switch (type) {
       case "facebook":
         return <Facebook size={size} className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter size={size} className="text-[#1DA1F2]" />;
+      case "x":
+        return <X size={size} className="text-black" />;
       case "instagram":
         return <Instagram size={size} className="text-[#E4405F]" />;
       case "linkedin":
@@ -348,7 +348,7 @@ const CreatePost = () => {
       case "youtube":
         return <Youtube size={size} className="text-[#FF0000]" />;
       default:
-        return <X size={size} className="text-[#1DA1F2]" />;
+        return <X size={size} className="text-black" />;
     }
   };
 

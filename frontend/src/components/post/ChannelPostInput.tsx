@@ -42,7 +42,7 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
   // Character limits by platform
   const getCharacterLimit = () => {
     switch (channel.type) {
-      case "twitter":
+      case "x":
         return 280;
       case "linkedin":
         return 3000;
@@ -65,8 +65,8 @@ const ChannelPostInput: React.FC<ChannelPostInputProps> = ({
     switch (type) {
       case "facebook":
         return <Facebook size={20} className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter size={20} className="text-[#1DA1F2]" />;
+      case "x":
+        return <X size={20} className="text-[#1DA1F2]" />;
       case "instagram":
         return <Instagram size={20} className="text-[#E4405F]" />;
       case "linkedin":

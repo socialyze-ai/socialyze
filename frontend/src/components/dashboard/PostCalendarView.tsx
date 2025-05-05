@@ -114,7 +114,7 @@ const PostCalendarView = () => {
   const eventStyleGetter = useCallback((event: CalendarEvent) => {
     let backgroundColor;
     switch (event.channelType) {
-      case "twitter":
+      case "x":
         backgroundColor = "#1DA1F2";
         break;
       case "facebook":

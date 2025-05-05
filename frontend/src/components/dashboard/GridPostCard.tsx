@@ -23,6 +23,7 @@ import {
   Share,
   SquareArrowOutUpRight,
   AlignVerticalJustifyStartIcon,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -63,14 +64,14 @@ const getSocialIcon = (platform: SocialPlatform, size = 18) => {
   switch (platform) {
     case "facebook":
       return <Facebook size={size} className="text-[#1877F2]" />;
-    case "twitter":
-      return <Twitter size={size} className="text-[#1DA1F2]" />;
+    case "x":
+      return <X size={size} className="text-black" />;
     case "instagram":
       return <Instagram size={size} className="text-[#E4405F]" />;
     case "linkedin":
       return <Linkedin size={size} className="text-[#0A66C2]" />;
     default:
-      return <Twitter size={size} className="text-[#1DA1F2]" />;
+      return <X size={size} className="text-black" />;
   }
 };
 
@@ -167,7 +168,6 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
             icon: <MessageCircle size={16} />,
           },
         ];
-      case "twitter":
       case "x":
         return [
           ...commonMetrics,

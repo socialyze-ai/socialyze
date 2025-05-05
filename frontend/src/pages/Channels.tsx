@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2 } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
 import { useSelector, useDispatch } from "react-redux";
@@ -39,7 +39,7 @@ const Channels = () => {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newChannel, setNewChannel] = useState<Partial<SocialChannel>>({
-    type: "twitter",
+    type: "x",
     name: "",
     profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
     connected: true,
@@ -143,7 +143,7 @@ const Channels = () => {
     });
     setIsAddDialogOpen(false);
     setNewChannel({
-      type: "twitter",
+      type: "x",
       name: "",
       profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
       connected: true,
@@ -162,8 +162,8 @@ const Channels = () => {
     switch (type) {
       case "facebook":
         return <Facebook className="h-6 w-6 text-blue-600" />;
-      case "twitter":
-        return <Twitter className="h-6 w-6 text-sky-500" />;
+      case "x":
+        return <X className="h-6 w-6 text-sky-500" />;
       case "instagram":
         return <Instagram className="h-6 w-6 text-pink-600" />;
       case "linkedin":
@@ -227,7 +227,7 @@ const Channels = () => {
                               case "facebook":
                                 handleChannelAuthMutation("facebook");
                                 break;
-                              case "twitter":
+                              case "x":
                                 handleChannelAuthMutation("x");
                                 break;
                               case "instagram":
@@ -302,8 +302,7 @@ const Channels = () => {
                   className="justify-start"
                   onClick={() => handleChannelAuthMutation("x")}
                 >
-                  <Twitter className="h-5 w-5 text-sky-500 mr-2" />
-                  Twitter
+                  <X className="h-5 w-5 text-sky-500 mr-2" />X
                 </Button>
                 <Button
                   variant="outline"
@@ -342,7 +341,7 @@ const Channels = () => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="twitter">Twitter</SelectItem>
+                      <SelectItem value="x">X</SelectItem>
                       <SelectItem value="facebook">Facebook</SelectItem>
                       <SelectItem value="instagram">Instagram</SelectItem>
                       <SelectItem value="linkedin">LinkedIn</SelectItem>
@@ -356,7 +355,7 @@ const Channels = () => {
                   <Label htmlFor="channel-name">Channel Name</Label>
                   <Input
                     id="channel-name"
-                    placeholder="e.g. My Personal Twitter"
+                    placeholder="e.g. My Personal X"
                     value={newChannel.name}
                     onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
                   />
@@ -385,8 +384,8 @@ const Channels = () => {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <Twitter className="h-8 w-8 text-sky-500" />
-                    <h3 className="font-semibold text-lg">Twitter</h3>
+                    <X className="h-8 w-8 text-sky-500" />
+                    <h3 className="font-semibold text-lg">X</h3>
                     <p className="text-sm text-muted-foreground">
                       Schedule tweets, threads, and engage with your audience.
                     </p>
