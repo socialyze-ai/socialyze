@@ -13,6 +13,8 @@ import { useSelector } from "react-redux";
 import { selectChannels } from "@/redux/slices/posts.slice";
 import { RootState } from "@/redux/store";
 import GridPostCard from "./GridPostCard";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -47,6 +49,7 @@ const PostCalendarView = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const isMobile = useIsMobile();
 
   const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
   const channels = useSelector(selectChannels);
@@ -145,7 +148,7 @@ const PostCalendarView = () => {
         textOverflow: "ellipsis",
         overflow: "hidden",
         whiteSpace: "nowrap",
-        fontSize: "0.75rem",
+        fontSize: "clamp(0.65rem, 1vw, 0.75rem)", // Responsive font size
       },
     };
   }, []);
@@ -166,14 +169,35 @@ const PostCalendarView = () => {
     );
     const timeStr = format(event.post.createdAt, "hh:mm a");
 
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
+    const PostContent = () => (
+      <GridPostCard
+        key={`${event.post._id}-${channel.id}`}
+        platform={channel.type}
+        profileImage={channel.profileImage}
+        username={channel.username || channel.id}
+        displayName={channel.name}
+        date={event.post.createdAt}
+        content={event.post.text || ""}
+        imageUrl={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
+        likes={0}
+        retweets={0}
+        comments={0}
+        impressions={0}
+        engagementRate={0}
+        clicks={0}
+        createdDaysAgo={0}
+        isCustom={event.post.postType === "schedule"}
+      />
+    );
+
+    return isMobile ? (
+      <Dialog>
+        <DialogTrigger asChild>
           <div className="flex items-center gap-1 cursor-pointer w-full">
             {channel && (
               <div className="flex justify-between items-center w-full">
-                <div className="flex gap-2 items-center">
-                  <div className="h-5 w-5 rounded-full overflow-hidden flex-shrink-0">
+                <div className="flex gap-1 sm:gap-2 items-center">
+                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full overflow-hidden flex-shrink-0">
                     <img
                       src={channel.profileImage}
                       alt={channel.name}
@@ -181,10 +205,43 @@ const PostCalendarView = () => {
                     />
                   </div>
 
-                  <p className="text-xs font-medium">{timeStr}</p>
+                  <p className="text-[10px] sm:text-xs font-medium">{timeStr}</p>
                 </div>
 
-                <div className="h-5 w-5 rounded overflow-hidden flex-shrink-0">
+                <div className="h-4 w-4 sm:h-5 sm:w-5 rounded overflow-hidden flex-shrink-0">
+                  <img
+                    src={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
+                    alt={channel.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogTrigger>
+        <DialogContent className="w-[90vw] md:w-96 p-0.5">
+          <PostContent />
+        </DialogContent>
+      </Dialog>
+    ) : (
+      <Popover>
+        <PopoverTrigger asChild>
+          <div className="flex items-center gap-1 cursor-pointer w-full">
+            {channel && (
+              <div className="flex justify-between items-center w-full">
+                <div className="flex gap-1 sm:gap-2 items-center">
+                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full overflow-hidden flex-shrink-0">
+                    <img
+                      src={channel.profileImage}
+                      alt={channel.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  <p className="text-[10px] sm:text-xs font-medium">{timeStr}</p>
+                </div>
+
+                <div className="h-4 w-4 sm:h-5 sm:w-5 rounded overflow-hidden flex-shrink-0">
                   <img
                     src={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
                     alt={channel.name}
@@ -196,25 +253,8 @@ const PostCalendarView = () => {
           </div>
         </PopoverTrigger>
 
-        <PopoverContent className="w-96 p-0.5">
-          <GridPostCard
-            key={`${event.post._id}-${channel.id}`}
-            platform={channel.type}
-            profileImage={channel.profileImage}
-            username={channel.username || channel.id}
-            displayName={channel.name}
-            date={event.post.createdAt}
-            content={event.post.text || ""}
-            imageUrl={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
-            likes={0}
-            retweets={0}
-            comments={0}
-            impressions={0}
-            engagementRate={0}
-            clicks={0}
-            createdDaysAgo={0}
-            isCustom={event.post.postType === "schedule"}
-          />
+        <PopoverContent side="right" align="start" className="w-[90vw] sm:w-96 p-0.5">
+          <PostContent />
         </PopoverContent>
       </Popover>
     );
@@ -238,19 +278,19 @@ const PostCalendarView = () => {
 
     return (
       <div className="relative group w-full h-full flex flex-col">
-        <div className="flex-shrink-0">{children}</div>
+        <div className="flex-shrink-0 text-xs sm:text-sm">{children}</div>
 
         {isCurrentOrFuture && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-1 bottom-1 hidden group-hover:flex h-6 w-6 p-0"
+            className="absolute right-0 sm:right-1 bottom-0 sm:bottom-1 hidden group-hover:flex h-4 w-4 sm:h-6 sm:w-6 p-0"
             onClick={(e) => {
               e.stopPropagation();
               handleAddPost(value);
             }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         )}
       </div>
@@ -259,7 +299,7 @@ const PostCalendarView = () => {
 
   return (
     <>
-      <Card className="p-2 h-[600px]">
+      <Card className="p-1 sm:p-2 h-[calc(100vh-12rem)]">
         <Calendar
           localizer={localizer}
           events={events}
@@ -274,13 +314,19 @@ const PostCalendarView = () => {
             dateCellWrapper: DateCellWrapper,
           }}
           popup
+          className="text-xs sm:text-sm"
         />
       </Card>
 
       {/* Popover for selected event */}
       {selectedEvent && (
         <Popover open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-          <PopoverContent className="w-96 p-2" sideOffset={5}>
+          <PopoverContent
+            side="right"
+            align="start"
+            className="w-[90vw] sm:w-96 p-2"
+            sideOffset={5}
+          >
             {(() => {
               const channel = channels.find(
                 (c) => c.id === selectedEvent.channelId || c.channelId === selectedEvent.channelId,

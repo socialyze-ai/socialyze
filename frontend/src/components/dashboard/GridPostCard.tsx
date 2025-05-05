@@ -129,7 +129,7 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
 
     return (
       <span
-        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[status]}`}
+        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[status]} whitespace-nowrap`}
       >
         {statusIcons[status]}
         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -215,36 +215,39 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
 
   return (
     <Card
-      className={cn("overflow-hidden h-full hover:shadow-md transition-shadow", isGrid && "mb-4")}
+      className={cn(
+        "overflow-hidden h-full hover:shadow-md transition-shadow break-inside-avoid",
+        isGrid && "mb-4",
+      )}
     >
-      <CardContent className="p-3">
+      <CardContent className="p-2 sm:p-3">
         {/* Header with avatar and platform icon */}
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Avatar className="w-8 h-8">
+        <div className="flex justify-between items-center mb-2 sm:mb-3 gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <div className="relative shrink-0">
+              <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
                 <AvatarImage src={profileImage} />
-                <AvatarFallback className="capitalize font-semibold">
+                <AvatarFallback className="capitalize font-semibold text-xs sm:text-sm">
                   {displayName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-4 h-4 flex items-center justify-center bg-white z-10">
-                {getSocialIcon(platform, 12)}
+              <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center bg-white z-10">
+                {getSocialIcon(platform, 10)}
               </div>
             </div>
-            <div>
-              <p className="text-sm font-medium leading-none">{displayName}</p>
-              <p className="text-xs text-muted-foreground">@{username}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium leading-none truncate">{displayName}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{username}</p>
             </div>
           </div>
 
           {/* Status badge */}
-          {getStatusBadge()}
+          <div className="shrink-0">{getStatusBadge()}</div>
         </div>
 
         {/* Content */}
-        <div className="mb-3">
-          <p className="text-sm whitespace-pre-wrap">
+        <div className="mb-2 sm:mb-3">
+          <p className="text-xs sm:text-sm whitespace-pre-wrap">
             {contentToDisplay}
             {content.length > 150 && (
               <span
@@ -259,25 +262,20 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
 
         {/* Media */}
         {imageUrl && (
-          <div className="mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
+          <div className="mb-2 sm:mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
             <img src={imageUrl} alt="Post media" className="h-full w-full object-cover" />
           </div>
         )}
 
         {/* Date and time */}
-        <div className="flex items-center text-xs text-muted-foreground mb-3">
-          <Clock size={12} className="mr-1" />
+        <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
+          <Clock size={10} className="mr-1" />
           <span>{formatPostDate(date)}</span>
-          {isCustom && <span className="ml-2 text-xs italic">(Custom)</span>}
+          {isCustom && <span className="ml-2 text-[10px] sm:text-xs italic">(Custom)</span>}
         </div>
 
-        <div className="flex justify-between items-center">
-          <div
-            className={cn(
-              "flex gap-2 flex-wrap justify-between text-gray-600",
-              engagementRatings?.length === 3 && "gap-5",
-            )}
-          >
+        <div className="flex justify-between items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-gray-600">
             {engagementRatings.map((item) => (
               <PostSocialEngagement
                 key={item.id}
@@ -287,37 +285,44 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
               />
             ))}
           </div>
-
-          {/* <Button variant="ghost" size="icon" className="border border-gray-300 h-10 w-10">
-            <AlignVerticalJustifyStartIcon />
-          </Button> */}
         </div>
       </CardContent>
 
-      <CardFooter className="p-3 border-t flex justify-between items-center">
-        <Button variant="ghost" size="icon" className="border border-gray-300">
-          <Tags size={16} />
+      <CardFooter className="p-2 sm:p-3 border-t flex justify-between items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="border border-gray-300 h-8 w-8 sm:h-10 sm:w-10"
+        >
+          <Tags size={14} className="sm:w-4 sm:h-4" />
         </Button>
 
-        <div className="flex gap-2">
-          <Button variant="outline" className="border border-gray-300 text-sm p-1.5 px-3">
-            <SquareArrowOutUpRight size={16} />
+        <div className="flex gap-1 sm:gap-2">
+          <Button
+            variant="outline"
+            className="border border-gray-300 text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
+          >
+            <SquareArrowOutUpRight size={14} className="sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             <p>View Post</p>
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="border border-gray-300">
-                <MoreVertical size={16} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="border border-gray-300 h-8 w-8 sm:h-10 sm:w-10"
+              >
+                <MoreVertical size={14} className="sm:w-4 sm:h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="flex items-center gap-2">
-                <Link size={16} />
+              <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
+                <Link size={14} className="sm:w-4 sm:h-4" />
                 <p>Copy link</p>
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2">
-                <Copy size={16} />
+              <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
+                <Copy size={14} className="sm:w-4 sm:h-4" />
                 <p>Duplicate</p>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -340,13 +345,12 @@ const PostSocialEngagement = ({
   count: number;
 }) => {
   return (
-    <div className="flex flex-col text-sm">
+    <div className="flex flex-col text-xs sm:text-sm">
       <div className="flex items-center gap-1">
         {icon}
-        <p className="text-sm font-semibold">{text}</p>
+        <p className="text-xs sm:text-sm font-semibold whitespace-nowrap">{text}</p>
       </div>
-
-      <p className="text-sm font-semibold">{count}</p>
+      <p className="text-xs sm:text-sm font-semibold">{count}</p>
     </div>
   );
 };

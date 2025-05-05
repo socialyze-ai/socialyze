@@ -109,198 +109,203 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   };
 
   return (
-    <div className="flex justify-between p-2 bg-white rounded-md shadow-sm border border-gray-200">
-      <div className="flex items-center gap-2 w-full">
-        <Popover open={isChannelOpen} onOpenChange={setIsChannelOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 flex gap-1.5 items-center justify-between"
-            >
-              <Users className="h-4 w-4" />
-              <span>Channels</span>
-              {selectedChannels.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                  {selectedChannels.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-            {channels.map((channel) => (
+    <div className="flex flex-col sm:flex-row justify-between p-2 bg-white rounded-md shadow-sm border border-gray-200">
+      <div className="flex flex-wrap items-center gap-2 w-full mb-2 sm:mb-0">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Popover open={isChannelOpen} onOpenChange={setIsChannelOpen}>
+            <PopoverTrigger asChild>
               <Button
-                key={channel.id}
-                variant="ghost"
-                className={cn(
-                  "justify-start font-normal",
-                  selectedChannels?.includes(channel.id) && "bg-muted",
-                )}
-                onClick={() => toggleChannel(channel.id)}
+                variant="outline"
+                size="sm"
+                className="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto"
               >
-                <div className="flex items-center space-x-2 w-full">
-                  <div className="h-5 w-5 rounded-full overflow-hidden">
-                    <img
-                      src={channel.profileImage}
-                      alt={channel.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <span>{channel.name}</span>
-                  {selectedChannels?.includes(channel.id) && <Check className="h-4 w-4 ml-auto" />}
-                </div>
+                <Users className="h-4 w-4" />
+                <span>Channels</span>
+                {selectedChannels.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {selectedChannels.length}
+                  </Badge>
+                )}
               </Button>
-            ))}
-          </PopoverContent>
-        </Popover>
-
-        <Popover open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 flex gap-1.5 items-center justify-between"
-            >
-              <BookMarked className="h-4 w-4" />
-              <span>Labels</span>
-              {selectedLabels.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                  {selectedLabels.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-            {labels.length > 0 ? (
-              labels.map((label) => (
+            </PopoverTrigger>
+            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+              {channels.map((channel) => (
                 <Button
-                  key={label?.id}
+                  key={channel.id}
                   variant="ghost"
                   className={cn(
                     "justify-start font-normal",
-                    selectedLabels?.includes(label?.id) && "bg-muted",
+                    selectedChannels?.includes(channel.id) && "bg-muted",
                   )}
-                  onClick={() => toggleLabel(label?.id)}
+                  onClick={() => toggleChannel(channel.id)}
                 >
                   <div className="flex items-center space-x-2 w-full">
-                    <span>{label?.name}</span>
-                    {selectedLabels?.includes(label?.id) && <Check className="h-4 w-4 ml-auto" />}
+                    <div className="h-5 w-5 rounded-full overflow-hidden">
+                      <img
+                        src={channel.profileImage}
+                        alt={channel.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <span>{channel.name}</span>
+                    {selectedChannels?.includes(channel.id) && (
+                      <Check className="h-4 w-4 ml-auto" />
+                    )}
                   </div>
                 </Button>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground p-2">No Labels found</div>
-            )}
-          </PopoverContent>
-        </Popover>
+              ))}
+            </PopoverContent>
+          </Popover>
 
-        {/* New Post Status Popover */}
-        <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 flex gap-1.5 items-center justify-between"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Post Status</span>
-              {selectedStatuses.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                  {selectedStatuses.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-            <Button
-              variant="ghost"
-              className={cn(
-                "justify-start font-normal",
-                selectedStatuses?.includes("scheduled") && "bg-muted",
-              )}
-              onClick={() => toggleStatus("scheduled")}
-            >
-              <div className="flex items-center space-x-2 w-full">
-                <Clock className="h-4 w-4" />
-                <span>Scheduled ({postCounts.scheduled})</span>
-                {selectedStatuses?.includes("scheduled") && <Check className="h-4 w-4 ml-auto" />}
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "justify-start font-normal",
-                selectedStatuses?.includes("sent") && "bg-muted",
-              )}
-              onClick={() => toggleStatus("sent")}
-            >
-              <div className="flex items-center space-x-2 w-full">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Posted ({postCounts.sent})</span>
-                {selectedStatuses?.includes("sent") && <Check className="h-4 w-4 ml-auto" />}
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "justify-start font-normal",
-                selectedStatuses?.includes("draft") && "bg-muted",
-              )}
-              onClick={() => toggleStatus("draft")}
-            >
-              <div className="flex items-center space-x-2 w-full">
-                <FileText className="h-4 w-4" />
-                <span>Drafts ({postCounts.draft})</span>
-                {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "justify-start font-normal",
-                selectedStatuses?.includes("failed") && "bg-muted",
-              )}
-              onClick={() => toggleStatus("failed")}
-            >
-              <div className="flex items-center space-x-2 w-full">
-                <AlertCircle className="h-4 w-4" />
-                <span>Failed ({postCounts.failed})</span>
-                {selectedStatuses?.includes("failed") && <Check className="h-4 w-4 ml-auto" />}
-              </div>
-            </Button>
-          </PopoverContent>
-        </Popover>
-
-        <Popover open={isTimezoneOpen} onOpenChange={setIsTimezoneOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full md:w-auto">
-              <span>Timezone: {timezone.split("/").pop()?.replace("_", " ") || timezone}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-            {timezones.map((tz) => (
+          <Popover open={isLabelOpen} onOpenChange={setIsLabelOpen}>
+            <PopoverTrigger asChild>
               <Button
-                key={tz?.name}
+                variant="outline"
+                size="sm"
+                className="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto"
+              >
+                <BookMarked className="h-4 w-4" />
+                <span>Labels</span>
+                {selectedLabels.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {selectedLabels.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+              {labels.length > 0 ? (
+                labels.map((label) => (
+                  <Button
+                    key={label?.id}
+                    variant="ghost"
+                    className={cn(
+                      "justify-start font-normal",
+                      selectedLabels?.includes(label?.id) && "bg-muted",
+                    )}
+                    onClick={() => toggleLabel(label?.id)}
+                  >
+                    <div className="flex items-center space-x-2 w-full">
+                      <span>{label?.name}</span>
+                      {selectedLabels?.includes(label?.id) && <Check className="h-4 w-4 ml-auto" />}
+                    </div>
+                  </Button>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground p-2">No Labels found</div>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Post Status</span>
+                {selectedStatuses.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {selectedStatuses.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+              <Button
                 variant="ghost"
-                className={cn("justify-start font-normal", timezone === tz?.name && "bg-muted")}
-                onClick={() => {
-                  onTimezoneChange(tz?.name);
-                  setIsTimezoneOpen(false);
-                }}
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("scheduled") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("scheduled")}
               >
                 <div className="flex items-center space-x-2 w-full">
-                  <span>
-                    {tz?.name}-{tz?.offset}
-                  </span>
-                  {timezone === tz?.name && <Check className="h-4 w-4 ml-auto" />}
+                  <Clock className="h-4 w-4" />
+                  <span>Scheduled ({postCounts.scheduled})</span>
+                  {selectedStatuses?.includes("scheduled") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
-            ))}
-          </PopoverContent>
-        </Popover>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("sent") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("sent")}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Posted ({postCounts.sent})</span>
+                  {selectedStatuses?.includes("sent") && <Check className="h-4 w-4 ml-auto" />}
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("draft") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("draft")}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <FileText className="h-4 w-4" />
+                  <span>Drafts ({postCounts.draft})</span>
+                  {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("failed") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("failed")}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Failed ({postCounts.failed})</span>
+                  {selectedStatuses?.includes("failed") && <Check className="h-4 w-4 ml-auto" />}
+                </div>
+              </Button>
+            </PopoverContent>
+          </Popover>
+
+          <Popover open={isTimezoneOpen} onOpenChange={setIsTimezoneOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <span className="truncate">
+                  Timezone: {timezone.split("/").pop()?.replace("_", " ") || timezone}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+              {timezones.map((tz) => (
+                <Button
+                  key={tz?.name}
+                  variant="ghost"
+                  className={cn("justify-start font-normal", timezone === tz?.name && "bg-muted")}
+                  onClick={() => {
+                    onTimezoneChange(tz?.name);
+                    setIsTimezoneOpen(false);
+                  }}
+                >
+                  <div className="flex items-center space-x-2 w-full">
+                    <span>
+                      {tz?.name}-{tz?.offset}
+                    </span>
+                    {timezone === tz?.name && <Check className="h-4 w-4 ml-auto" />}
+                  </div>
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
-      <div className="flex justify-end items-center">
+      <div className="flex justify-center sm:justify-end items-center w-full sm:w-auto">
         <LayoutSelector activeLayout={activeLayout} onLayoutChange={setActiveLayout} />
       </div>
     </div>

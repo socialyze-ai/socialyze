@@ -9,7 +9,7 @@ const PostGridView = () => {
   const channels = useSelector(selectChannels);
 
   return (
-    <div className="columns-3 gap-4 bg-white shadow-2xl border border-gray-200 p-4 rounded-lg">
+    <div className="columns-1 md:columns-3 gap-2 md:gap-4 bg-white shadow-2xl border border-gray-200 p-2 md:p-4 rounded-lg">
       {posts.length > 0 ? (
         posts.map((post) => {
           // Find associated channel
