@@ -113,7 +113,9 @@ export class PostService {
     const filter: any = {};
 
     if (channel && channel.length > 0) {
-      filter.channelId = { $in: channel };
+      filter.channelId = {
+        $in: channel.map((channel) => new Types.ObjectId(channel)),
+      };
     }
 
     if (handle && handle.length > 0) {
@@ -125,7 +127,7 @@ export class PostService {
     }
 
     if (label && label.length > 0) {
-      filter.label = { $in: label };
+      filter.label = { $in: label.map((label) => new Types.ObjectId(label)) };
     }
 
     const posts = await this.postModel
