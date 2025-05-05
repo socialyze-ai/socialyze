@@ -24,6 +24,7 @@ import {
   Facebook,
   Info,
   Instagram,
+  Link,
   Linkedin,
   MoveRight,
   Plus,
@@ -611,20 +612,19 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             <div className="flex justify-between mt-2">
               <Button
                 onClick={handleToggleContentSync}
-                className="text-sm flex justify-center items-center gap-2 ring-1 ring-blue-600"
                 variant="outline"
-                disabled={selectedChannels.length === 0 || !activeChannel}
+                size="sm"
+                disabled={selectedChannels.length === 1 || !activeChannel}
               >
                 {isCustomContent ? (
                   <>
-                    Sync content
-                    <Unlink />
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
-                          <Info />
+                        <TooltipTrigger className="flex items-center gap-2">
+                          <p>Sync content</p>
+                          <Link />
                         </TooltipTrigger>
-                        <TooltipContent className="text-xs w-64 h-fit text-wrap p-2 rounded-md bg-white">
+                        <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
                           Sync content across all selected channels
                           <br />
                           Note: first channel content will be consider for syncing content
@@ -633,10 +633,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                     </TooltipProvider>
                   </>
                 ) : (
-                  <>
-                    Customize for each network
-                    <MoveRight />
-                  </>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="flex items-center gap-2">
+                        <p>Unsync content</p>
+                        <Unlink />
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
+                        Customize for each network
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </Button>
 
@@ -644,25 +651,30 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 <Button
                   onClick={handleDraftSave}
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   disabled={selectedChannels.length === 0 || !activeChannel}
+                  className="flex items-center gap-2"
                 >
                   <Save />
+                  <p>Save</p>
                 </Button>
 
                 <Button
                   onClick={() => dispatch(setScheduleModalOpen(true))}
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   disabled={selectedChannels.length === 0 || !activeChannel}
+                  className="flex items-center gap-2"
                 >
                   <CalendarCheck2 />
+                  <p>Schedule</p>
                 </Button>
 
                 <Button
                   onClick={handlePostNow}
                   className="bg-blue-600 hover:bg-blue-700"
                   disabled={selectedChannels.length === 0 || !activeChannel}
+                  size="sm"
                 >
                   Post
                 </Button>

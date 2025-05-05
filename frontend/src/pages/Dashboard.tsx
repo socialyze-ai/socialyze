@@ -45,7 +45,7 @@ const Dashboard = () => {
         <div className="rounded-lg overflow-y-scroll h-[calc(100vh-21rem)]">
           {activeLayout === "list" && <PostListView />}
           {activeLayout === "grid" && <PostGridView />}
-          {activeLayout === "calendar" && <PostCalendarView timezone={timezone} />}
+          {activeLayout === "calendar" && <PostCalendarView />}
         </div>
       </div>
     </MainLayout>

@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicRoute from "./components/PublicRoute";
 import InitialDataLoader from "./components/InitialDataLoader";
+import CalenderPage from "./pages/CalenderPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <CalenderPage />
                 </ProtectedRoute>
               }
             />

@@ -17,10 +17,6 @@ import GridPostCard from "./GridPostCard";
 // Initialize localizer
 const localizer = momentLocalizer(moment);
 
-interface PostCalendarViewProps {
-  timezone: string;
-}
-
 // Using the PostType interface from dashboardPosts slice
 interface PostType {
   _id: string;
@@ -46,7 +42,7 @@ interface CalendarEvent {
   channelType: string;
 }
 
-const PostCalendarView: React.FC<PostCalendarViewProps> = ({ timezone }) => {
+const PostCalendarView = () => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
