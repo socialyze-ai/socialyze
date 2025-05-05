@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface PostType {
+export interface DashboardPostType {
   _id: string;
   channelId: string;
   text: string;
   label: string[];
   media: string[];
   postType: "postnow" | "draft" | "schedule";
-  postStatus: "queued" | "sent" | "failed" | "published";
+  postStatus: "queued" | "published" | "draft" | "failed";
   scheduledTime?: string;
   handle?: string;
   createdAt: string;
@@ -23,7 +23,7 @@ interface FilterType {
 }
 
 interface DashboardPostsState {
-  posts: PostType[];
+  posts: DashboardPostType[];
   filters: FilterType;
   isLoading: boolean;
   error: string | null;
@@ -46,7 +46,7 @@ const dashboardPostsSlice = createSlice({
   name: "dashboardPosts",
   initialState,
   reducers: {
-    setPosts: (state, action: PayloadAction<PostType[]>) => {
+    setPosts: (state, action: PayloadAction<DashboardPostType[]>) => {
       state.posts = action.payload;
     },
     setFilters: (state, action: PayloadAction<FilterType>) => {

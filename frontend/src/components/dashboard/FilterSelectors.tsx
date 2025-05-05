@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BookMarked, Check, Users, FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
@@ -7,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSelector, useDispatch } from "react-redux";
 import { selectLabels } from "@/redux/slices/labelManager.slice";
-import { selectChannels, selectPosts } from "@/redux/slices/posts.slice";
+import { selectChannels } from "@/redux/slices/posts.slice";
 import { RootState } from "@/redux/store";
 import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 import LayoutSelector, { LayoutType } from "./LayoutSelector";
@@ -28,7 +27,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   const dispatch = useDispatch();
   const channels = useSelector(selectChannels);
   const labels = useSelector(selectLabels);
-  const posts = useSelector(selectPosts);
+  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
 
   // Get filter values from the dashboard slice
   const selectedChannels = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
@@ -44,10 +43,10 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
 
   // Count posts by status
   const postCounts = {
-    scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
-    sent: (posts || []).filter((post) => post.status === "sent").length,
-    draft: (posts || []).filter((post) => post.status === "draft").length,
-    failed: (posts || []).filter((post) => post.status === "failed").length,
+    published: (posts || []).filter((post) => post.postStatus === "published").length,
+    queued: (posts || []).filter((post) => post.postStatus === "queued").length,
+    draft: (posts || []).filter((post) => post.postStatus === "draft").length,
+    failed: (posts || []).filter((post) => post.postStatus === "failed").length,
   };
 
   const timezones = [
@@ -218,44 +217,47 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                 variant="ghost"
                 className={cn(
                   "justify-start font-normal",
-                  selectedStatuses?.includes("scheduled") && "bg-muted",
-                )}
-                onClick={() => toggleStatus("scheduled")}
-              >
-                <div className="flex items-center space-x-2 w-full">
-                  <Clock className="h-4 w-4" />
-                  <span>Scheduled ({postCounts.scheduled})</span>
-                  {selectedStatuses?.includes("scheduled") && <Check className="h-4 w-4 ml-auto" />}
-                </div>
-              </Button>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "justify-start font-normal",
-                  selectedStatuses?.includes("sent") && "bg-muted",
-                )}
-                onClick={() => toggleStatus("sent")}
-              >
-                <div className="flex items-center space-x-2 w-full">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Posted ({postCounts.sent})</span>
-                  {selectedStatuses?.includes("sent") && <Check className="h-4 w-4 ml-auto" />}
-                </div>
-              </Button>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "justify-start font-normal",
                   selectedStatuses?.includes("draft") && "bg-muted",
                 )}
                 onClick={() => toggleStatus("draft")}
               >
                 <div className="flex items-center space-x-2 w-full">
-                  <FileText className="h-4 w-4" />
-                  <span>Drafts ({postCounts.draft})</span>
+                  <Clock className="h-4 w-4" />
+                  <span>Draft ({postCounts.draft})</span>
                   {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
+
+              <Button
+                variant="ghost"
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("published") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("published")}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Published ({postCounts.published})</span>
+                  {selectedStatuses?.includes("published") && <Check className="h-4 w-4 ml-auto" />}
+                </div>
+              </Button>
+
+              <Button
+                variant="ghost"
+                className={cn(
+                  "justify-start font-normal",
+                  selectedStatuses?.includes("queued") && "bg-muted",
+                )}
+                onClick={() => toggleStatus("queued")}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <FileText className="h-4 w-4" />
+                  <span>Queued ({postCounts.queued})</span>
+                  {selectedStatuses?.includes("queued") && <Check className="h-4 w-4 ml-auto" />}
+                </div>
+              </Button>
+
               <Button
                 variant="ghost"
                 className={cn(

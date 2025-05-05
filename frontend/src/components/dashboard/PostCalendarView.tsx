@@ -3,7 +3,6 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, addDays, startOfToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import moment from "moment";
-import { StatusFilter } from "./PostStatusSelector";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -15,43 +14,28 @@ import { RootState } from "@/redux/store";
 import GridPostCard from "./GridPostCard";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DashboardPostType } from "@/redux/slices/dashboardPosts.slice";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
-
-// Using the PostType interface from dashboardPosts slice
-interface PostType {
-  _id: string;
-  channelId: string;
-  text: string;
-  label: string[];
-  media: string[];
-  postType: "postnow" | "draft" | "schedule";
-  postStatus: "queued" | "sent" | "failed" | "published";
-  scheduledTime?: string;
-  handle?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface CalendarEvent {
   id: string;
   title: string;
   start: Date;
   end: Date;
-  post: PostType;
+  post: DashboardPostType;
   channelId: string;
   channelType: string;
 }
 
-const PostCalendarView = () => {
+const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const isMobile = useIsMobile();
 
-  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
   const channels = useSelector(selectChannels);
   const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
   const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
@@ -186,7 +170,6 @@ const PostCalendarView = () => {
         engagementRate={0}
         clicks={0}
         createdDaysAgo={0}
-        isCustom={event.post.postType === "schedule"}
       />
     );
 
@@ -357,7 +340,6 @@ const PostCalendarView = () => {
                       ? differenceInDays(new Date(), new Date(selectedEvent.post.createdAt))
                       : 0
                   }
-                  isCustom={selectedEvent.post.postType === "schedule"}
                 />
               );
             })()}

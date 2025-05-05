@@ -54,7 +54,6 @@ interface GridPostCardProps {
   impressions?: number;
   engagementRate?: number;
   createdDaysAgo?: number;
-  isCustom?: boolean;
   isGrid?: boolean;
   clicks?: number;
 }
@@ -91,7 +90,6 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   engagementRate = 0,
   createdDaysAgo = 20,
   clicks = 0,
-  isCustom = false,
   isGrid = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -111,7 +109,6 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   const getStatusBadge = () => {
     // Determine status based on date and custom flag
     let status = "sent";
-    if (isCustom) status = "custom";
     if (new Date(date) > new Date()) status = "scheduled";
 
     const statusColors = {
@@ -271,7 +268,6 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
         <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
           <Clock size={10} className="mr-1" />
           <span>{formatPostDate(date)}</span>
-          {isCustom && <span className="ml-2 text-[10px] sm:text-xs italic">(Custom)</span>}
         </div>
 
         <div className="flex justify-between items-center gap-2">

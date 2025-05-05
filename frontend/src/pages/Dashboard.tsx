@@ -1,27 +1,19 @@
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ActiveChannels from "@/components/dashboard/ActiveChannels";
-import LayoutSelector, { LayoutType } from "@/components/dashboard/LayoutSelector";
-import PostStatusSelector from "@/components/dashboard/PostStatusSelector";
+import { LayoutType } from "@/components/dashboard/LayoutSelector";
 import PostListView from "@/components/dashboard/PostListView";
 import PostGridView from "@/components/dashboard/PostGridView";
 import PostCalendarView from "@/components/dashboard/PostCalendarView";
 import FilterSelectors from "@/components/dashboard/FilterSelectors";
 import { useSelector } from "react-redux";
-import { selectPosts } from "@/redux/slices/posts.slice";
+import { RootState } from "@/redux/store";
 
 const Dashboard = () => {
-  const posts = useSelector(selectPosts);
+  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
+
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
   const [timezone, setTimezone] = useState<string>("UTC");
-
-  // // Count posts by status
-  // const postCounts = {
-  //   scheduled: (posts || []).filter((post) => post.status === "scheduled").length,
-  //   sent: (posts || []).filter((post) => post.status === "sent").length,
-  //   draft: (posts || []).filter((post) => post.status === "draft").length,
-  //   failed: (posts || []).filter((post) => post.status === "failed").length,
-  // };
 
   return (
     <MainLayout title="Dashboard">
@@ -43,9 +35,9 @@ const Dashboard = () => {
 
         {/* Content area */}
         <div className="rounded-lg overflow-y-scroll h-[calc(100vh-21rem)]">
-          {activeLayout === "list" && <PostListView />}
-          {activeLayout === "grid" && <PostGridView />}
-          {activeLayout === "calendar" && <PostCalendarView />}
+          {activeLayout === "list" && <PostListView posts={posts} />}
+          {activeLayout === "grid" && <PostGridView posts={posts} />}
+          {activeLayout === "calendar" && <PostCalendarView posts={posts} />}
         </div>
       </div>
     </MainLayout>

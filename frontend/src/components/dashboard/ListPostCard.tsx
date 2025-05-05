@@ -6,7 +6,7 @@ import GridPostCard from "./GridPostCard";
 
 export type SocialPlatform = "twitter" | "instagram" | "linkedin" | "facebook" | "x";
 
-interface DashboardPostPreviewProps {
+interface ListPostCardProps {
   id?: string;
   platform: SocialPlatform;
   profileImage?: string;
@@ -22,7 +22,6 @@ interface DashboardPostPreviewProps {
   impressions?: number;
   engagementRate?: number;
   createdDaysAgo?: number;
-  isCustom?: boolean;
   clicks?: number;
 }
 
@@ -36,7 +35,7 @@ const formatDate = (dateString: string | undefined): string => {
   }
 };
 
-const ListPostCard: React.FC<DashboardPostPreviewProps> = ({
+const ListPostCard: React.FC<ListPostCardProps> = ({
   platform,
   profileImage,
   username,
@@ -52,7 +51,6 @@ const ListPostCard: React.FC<DashboardPostPreviewProps> = ({
   engagementRate = 0,
   createdDaysAgo = 20,
   clicks = 0,
-  isCustom = false,
 }) => {
   return (
     <div className="w-[90%] mx-auto">
@@ -82,22 +80,6 @@ const ListPostCard: React.FC<DashboardPostPreviewProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-
-          {isCustom && (
-            <Tooltip>
-              <TooltipTrigger asChild className="cursor-pointer text-xs text-gray-500">
-                <p className="flex items-center gap-1">
-                  Custom <Clock size={12} />
-                </p>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs bg-gray-500 text-white w-60">
-                <p>
-                  Posting time was set manually and is not determined by the channel's posting
-                  schedule
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
         </div>
 
         {/* Right Section */}
@@ -116,7 +98,6 @@ const ListPostCard: React.FC<DashboardPostPreviewProps> = ({
           engagementRate={engagementRate}
           clicks={clicks}
           createdDaysAgo={createdDaysAgo}
-          isCustom={isCustom}
           storyUrl={storyUrl}
         />
       </div>
