@@ -8,9 +8,10 @@ import PostCalendarView from "@/components/dashboard/PostCalendarView";
 import FilterSelectors from "@/components/dashboard/FilterSelectors";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
-  const posts = useSelector((state: RootState) => state.dashboardPosts.posts);
+  const { posts, isLoading } = useSelector((state: RootState) => state.dashboardPosts);
 
   const [activeLayout, setActiveLayout] = useState<LayoutType>("list");
   const [timezone, setTimezone] = useState<string>("UTC");
@@ -35,9 +36,17 @@ const Dashboard = () => {
 
         {/* Content area */}
         <div className="rounded-lg overflow-y-scroll h-[calc(100vh-20rem)]">
-          {activeLayout === "list" && <PostListView posts={posts} />}
-          {activeLayout === "grid" && <PostGridView posts={posts} />}
-          {activeLayout === "calendar" && <PostCalendarView posts={posts} />}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <Loader2 className="h-16 w-16 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <>
+              {activeLayout === "list" && <PostListView posts={posts} />}
+              {activeLayout === "grid" && <PostGridView posts={posts} />}
+              {activeLayout === "calendar" && <PostCalendarView posts={posts} />}
+            </>
+          )}
         </div>
       </div>
     </MainLayout>
