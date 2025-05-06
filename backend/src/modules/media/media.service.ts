@@ -6,6 +6,8 @@ import { GiphyService } from '../service/giphy.service';
 import { GoogleImageService } from '../service/googleImage.service';
 import { GcsService } from '../service/gcs.service';
 import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
+import { TenorService } from '../service/tenor.service';
+import { PexelsService } from '../service/pexels.service';
 
 @Injectable()
 export class MediaService {
@@ -13,6 +15,8 @@ export class MediaService {
     private readonly unsplashService: UnsplashService,
     private readonly giphyService: GiphyService,
     private readonly googleImageService: GoogleImageService,
+    private readonly tenorService: TenorService,
+    private readonly pexelsService: PexelsService,
     private readonly gcsService: GcsService,
   ) {}
 
@@ -26,6 +30,10 @@ export class MediaService {
         return await this.giphyService.getTrendingGifs(getImagesDto);
       } else if (provider === 'google') {
         return await this.googleImageService.getImages(getImagesDto);
+      } else if (provider === 'tenor') {
+        return await this.tenorService.getImages(getImagesDto);
+      } else if (provider === 'pexels') {
+        return await this.pexelsService.getImages(getImagesDto);
       } else {
         response = { message: 'Unknown provided' };
       }
