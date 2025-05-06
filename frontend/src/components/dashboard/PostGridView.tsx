@@ -8,10 +8,6 @@ const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
   const channels = useSelector(selectChannels);
 
   const renderedPosts = useMemo(() => {
-    if (posts?.length === 0) {
-      return <div className="text-center text-muted-foreground">No posts found</div>;
-    }
-
     return posts.map((post) => {
       // Find associated channel
       const channel = channels.find(
@@ -44,9 +40,17 @@ const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
   }, [posts, channels]);
 
   return (
-    <div className="columns-1 md:columns-3 gap-2 md:gap-4 bg-white shadow-2xl border border-gray-200 p-2 md:p-4 rounded-lg">
-      {renderedPosts}
-    </div>
+    <>
+      {posts?.length === 0 ? (
+        <div className="flex justify-center items-center h-full bg-white shadow-sm border border-gray-200 p-2 md:p-4 rounded-lg">
+          <span className="text-muted-foreground">No posts found</span>
+        </div>
+      ) : (
+        <div className="columns-1 md:columns-3 gap-2 md:gap-4 bg-white shadow-2xl border border-gray-200 p-2 md:p-4 rounded-lg">
+          {renderedPosts}
+        </div>
+      )}
+    </>
   );
 };
 

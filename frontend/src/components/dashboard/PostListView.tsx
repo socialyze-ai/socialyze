@@ -38,10 +38,6 @@ const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
   }, []);
 
   const renderedPosts = useMemo(() => {
-    if (posts?.length === 0) {
-      return <div className="text-center text-muted-foreground">No posts found</div>;
-    }
-
     return posts.map((post) => {
       // Find associated channel
       const channel = channels.find(
@@ -73,11 +69,19 @@ const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
   }, [posts, channels, getPlatform, calculateDaysAgo]);
 
   return (
-    <div className="bg-white shadow-2xl border border-gray-200 rounded-lg">
-      <div className="space-y-4 p-4 w-full md:w-[80%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] mx-auto">
-        {renderedPosts}
-      </div>
-    </div>
+    <>
+      {posts?.length === 0 ? (
+        <div className="flex justify-center items-center h-full bg-white shadow-sm border border-gray-200 p-2 md:p-4 rounded-lg">
+          <span className="text-muted-foreground">No posts found</span>
+        </div>
+      ) : (
+        <div className="bg-white shadow-2xl border border-gray-200 rounded-lg">
+          <div className="space-y-4 p-4 w-full md:w-[80%] lg:w-[70%] xl:w-[60%] 2xl:w-[50%] mx-auto">
+            {renderedPosts}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
