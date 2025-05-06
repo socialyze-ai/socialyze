@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, addDays, startOfToday, isBefore, startOfDay, differenceInDays } from "date-fns";
+import { format, startOfDay, differenceInDays } from "date-fns";
 import moment from "moment";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,7 +10,6 @@ import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/post/CreatePostModal";
 import { useSelector } from "react-redux";
 import { selectChannels } from "@/redux/slices/posts.slice";
-import { RootState } from "@/redux/store";
 import GridPostCard from "./GridPostCard";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -37,39 +36,11 @@ const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
   const isMobile = useIsMobile();
 
   const channels = useSelector(selectChannels);
-  const statusFilter = useSelector((state: RootState) => state.dashboardPosts.filters.postStatus);
-  const channelFilter = useSelector((state: RootState) => state.dashboardPosts.filters.channel);
-  const tagFilter = useSelector((state: RootState) => state.dashboardPosts.filters.label);
-
-  console.log("posts", posts);
-
-  const getTagsFromContent = (content: string): string[] => {
-    const regex = /#(\w+)/g;
-    const matches = content.match(regex);
-    return matches ? matches?.map((tag) => tag.substring(1)) : [];
-  };
-
-  const filteredPosts = useMemo(() => {
-    return (posts || []).filter((post) => {
-      if (!post.createdAt) return false;
-      if (statusFilter.length > 0 && !statusFilter.includes(post.postStatus)) return false;
-
-      // Check channel filter - posts have a single channelId, not an array of channels
-      if (channelFilter.length > 0 && !channelFilter.includes(post.channelId)) return false;
-
-      if (tagFilter.length > 0) {
-        const postTags = getTagsFromContent(post.text || "");
-        if (!tagFilter.some((tag) => postTags.includes(tag))) return false;
-      }
-
-      return true;
-    });
-  }, [posts, statusFilter, channelFilter, tagFilter]);
 
   const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];
 
-    filteredPosts.forEach((post) => {
+    (posts || []).forEach((post) => {
       if (post.createdAt) {
         const channelId = post.channelId;
         const channel = channels.find((c) => c.id === channelId || c.channelId === channelId);
@@ -93,7 +64,7 @@ const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
     });
 
     return calendarEvents;
-  }, [filteredPosts, channels]);
+  }, [posts, channels]);
 
   const eventStyleGetter = useCallback((event: CalendarEvent) => {
     let backgroundColor;
@@ -252,7 +223,7 @@ const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
     // Check if the date is current or future
     const today = startOfDay(new Date());
     const cellDate = startOfDay(new Date(value));
-    const isCurrentOrFuture = !isBefore(cellDate, today);
+    const isCurrentOrFuture = cellDate >= today;
 
     const handleAddPost = (date: Date) => {
       setSelectedDate(date);

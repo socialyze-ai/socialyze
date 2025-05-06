@@ -223,7 +223,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               >
                 <div className="flex items-center space-x-2 w-full">
                   <Clock className="h-4 w-4" />
-                  <span>Draft ({postCounts.draft})</span>
+                  <span>Draft</span>
                   {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
@@ -238,7 +238,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               >
                 <div className="flex items-center space-x-2 w-full">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span>Published ({postCounts.published})</span>
+                  <span>Published</span>
                   {selectedStatuses?.includes("published") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
@@ -253,7 +253,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               >
                 <div className="flex items-center space-x-2 w-full">
                   <FileText className="h-4 w-4" />
-                  <span>Queued ({postCounts.queued})</span>
+                  <span>Queued</span>
                   {selectedStatuses?.includes("queued") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
@@ -268,7 +268,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               >
                 <div className="flex items-center space-x-2 w-full">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Failed ({postCounts.failed})</span>
+                  <span>Failed</span>
                   {selectedStatuses?.includes("failed") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>

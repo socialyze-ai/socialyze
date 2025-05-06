@@ -89,36 +89,39 @@ const InitialDataLoader = () => {
   useEffect(() => {
     if (postsData?.data?.length) {
       // Ensure we're using serializable data
-      const formattedPosts = postsData.data.map(
-        (post: {
-          _id: string;
-          channelId: string;
-          text: string;
-          label: string[];
-          media: string[];
-          postType: string;
-          postStatus: string;
-          scheduledTime: string;
-          handle: string;
-          createdAt: string;
-          updatedAt: string;
-        }) => ({
-          _id: post._id,
-          channelId: post.channelId,
-          text: post.text,
-          label: post.label || [],
-          media: post.media || [],
-          postType: post.postType,
-          postStatus: post.postStatus,
-          // Store dates as ISO strings instead of Date objects
-          scheduledTime: post.scheduledTime ? post.scheduledTime : null,
-          handle: post.handle,
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-        }),
-      );
+      const formattedPosts =
+        postsData.data.map(
+          (post: {
+            _id: string;
+            channelId: string;
+            text: string;
+            label: string[];
+            media: string[];
+            postType: string;
+            postStatus: string;
+            scheduledTime: string;
+            handle: string;
+            createdAt: string;
+            updatedAt: string;
+          }) => ({
+            _id: post._id,
+            channelId: post.channelId,
+            text: post.text,
+            label: post.label || [],
+            media: post.media || [],
+            postType: post.postType,
+            postStatus: post.postStatus,
+            // Store dates as ISO strings instead of Date objects
+            scheduledTime: post.scheduledTime ? post.scheduledTime : null,
+            handle: post.handle,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+          }),
+        ) || [];
 
       dispatch(setPosts(formattedPosts));
+    } else {
+      dispatch(setPosts([]));
     }
   }, [postsData, dispatch]);
 
