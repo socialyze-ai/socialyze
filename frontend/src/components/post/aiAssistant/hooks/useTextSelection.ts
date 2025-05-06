@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, MutableRefObject } from "react";
 import { useDispatch } from "react-redux";
 import {
   setSelectedText,
@@ -11,11 +11,28 @@ interface UseTextSelectionParams {
   editorRef: React.RefObject<HTMLDivElement>;
   content: string;
   isTyping: boolean;
+  isTypingEffect?: boolean;
+  showTypeControls?: boolean;
+  isPendingContent?: boolean;
+  isPendingHashTags?: boolean;
+  previousSelectionRef?: MutableRefObject<{ start: number; end: number } | null>;
 }
 
-export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelectionParams) => {
+export const useTextSelection = ({
+  editorRef,
+  content,
+  isTyping,
+  isTypingEffect = false,
+  showTypeControls = false,
+  isPendingContent = false,
+  isPendingHashTags = false,
+  previousSelectionRef: externalSelectionRef,
+}: UseTextSelectionParams) => {
   const dispatch = useDispatch();
-  const previousSelectionRef = useRef<{ start: number; end: number } | null>(null);
+  const internalSelectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  // Use either the external ref provided or the internal one
+  const previousSelectionRef = externalSelectionRef || internalSelectionRef;
 
   // Helper function to get text nodes in an element
   const getTextNodesIn = (node: Node): Text[] => {
@@ -84,6 +101,21 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
   const handleTextSelection = () => {
     if (!editorRef.current) return;
 
+    // Don't handle text selection if AI features are active
+    if (isTyping || isTypingEffect || showTypeControls || isPendingContent || isPendingHashTags)
+      return;
+
+    // Check if the selection is within the editor
+    const domSelection = window.getSelection();
+    if (!domSelection || domSelection.rangeCount === 0) return;
+
+    const range = domSelection.getRangeAt(0);
+    // Verify the selection is inside our editor
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      // Selection is outside the editor, ignore it
+      return;
+    }
+
     const selection = getCurrentSelection();
     const hasSelection = selection && selection.start !== selection.end;
 
@@ -96,6 +128,7 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
         // Store current selection in previousSelectionRef for future use
         previousSelectionRef.current = { start: selStart, end: selEnd };
 
+        // Always update Redux to ensure consistent state
         dispatch(setSelectedText(selText));
         dispatch(setSelectedRange({ start: selStart, end: selEnd }));
         dispatch(setUnderlineType("selection"));
@@ -146,7 +179,7 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
       // Focus the editor first
       editorRef.current.focus();
 
-      setTimeout(() => {
+      const attemptSelection = (attempt = 1, maxAttempts = 5) => {
         if (!editorRef.current) return;
 
         const selection = window.getSelection();
@@ -159,52 +192,83 @@ export const useTextSelection = ({ editorRef, content, isTyping }: UseTextSelect
           const range = document.createRange();
           const textNodes = getTextNodesIn(editorRef.current);
 
-          if (textNodes.length === 0) return;
+          if (textNodes.length === 0) {
+            if (attempt < maxAttempts) {
+              // Try again after a short delay with increased time
+              setTimeout(() => attemptSelection(attempt + 1), 50 * attempt);
+            }
+            return;
+          }
 
           // Find the correct text node and position with improved calculation
           let currentPos = 0;
+          let startFound = false;
+          let endFound = false;
           let startNode: Text | null = null;
           let startOffset = 0;
           let endNode: Text | null = null;
           let endOffset = 0;
 
-          // Find start node and offset with better node traversal
+          // Improved node traversal that handles more edge cases
           for (const node of textNodes) {
-            if (currentPos + node.length > selRange.start) {
+            const nodeLength = node.length;
+
+            // Check if this node contains the start position
+            if (
+              !startFound &&
+              currentPos <= selRange.start &&
+              currentPos + nodeLength >= selRange.start
+            ) {
               startNode = node;
               startOffset = selRange.start - currentPos;
-              break;
+              startFound = true;
             }
-            currentPos += node.length;
-          }
 
-          // Reset for end node search
-          currentPos = 0;
-
-          // Find end node and offset
-          for (const node of textNodes) {
-            if (currentPos + node.length > selRange.end) {
+            // Check if this node contains the end position
+            if (
+              !endFound &&
+              currentPos <= selRange.end &&
+              currentPos + nodeLength >= selRange.end
+            ) {
               endNode = node;
               endOffset = selRange.end - currentPos;
-              break;
+              endFound = true;
             }
-            currentPos += node.length;
+
+            // If we found both start and end, we can break the loop
+            if (startFound && endFound) break;
+
+            currentPos += nodeLength;
           }
 
+          // If start and end nodes are found, create and apply the range
           if (startNode && endNode) {
             range.setStart(startNode, startOffset);
             range.setEnd(endNode, endOffset);
             selection.addRange(range);
 
-            // Update Redux state
+            // Always update Redux state to ensure consistent selection state
             dispatch(setSelectedRange(selRange));
             dispatch(setSelectedText(content.substring(selRange.start, selRange.end)));
             dispatch(setIsTextSelected(true));
+
+            // Store in previousSelectionRef for future use
+            previousSelectionRef.current = selRange;
+          } else if (attempt < maxAttempts) {
+            // If we couldn't find the nodes, try again after a short delay
+            setTimeout(() => attemptSelection(attempt + 1), 100 * attempt);
           }
         } catch (e) {
           console.error("Error setting selection:", e);
+          if (attempt < maxAttempts) {
+            // If there was an error, try again after a short delay
+            setTimeout(() => attemptSelection(attempt + 1), 100 * attempt);
+          }
         }
-      }, 50);
+      };
+
+      // Start the selection attempt
+      attemptSelection();
     }
   };
 

@@ -1,3 +1,4 @@
+import React from "react";
 import ActionButtons from "./ActionButtons";
 
 const RefinePopover = ({
@@ -13,8 +14,16 @@ const RefinePopover = ({
   handleRegenerateRefinedText: () => void;
   isPendingContent: boolean;
 }) => {
+  // Prevent clicks inside the popover from bubbling and affecting selection
+  const handlePopoverClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
-    <div className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm">
+    <div
+      className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm"
+      onClick={handlePopoverClick}
+    >
       {isPendingContent ? (
         <p className="text-xs text-gray-600 mt-1">Refining...</p>
       ) : (

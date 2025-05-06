@@ -12,6 +12,7 @@ interface ContentEditableWrapperProps {
   placeholder: string;
   isPostModal: boolean;
   hasScrollbar: boolean;
+  disableSelection?: boolean;
   className?: string;
   onInput: (e: React.FormEvent<HTMLElement>) => void;
   onMouseEnter: () => void;
@@ -34,6 +35,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
   placeholder,
   isPostModal,
   hasScrollbar,
+  disableSelection = false,
   className,
   onInput,
   onMouseEnter,
@@ -65,6 +67,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
           "resize-none border-0 outline-none focus:outline-none p-3 bg-gray-50 rounded overflow-y-auto whitespace-pre-wrap",
           isPostModal ? "text-sm h-[300px]" : "text-base h-[200px]",
           hasScrollbar ? "pr-5" : "pr-6",
+          disableSelection ? "disable-selection" : "",
           className,
         )}
         data-placeholder={placeholder}
@@ -103,6 +106,28 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
             width: 0;
             height: 0;
             pointer-events: none;
+          }
+          .disable-selection {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            cursor: default;
+          }
+          /* Enhanced selection styling */
+          [contenteditable=true]::selection {
+            background-color: rgba(16, 185, 129, 0.3) !important; /* Green highlight */
+            color: inherit;
+          }
+          [contenteditable=true]::-moz-selection {
+            background-color: rgba(16, 185, 129, 0.3) !important;
+            color: inherit;
+          }
+          .is-refining [contenteditable=true]::selection {
+            background-color: rgba(16, 185, 129, 0.5) !important; /* Stronger green highlight during refining */
+          }
+          .is-refining [contenteditable=true]::-moz-selection {
+            background-color: rgba(16, 185, 129, 0.5) !important;
           }
         `}
       </style>

@@ -10,12 +10,16 @@ import {
 interface SelectionDetectorProps {
   editorRef: React.RefObject<HTMLDivElement>;
   isTyping: boolean;
+  isPendingContent?: boolean;
+  isPendingHashTags?: boolean;
   onBeforeSelectionDetected?: () => void;
 }
 
 export const useSelectionDetector = ({
   editorRef,
   isTyping,
+  isPendingContent = false,
+  isPendingHashTags = false,
   onBeforeSelectionDetected,
 }: SelectionDetectorProps) => {
   const dispatch = useDispatch();
@@ -29,7 +33,8 @@ export const useSelectionDetector = ({
 
   // Modified function to detect and handle text selection
   const detectTextSelection = useCallback(() => {
-    if (!editorRef.current || isTyping) return null;
+    // Don't detect selection if typing or any AI feature is in progress
+    if (!editorRef.current || isTyping || isPendingContent || isPendingHashTags) return null;
 
     // Call the callback if provided
     if (onBeforeSelectionDetected) {
@@ -39,6 +44,13 @@ export const useSelectionDetector = ({
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return null;
 
+    // Check if the selection is within the editor
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      // Selection is outside the editor, ignore it
+      return null;
+    }
+
     const selectedText = selection.toString().trim();
     if (!selectedText) {
       dispatch(resetTextState());
@@ -46,7 +58,6 @@ export const useSelectionDetector = ({
     }
 
     // If we have selected text, store it
-    const range = selection.getRangeAt(0);
     const editorContent = getEditorText();
 
     // Find the position in the plain text content
@@ -65,7 +76,15 @@ export const useSelectionDetector = ({
     dispatch(setIsTextSelected(true));
 
     return { selectedText, selectionRange };
-  }, [editorRef, isTyping, dispatch, getEditorText, onBeforeSelectionDetected]);
+  }, [
+    editorRef,
+    isTyping,
+    isPendingContent,
+    isPendingHashTags,
+    dispatch,
+    getEditorText,
+    onBeforeSelectionDetected,
+  ]);
 
   // Function to clear any text selection in the DOM
   const clearSelection = useCallback(() => {

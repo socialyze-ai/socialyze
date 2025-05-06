@@ -15,6 +15,12 @@ export const useSelectionCoordinates = (editorRef: React.RefObject<HTMLDivElemen
     if (!editorRef.current) return null;
 
     const range = selection.getRangeAt(0);
+
+    // Verify the selection is inside our editor
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return null;
+    }
+
     const rect = range.getBoundingClientRect();
     const editorRect = editorRef.current.getBoundingClientRect();
 
