@@ -1,5 +1,4 @@
 import { useGetImages, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
-import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { DebounceInput } from "react-debounce-input";
@@ -8,7 +7,7 @@ import { Media } from "../MediaUploader";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 
-interface UnsplashImage {
+interface Image {
   url: string;
   download_location: string;
   username: string;
@@ -18,20 +17,20 @@ interface UnsplashImage {
   height: number;
 }
 
-const UnsplashMediaModalContent = ({
-  selectedMediaContent,
+const MediaModalContent = ({
   setSelectedMediaContent,
   onImageSelect,
   closeModal,
+  provider = "unsplash",
 }: {
-  selectedMediaContent: Media[];
   setSelectedMediaContent: (media: Media[]) => void;
   onImageSelect?: (image: Media) => void;
   closeModal?: () => void;
+  provider?: string;
 }) => {
-  const [images, setImages] = useState<UnsplashImage[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [page, setPage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState("trending");
+  const [searchKeyword, setSearchKeyword] = useState("elephant dancing");
   const [isSelecting, setIsSelecting] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +42,7 @@ const UnsplashMediaModalContent = ({
     isLoading: isLoadingUnsplash,
     isError: isErrorUnsplash,
   } = useGetImages({
-    provider: "unsplash",
+    provider: provider,
     search: searchKeyword,
     page: page,
     limit: 10,
@@ -96,7 +95,7 @@ const UnsplashMediaModalContent = ({
     };
   }, [loadMoreImages, isLoadingUnsplash, loadingMore]);
 
-  const handleSelectImage = (image: UnsplashImage) => {
+  const handleSelectImage = (image: Image) => {
     setIsSelecting(true);
 
     const postId = uuidv4();
@@ -228,4 +227,4 @@ const UnsplashMediaModalContent = ({
   );
 };
 
-export default UnsplashMediaModalContent;
+export default MediaModalContent;
