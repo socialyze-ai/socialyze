@@ -214,7 +214,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       return;
     }
 
-    submitPost(channels, "schedule", scheduledAt);
+    submitPost(channels, "scheduled", scheduledAt);
   };
 
   const handlePostNow = () => {
@@ -300,7 +300,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const submitPost = (
     channelIds: string[],
-    status: "postnow" | "schedule" | "draft",
+    status: "postnow" | "scheduled" | "draft",
     scheduledAt?: Date,
   ) => {
     const finalData = [];
@@ -319,7 +319,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         scheduledTime: scheduledAt,
         label: selectedLabels?.map((label) => label.id),
         media: mediaUrls,
-        postType: status, // "postnow" | "schedule" | "draft"
+        postType: status, // "postnow" | "scheduled" | "draft"
         postStatus: "queued",
         handle: socialHandle,
       };
@@ -342,13 +342,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     console.log("finalData", finalData);
 
     const statusText =
-      status === "postnow" ? "sent" : status === "schedule" ? "scheduled" : "saved as draft";
+      status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
 
     toast({
       title:
         status === "postnow"
           ? "Post sent"
-          : status === "schedule"
+          : status === "scheduled"
           ? "Post scheduled"
           : "Draft saved",
       description: `Your post has been ${statusText}.`,
@@ -470,7 +470,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                   <LabelSelector />
                 </div>
                 <DialogDescription>
-                  Create and schedule posts for your social media channels
+                  Create and scheduled posts for your social media channels
                 </DialogDescription>
               </div>
             </DialogHeader>

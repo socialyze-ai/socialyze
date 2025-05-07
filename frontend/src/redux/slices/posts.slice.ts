@@ -13,7 +13,7 @@ export type SocialChannel = {
   channelId?: string;
 };
 
-export type PostStatus = "draft" | "schedule" | "postnow" | "failed" | "scheduled" | "sent";
+export type PostStatus = "draft" | "scheduled" | "postnow" | "failed" | "sent";
 
 export type Post = {
   id: string;
@@ -37,7 +37,7 @@ const initialPosts: Post[] = [
     content: "This is my first scheduled post! #excited",
     channels: ["1", "2"],
     scheduledAt: new Date(Date.now() + 86400000).toISOString(), // Use ISO string
-    status: "schedule",
+    status: "scheduled",
     createdAt: new Date().toISOString(), // Use ISO string
     updatedAt: new Date().toISOString(), // Use ISO string
   },

@@ -19,7 +19,7 @@ interface PostType {
   text: string;
   label: string[];
   media: string[];
-  postType: "postnow" | "draft" | "schedule";
+  postType: "postnow" | "draft" | "scheduled";
   postStatus: "queued" | "sent" | "failed" | "published";
   scheduledTime?: string;
 }

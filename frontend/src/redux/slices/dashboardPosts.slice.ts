@@ -6,7 +6,7 @@ export interface DashboardPostType {
   text: string;
   label: string[];
   media: string[];
-  postType: "postnow" | "draft" | "schedule";
+  postType: "postnow" | "draft" | "scheduled";
   postStatus: "queued" | "published" | "draft" | "failed";
   scheduledTime?: string;
   handle?: string;

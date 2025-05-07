@@ -172,7 +172,7 @@ const CreatePost = () => {
     if (postCreation.isScheduled && !scheduledAt) {
       toast({
         title: "Schedule time required",
-        description: "Please select a date and time to schedule your post.",
+        description: "Please select a date and time to scheduled your post.",
         variant: "destructive",
       });
       return;
@@ -204,7 +204,7 @@ const CreatePost = () => {
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
-        postType: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+        postType: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
         postStatus: "queued",
       };
 
@@ -216,7 +216,7 @@ const CreatePost = () => {
           channels: [channelId],
           scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
           mediaUrls,
-          status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+          status: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
         }),
       );
     });
@@ -307,7 +307,7 @@ const CreatePost = () => {
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
-        postType: "schedule",
+        postType: "scheduled",
         postStatus: "queued",
       };
 
@@ -319,7 +319,7 @@ const CreatePost = () => {
           channels: [channelId],
           scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
           mediaUrls,
-          status: "schedule",
+          status: "scheduled",
         }),
       );
     });
@@ -546,7 +546,7 @@ const CreatePost = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium">Schedule</h3>
                 <Checkbox
-                  id="schedule-toggle"
+                  id="scheduled-toggle"
                   checked={postCreation.isScheduled}
                   onCheckedChange={(checked) => dispatch(setIsScheduled(checked as boolean))}
                 />

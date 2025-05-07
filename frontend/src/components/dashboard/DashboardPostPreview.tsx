@@ -218,7 +218,7 @@ const DashboardPostPreview: React.FC<DashboardPostPreviewProps> = ({
               <TooltipContent className="text-xs bg-gray-500 text-white w-60">
                 <p>
                   Posting time was set manually and is not determined by the channel's posting
-                  schedule
+                  scheduled
                 </p>
               </TooltipContent>
             </Tooltip>

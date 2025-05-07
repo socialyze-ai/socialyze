@@ -463,7 +463,7 @@ const Channels = () => {
                     </svg>
                     <h3 className="font-semibold text-lg">TikTok</h3>
                     <p className="text-sm text-muted-foreground">
-                      Plan and schedule your TikTok content strategy.
+                      Plan and scheduled your TikTok content strategy.
                     </p>
                   </div>
                 </div>
