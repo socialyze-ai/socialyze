@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
 import {
   SocialChannel,
@@ -46,6 +47,7 @@ const Channels = () => {
   });
 
   const { mutate: handleChannelAuth } = useChannelAuth();
+  const queryClient = useQueryClient();
 
   const handleChannelAuthMutation = (handle: string) => {
     handleChannelAuth(
@@ -62,6 +64,11 @@ const Channels = () => {
             });
             return;
           }
+          const handleMessage = (repsponse: MessageEvent) => {
+            queryClient.invalidateQueries({ queryKey: ["channels"] });
+          };
+
+          window.addEventListener("message", handleMessage);
         },
         onError: (error) => {
           toast({
@@ -73,58 +80,6 @@ const Channels = () => {
       },
     );
   };
-
-  // const facebookHandleLogin = (_response: any) => {
-  //   const url = BACKEND_URL + "connect/facebook2";
-  //   const width = 500;
-  //   const height = 500;
-  //   const left = (window.innerWidth - width) / 2;
-  //   const top = (window.innerHeight - height) / 2;
-  //   window.open(
-  //     url,
-  //     "_blank",
-  //     `width=${width},height=${height},left=${left},top=${top}`
-  //   );
-  // };
-
-  // const instagramHandleLogin = (_response: any) => {
-  //   const url = BACKEND_URL + "connect/instagram2";
-  //   const width = 500;
-  //   const height = 500;
-  //   const left = (window.innerWidth - width) / 2;
-  //   const top = (window.innerHeight - height) / 2;
-  //   window.open(
-  //     url,
-  //     "_blank",
-  //     `width=${width},height=${height},left=${left},top=${top}`
-  //   );
-  // };
-
-  // const twitterHandleLogin = (_response: any) => {
-  //   const url = BACKEND_URL + "connect/twitter";
-  //   const width = 500;
-  //   const height = 500;
-  //   const left = (window.innerWidth - width) / 2;
-  //   const top = (window.innerHeight - height) / 2;
-  //   window.open(
-  //     url,
-  //     "_blank",
-  //     `width=${width},height=${height},left=${left},top=${top}`
-  //   );
-  // };
-
-  // const linkedInHandleLogin = (_response: any) => {
-  //   const url = BACKEND_URL + "connect/linkedin";
-  //   const width = 500;
-  //   const height = 500;
-  //   const left = (window.innerWidth - width) / 2;
-  //   const top = (window.innerHeight - height) / 2;
-  //   window.open(
-  //     url,
-  //     "_blank",
-  //     `width=${width},height=${height},left=${left},top=${top}`
-  //   );
-  // };
 
   const handleAddChannel = () => {
     if (!newChannel.name || !newChannel.type) {

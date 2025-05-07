@@ -1,13 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import axios from 'axios';
 import { GetImagesDto } from '../media/dto/getImages.dto';
-import { UploadMediaDto } from '../media/dto/uploadMedia.dto';
 import { Readable } from 'stream';
-
-// const storage = new Storage({
-//   keyFilename: process.env.GCS_KEYFILE_PATH, // e.g., './gcs-key.json'
-// });
-// const bucketName = process.env.GCS_BUCKET_NAME;
 
 @Injectable()
 export class UnsplashService {

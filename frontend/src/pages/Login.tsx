@@ -67,7 +67,7 @@ const Login = () => {
           <CardHeader>
             <CardTitle>Login</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Enter your credentials to access your 
             </CardDescription>
           </CardHeader>
 

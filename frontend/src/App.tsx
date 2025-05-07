@@ -15,6 +15,7 @@ import Channels from "./pages/Channels";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicRoute from "./components/PublicRoute";
+import { Authenticate } from "./pages/Authenticate";
 import InitialDataLoader from "./components/InitialDataLoader";
 import CalenderPage from "./pages/CalenderPage";
 
@@ -95,6 +96,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/authenticate"
+              element={
+                <ProtectedRoute>
+                  <Authenticate />
                 </ProtectedRoute>
               }
             />

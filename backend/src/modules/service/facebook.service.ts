@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Channel } from '../channel/channel.model';
 import { User } from '../user/user.model';
 import axios from 'axios';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
+import { Post } from '../post/post.model';
 
 @Injectable()
 export class FacebookService {
@@ -146,6 +147,127 @@ export class FacebookService {
         error.response?.data || error.message,
       );
       throw new Error('Failed to fetch pages');
+    }
+  }
+
+  async publish(post: Post) {
+    try {
+      const channel = await this.channelModel.findById(post.channelId);
+      if (!channel) {
+        throw new Error('123414 Channel not found for publishing');
+      }
+
+      if (channel.handle !== 'instagram')
+        throw new InternalServerErrorException({
+          success: false,
+          message: 'Not an Facebook Channel Id',
+        });
+
+      const accessToken = channel.accesstoken;
+      const pageId = channel.channelId;
+      const message = post.text;
+      const media = post.media || [];
+
+      let postId = '';
+      let postUrl = '';
+
+      // CASE: Video post
+      if (media.length && media[0].includes('.mp4')) {
+        const videoResponse = await axios.post(
+          `https://graph.facebook.com/v20.0/${pageId}/videos`,
+          {
+            file_url: media[0],
+            description: message,
+            published: true,
+          },
+          {
+            params: {
+              access_token: accessToken,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        postId = videoResponse.data.id;
+        postUrl = `https://www.facebook.com/reel/${postId}`;
+      } else {
+        // CASE: Photo post or plain text
+        let attached_media = [];
+
+        if (media.length > 0) {
+          const uploadPhotos = await Promise.all(
+            media.map(async (url) => {
+              const photoResponse = await axios.post(
+                `https://graph.facebook.com/v20.0/${pageId}/photos`,
+                {
+                  url,
+                  published: false,
+                },
+                {
+                  params: {
+                    access_token: accessToken,
+                  },
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                },
+              );
+
+              return { media_fbid: photoResponse.data.id };
+            }),
+          );
+
+          attached_media = uploadPhotos;
+        }
+
+        const postResponse = await axios.post(
+          `https://graph.facebook.com/v20.0/${pageId}/feed`,
+          {
+            message,
+            ...(attached_media.length ? { attached_media } : {}),
+            published: true,
+          },
+          {
+            params: {
+              access_token: accessToken,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        postId = postResponse.data.id;
+      }
+
+      const permalinkResponse = await axios.get(
+        `https://graph.facebook.com/v20.0/${postId}`,
+        {
+          params: {
+            fields: 'permalink_url',
+            access_token: accessToken,
+          },
+        },
+      );
+
+      postUrl = permalinkResponse.data.permalink_url;
+
+      return {
+        success: true,
+        postId,
+        postUrl,
+      };
+    } catch (error) {
+      console.error(
+        'Facebook publish error:',
+        error.response?.data || error.message,
+      );
+      return {
+        success: false,
+        message: error.message,
+      };
     }
   }
 }

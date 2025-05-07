@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Channel } from '../channel/channel.model';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
 import { TwitterApi } from 'twitter-api-v2';
+import { Post } from '../post/post.model';
+import * as sharp from 'sharp';
+import axios from 'axios';
+import { lookup } from 'mime-types';
 
 @Injectable()
 export class XService {
@@ -20,7 +24,7 @@ export class XService {
       appKey: process.env.X_API_KEY!,
       appSecret: process.env.X_API_SECRET!,
     });
-    console.log('Here1', process.env.X_API_KEY, process.env.X_API_SECRET!);
+
     const { url, oauth_token, oauth_token_secret } =
       await client.generateAuthLink(
         process.env.FRONTEND_URL + '/authenticate',
@@ -63,8 +67,6 @@ export class XService {
       'user.fields': 'profile_image_url,username,name,id,verified',
     });
 
-    console.log('data', data);
-
     await this.channelModel.findOneAndUpdate(
       { channelId: data.id, user: new Types.ObjectId(userId) },
       {
@@ -97,5 +99,100 @@ export class XService {
       tweetId: data.id,
       url: `https://twitter.com/user/status/${data.id}`,
     };
+  }
+
+  async publish(
+    post: Post,
+  ): Promise<{ success: boolean; postId?: string; postUrl?: string }> {
+    try {
+      const channel = await this.channelModel.findById(post.channelId).exec();
+      if (!channel) {
+        throw new InternalServerErrorException('Channel not found for X post.');
+      }
+
+      if (channel.handle !== 'x')
+        throw new InternalServerErrorException({
+          success: false,
+          message: 'Not an X Channel Id',
+        });
+
+      const [accessToken, accessSecret] = channel.accesstoken.split(':');
+
+      const client = new TwitterApi({
+        appKey: process.env.X_API_KEY!,
+        appSecret: process.env.X_API_SECRET!,
+        accessToken,
+        accessSecret,
+      });
+
+      const {
+        data: { username },
+      } = await client.v2.me({ 'user.fields': 'username' });
+
+      // Prepare media uploads
+      let media_ids: string[] = [];
+      if (post.media && post.media.length > 0) {
+        const uploadResults = await Promise.all(
+          post.media.map(async (url) => {
+            const response = await axios.get(url, {
+              responseType: 'arraybuffer',
+            });
+            const buffer = Buffer.from(response.data);
+            const mimeType = lookup(url) || '';
+
+            let mediaBuffer = buffer;
+
+            if (mimeType.startsWith('image/') && mimeType !== 'image/gif') {
+              mediaBuffer = await sharp(buffer)
+                .resize({ width: 1000 })
+                .toBuffer();
+            } else if (mimeType === 'image/gif') {
+              mediaBuffer = await sharp(buffer, { animated: true })
+                .resize({ width: 1000 })
+                .gif()
+                .toBuffer();
+            }
+
+            const mediaId = await client.v1.uploadMedia(mediaBuffer, {
+              mimeType,
+            });
+            return mediaId;
+          }),
+        );
+
+        media_ids = uploadResults.filter(Boolean);
+      }
+
+      const media_ids_tuple = media_ids.slice(0, 4) as
+        | [string]
+        | [string, string]
+        | [string, string, string]
+        | [string, string, string, string];
+
+      const tweetRes = await client.v2.tweet({
+        text: post.text,
+        ...(media_ids.length
+          ? {
+              media: {
+                media_ids: media_ids_tuple,
+              },
+            }
+          : {}),
+      });
+
+      const tweetId = tweetRes.data.id;
+      const tweetUrl = `https://twitter.com/${username}/status/${tweetId}`;
+
+      return {
+        success: true,
+        postId: tweetId,
+        postUrl: tweetUrl,
+      };
+    } catch (error) {
+      console.error('X publish error:', error);
+      return {
+        success: false,
+      };
+    }
   }
 }
