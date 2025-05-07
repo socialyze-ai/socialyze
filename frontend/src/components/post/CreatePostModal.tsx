@@ -85,6 +85,7 @@ import { reset } from "@/redux/slices/aiAssistant.slice";
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedDate?: Date;
 }
 
 export const getSocialIcon = (type: string, size: number = 24) => {
@@ -104,7 +105,7 @@ export const getSocialIcon = (type: string, size: number = 24) => {
   }
 };
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, selectedDate }) => {
   const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
@@ -670,14 +671,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   <p>Schedule</p>
                 </Button>
 
-                <Button
-                  onClick={handlePostNow}
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={selectedChannels.length === 0 || !activeChannel}
-                  size="sm"
-                >
-                  Post
-                </Button>
+                {!selectedDate && (
+                  <Button
+                    onClick={handlePostNow}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={selectedChannels.length === 0 || !activeChannel}
+                    size="sm"
+                  >
+                    Post
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -742,9 +745,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       <ScheduleModal
         isOpen={postCreation.isScheduleModalOpen}
         onClose={() => dispatch(setScheduleModalOpen(false))}
-        selectedDate={postCreation.scheduledDate || new Date()}
+        selectedDate={selectedDate ? new Date(selectedDate) : new Date()}
         onSchedule={handleSchedule}
-        content=""
       />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

@@ -321,7 +321,7 @@ const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
       <CreatePostModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        // initialDate={selectedDate}
+        selectedDate={selectedDate}
       />
     </>
   );

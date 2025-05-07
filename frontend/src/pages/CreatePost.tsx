@@ -617,7 +617,6 @@ const CreatePost = () => {
         onClose={() => dispatch(setScheduleModalOpen(false))}
         selectedDate={postCreation.scheduledDate || new Date()}
         onSchedule={handleScheduleFromModal}
-        content=""
       />
 
       {/* Alert Dialog for Sync Confirmation */}
