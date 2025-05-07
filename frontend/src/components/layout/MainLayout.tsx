@@ -34,7 +34,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, title }) => {
   const location = useLocation();
 
   // Restricted paths that are not yet implemented
-  const comingSoonPaths = ["/calendar", "/analytics", "/settings"];
+  const comingSoonPaths = ["/settings"];
 
   const showComingSoon = comingSoonPaths.some((path) => location.pathname.includes(path));
 

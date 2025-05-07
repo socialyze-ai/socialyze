@@ -15,7 +15,7 @@ type ContentType = "refine" | "complete" | "hashtags";
 interface UseAIContentParams {
   content: string;
   startTypeEffect: (text: string, type: ContentType) => void;
-  focusAndSelectText: () => void;
+  focusAndSelectText: (range: { start: number; end: number } | null) => void;
   previousSelectionRef: React.MutableRefObject<{ start: number; end: number } | null>;
 }
 
@@ -55,6 +55,9 @@ export const useAIContent = ({
         `<focus>${cleanSelectedText}</focus>` +
         content.substring(selEnd);
 
+      // Keep focus on the selected text during the API call
+      focusAndSelectText(selectedRange);
+
       generateContent(
         {
           text: cleanSelectedText, // send only selected text
@@ -73,7 +76,7 @@ export const useAIContent = ({
 
             // Always ensure the selection is preserved
             setTimeout(() => {
-              focusAndSelectText();
+              focusAndSelectText(previousSelectionRef.current);
             }, 50);
           },
           onError: () => {
@@ -82,6 +85,11 @@ export const useAIContent = ({
               description: "Please try again.",
               variant: "destructive",
             });
+
+            // Still restore selection on error
+            setTimeout(() => {
+              focusAndSelectText(previousSelectionRef.current);
+            }, 10);
           },
         },
       );
@@ -142,7 +150,16 @@ export const useAIContent = ({
   };
 
   // Handler for regenerating refined text
-  const handleRegenerateRefinedText = (selectedRange: { start: number; end: number } | null) => {
+  const handleRegenerateRefinedText = (
+    selectedRange: { start: number; end: number } | null,
+    e?: React.MouseEvent,
+  ) => {
+    // If there's an event, prevent default behavior and propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     // Use previousSelectionRef as a fallback if selectedRange is somehow lost
     const selRange = selectedRange || previousSelectionRef.current;
     if (!selRange) return;
@@ -156,6 +173,9 @@ export const useAIContent = ({
 
     // Store the current selection to preserve it
     previousSelectionRef.current = selRange;
+
+    // Maintain focus and selection during API call
+    focusAndSelectText(selRange);
 
     // Wrap selected text in <focus> tags
     const wholeText =
@@ -178,7 +198,7 @@ export const useAIContent = ({
 
           // Ensure focus is maintained
           setTimeout(() => {
-            focusAndSelectText();
+            focusAndSelectText(previousSelectionRef.current);
           }, 50);
         },
         onError: () => {
@@ -187,6 +207,11 @@ export const useAIContent = ({
             description: "Please try again.",
             variant: "destructive",
           });
+
+          // Still restore selection on error
+          setTimeout(() => {
+            focusAndSelectText(previousSelectionRef.current);
+          }, 10);
         },
       },
     );

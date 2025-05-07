@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export interface HashtagManagerType {
@@ -24,12 +24,7 @@ export const useGetHashtagManagers = () => {
   return useQuery({
     queryKey: ["hashtagManagers"],
     queryFn: async () => {
-      const { data } = await makeRequest(
-        BACKEND_URL + "hashtagManager",
-        "GET",
-        "",
-        HARD_CODED_TOKEN
-      );
+      const { data } = await makeRequest(BACKEND_URL + "hashtagManager", "GET", "", LOG_TOKEN);
       return data as HashtagManagerType[];
     },
   });
@@ -43,7 +38,7 @@ export const useGetHashtagManagerById = (id: string) => {
         `${BACKEND_URL}hashtagManager/${id}`,
         "GET",
         "",
-        HARD_CODED_TOKEN
+        LOG_TOKEN,
       );
       return data as HashtagManagerType;
     },
@@ -60,7 +55,7 @@ export const useCreateHashtagManager = () => {
         BACKEND_URL + "hashtagManager",
         "POST",
         payload,
-        HARD_CODED_TOKEN
+        LOG_TOKEN,
       );
       return data;
     },
@@ -74,18 +69,12 @@ export const useUpdateHashtagManager = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateHashtagManagerPayload;
-    }) => {
+    mutationFn: async ({ id, payload }: { id: string; payload: UpdateHashtagManagerPayload }) => {
       const { data } = await makeRequest(
         `${BACKEND_URL}hashtagManager/${id}`,
         "PATCH",
         payload,
-        HARD_CODED_TOKEN
+        LOG_TOKEN,
       );
       return data;
     },
@@ -107,7 +96,7 @@ export const useDeleteHashtagManager = () => {
         `${BACKEND_URL}hashtagManager/${id}`,
         "DELETE",
         "",
-        HARD_CODED_TOKEN
+        LOG_TOKEN,
       );
       return data;
     },
@@ -125,7 +114,7 @@ export const useGetHashtags = () => {
         BACKEND_URL + "hashtag/get-all-hashtags",
         "GET",
         "",
-        HARD_CODED_TOKEN
+        LOG_TOKEN,
       );
       return data;
     },

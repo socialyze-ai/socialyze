@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { usePosts } from "@/context/PostsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, Info, Unlink, MoveRight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -69,9 +68,10 @@ import { selectSelectedLabels, unselectAllLabels } from "@/redux/slices/labelMan
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
+import { addPost, selectChannels } from "@/redux/slices/posts.slice";
 
 const CreatePost = () => {
-  const { channels, addPost } = usePosts();
+  const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
   const selectedChannels = useSelector(selectSelectedChannels);
@@ -172,7 +172,7 @@ const CreatePost = () => {
     if (postCreation.isScheduled && !scheduledAt) {
       toast({
         title: "Schedule time required",
-        description: "Please select a date and time to schedule your post.",
+        description: "Please select a date and time to scheduled your post.",
         variant: "destructive",
       });
       return;
@@ -198,28 +198,39 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
-        postType: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
+        postType: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
         postStatus: "queued",
       };
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        scheduledAt,
-        mediaUrls,
-        status: isDraft ? "draft" : postCreation.isScheduled ? "schedule" : "postnow",
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
+          mediaUrls,
+          status: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
+        }),
+      );
     });
 
-    console.log("finalData", finalData);
+    handleCreatePostApiCall(finalData, isDraft, scheduledAt, selectedChannels);
+  };
+
+  const handleCreatePostApiCall = (
+    finalData: any,
+    isDraft: boolean,
+    scheduledAt: Date,
+    selectedChannels: string[],
+  ) => {
+    if (selectedChannels?.length !== finalData?.length) return;
 
     addPostMutation(finalData, {
       onSuccess: () => {
@@ -290,44 +301,30 @@ const CreatePost = () => {
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
-        postType: "schedule",
+        postType: "scheduled",
         postStatus: "queued",
       };
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        scheduledAt,
-        mediaUrls,
-        status: "schedule",
-      });
-
-      addPostMutation(finalData, {
-        onSuccess: () => {
-          toast({
-            title: "Post scheduled",
-            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to schedule post",
-            variant: "destructive",
-          });
-        },
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
+          mediaUrls,
+          status: "scheduled",
+        }),
+      );
     });
 
-    console.log("finalData", finalData);
+    handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);
 
     toast({
       title: "Post scheduled",
@@ -342,8 +339,8 @@ const CreatePost = () => {
     switch (type) {
       case "facebook":
         return <Facebook size={size} className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter size={size} className="text-[#1DA1F2]" />;
+      case "x":
+        return <X size={size} className="text-black" />;
       case "instagram":
         return <Instagram size={size} className="text-[#E4405F]" />;
       case "linkedin":
@@ -351,7 +348,7 @@ const CreatePost = () => {
       case "youtube":
         return <Youtube size={size} className="text-[#FF0000]" />;
       default:
-        return <X size={size} className="text-[#1DA1F2]" />;
+        return <X size={size} className="text-black" />;
     }
   };
 
@@ -549,7 +546,7 @@ const CreatePost = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium">Schedule</h3>
                 <Checkbox
-                  id="schedule-toggle"
+                  id="scheduled-toggle"
                   checked={postCreation.isScheduled}
                   onCheckedChange={(checked) => dispatch(setIsScheduled(checked as boolean))}
                 />
@@ -620,7 +617,6 @@ const CreatePost = () => {
         onClose={() => dispatch(setScheduleModalOpen(false))}
         selectedDate={postCreation.scheduledDate || new Date()}
         onSchedule={handleScheduleFromModal}
-        content=""
       />
 
       {/* Alert Dialog for Sync Confirmation */}

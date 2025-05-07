@@ -281,7 +281,7 @@ const AIAssistantEditor = () => {
 
           {prompt === "" && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {examplePrompts.map((examplePrompt, index) => (
+              {examplePrompts?.map((examplePrompt, index) => (
                 <Badge
                   key={index}
                   variant="secondary"
@@ -300,7 +300,7 @@ const AIAssistantEditor = () => {
           <div className="mt-4">
             <p className="text-sm text-gray-700 mb-2">Select tone:</p>
             <div className="flex gap-2">
-              {tones.map((tone) => (
+              {tones?.map((tone) => (
                 <Badge
                   key={tone.id}
                   variant={selectedTone === tone.id ? "default" : "outline"}
@@ -403,7 +403,7 @@ const AIAssistantEditor = () => {
                 <TabsTrigger value="suggestion2">Option 3</TabsTrigger>
               </TabsList>
 
-              {suggestions.map((suggestion, index) => (
+              {suggestions?.map((suggestion, index) => (
                 <TabsContent key={index} value={`suggestion${index}`} className="mt-0">
                   <div className="bg-gray-50 p-3 rounded-md">
                     <p className="text-sm text-gray-700">{suggestion}</p>

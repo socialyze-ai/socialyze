@@ -1,14 +1,13 @@
 import { useGetImages, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
-import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { DebounceInput } from "react-debounce-input";
 
 import { Media } from "../MediaUploader";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 
-interface UnsplashImage {
+interface Image {
   url: string;
   download_location: string;
   username: string;
@@ -18,21 +17,23 @@ interface UnsplashImage {
   height: number;
 }
 
-const UnsplashMediaModalContent = ({
-  selectedMediaContent,
+const MediaModalContent = ({
   setSelectedMediaContent,
   onImageSelect,
   closeModal,
+  provider = "unsplash",
 }: {
-  selectedMediaContent: Media[];
   setSelectedMediaContent: (media: Media[]) => void;
   onImageSelect?: (image: Media) => void;
   closeModal?: () => void;
+  provider?: string;
 }) => {
-  const [images, setImages] = useState<UnsplashImage[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [page, setPage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState("trending");
+  const [searchKeyword, setSearchKeyword] = useState("elephant dancing");
   const [isSelecting, setIsSelecting] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { mutate: generateGCSUrl, isPending: isGenerateGCSUrlPending } = useUploadUnsplashMedia();
 
@@ -41,7 +42,7 @@ const UnsplashMediaModalContent = ({
     isLoading: isLoadingUnsplash,
     isError: isErrorUnsplash,
   } = useGetImages({
-    provider: "unsplash",
+    provider: provider,
     search: searchKeyword,
     page: page,
     limit: 10,
@@ -51,14 +52,50 @@ const UnsplashMediaModalContent = ({
   useEffect(() => {
     if (unsplashData?.data?.media) {
       setImages((prevImages) => [...prevImages, ...unsplashData.data.media]);
+      setLoadingMore(false);
     }
   }, [unsplashData]);
 
-  const loadMoreImages = () => {
-    setPage((prevPage) => prevPage + 1);
-  };
+  // Reset when search changes
+  useEffect(() => {
+    setImages([]);
+    setPage(1);
+  }, [searchKeyword]);
 
-  const handleSelectImage = (image: UnsplashImage) => {
+  const loadMoreImages = useCallback(() => {
+    if (!isLoadingUnsplash && !loadingMore) {
+      setLoadingMore(true);
+      setPage((prevPage) => prevPage + 1);
+    }
+  }, [isLoadingUnsplash, loadingMore]);
+
+  // Handle scroll for infinite loading
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+
+    const handleScroll = () => {
+      if (scrollContainer) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+
+        // If scrolled to near bottom (within 200px of bottom)
+        if (scrollHeight - scrollTop - clientHeight < 200 && !isLoadingUnsplash && !loadingMore) {
+          loadMoreImages();
+        }
+      }
+    };
+
+    if (scrollContainer) {
+      scrollContainer.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [loadMoreImages, isLoadingUnsplash, loadingMore]);
+
+  const handleSelectImage = (image: Image) => {
     setIsSelecting(true);
 
     const postId = uuidv4();
@@ -87,16 +124,16 @@ const UnsplashMediaModalContent = ({
 
           toast({
             title: "Success",
-            description: "Unsplash image selected successfully",
+            description: "Image selected successfully",
           });
         },
         onError: (error) => {
-          console.error("Error uploading Unsplash image:", error);
+          console.error("Error uploading image:", error);
           setIsSelecting(false);
 
           toast({
             title: "Error",
-            description: "Failed to select Unsplash image",
+            description: "Failed to select image",
             variant: "destructive",
           });
         },
@@ -117,8 +154,11 @@ const UnsplashMediaModalContent = ({
         placeholder="Search for images"
         className="p-2 border rounded"
       />
-      <div className="flex flex-col gap-2 min-h-[20dvh] max-h-[60vh] overflow-y-auto">
-        {isLoadingUnsplash || isSelecting || isGenerateGCSUrlPending ? (
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-col gap-2 min-h-[20dvh] max-h-[60vh] overflow-y-auto"
+      >
+        {(isLoadingUnsplash && page === 1) || isSelecting || isGenerateGCSUrlPending ? (
           <div className="flex flex-col items-center justify-center my-10">
             <Loader2 className="animate-spin text-blue-500" size={32} />
             <p className="mt-2 text-lg font-semibold text-gray-700">
@@ -177,17 +217,14 @@ const UnsplashMediaModalContent = ({
           </div>
         )}
 
-        {!isLoadingUnsplash && !isSelecting && !isGenerateGCSUrlPending && (
-          <button
-            onClick={loadMoreImages}
-            className="self-center mt-4 p-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-          >
-            Load More
-          </button>
+        {loadingMore && (
+          <div className="flex justify-center py-4">
+            <Loader2 className="animate-spin text-blue-500" size={24} />
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-export default UnsplashMediaModalContent;
+export default MediaModalContent;

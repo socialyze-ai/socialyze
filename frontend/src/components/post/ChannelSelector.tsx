@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { SocialChannel } from "@/context/PostsContext";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { SocialChannel } from "@/redux/slices/posts.slice";
+import { Facebook, Instagram, Linkedin, Twitter, X } from "lucide-react";
 // import { TiktokIcon } from "@/components/icons";
 import PostPreview from "./PostPreview";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
@@ -20,8 +20,8 @@ export const getSocialIcon = (type: string) => {
   switch (type) {
     case "facebook":
       return <Facebook className="text-[#1877F2]" />;
-    case "twitter":
-      return <Twitter className="text-[#1DA1F2]" />;
+    case "x":
+      return <X className="text-[#1DA1F2]" />;
     case "instagram":
       return <Instagram className="text-[#E4405F]" />;
     case "linkedin":
@@ -29,7 +29,7 @@ export const getSocialIcon = (type: string) => {
     // case "tiktok":
     //   return <TiktokIcon />;
     default:
-      return <Twitter className="text-[#1DA1F2]" />;
+      return <X className="text-[#1DA1F2]" />;
   }
 };
 

@@ -41,7 +41,7 @@ const aspectRatios = [
   { name: "Portrait (4:5)", value: 4 / 5 }, // Instagram
   { name: "Landscape (16:9)", value: 16 / 9 }, // Instagram, Facebook, LinkedIn
   { name: "Story (9:16)", value: 9 / 16 }, // Instagram/Facebook Stories, Reels
-  { name: "Twitter Post (16:10)", value: 16 / 10 }, // X.com (Twitter)
+  { name: "X Post (16:10)", value: 16 / 10 }, // X.com (Twitter)
   { name: "LinkedIn (3:2)", value: 3 / 2 }, // LinkedIn
 ];
 

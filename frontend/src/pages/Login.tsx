@@ -31,10 +31,10 @@ const Login = () => {
         description: "Welcome back to Socialyze!",
       });
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Login failed",
-        description: "Please check your credentials and try again.",
+        description: error.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -49,15 +49,10 @@ const Login = () => {
               S
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Sign in to Socialyze
-          </h2>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Sign in to Socialyze</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{" "}
-            <Link
-              to="/signup"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <Link to="/signup" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               create a new account
             </Link>
           </p>
@@ -66,9 +61,7 @@ const Login = () => {
         <Card>
           <CardHeader>
             <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your 
-            </CardDescription>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
@@ -116,17 +109,11 @@ const Login = () => {
         <div className="text-center mt-4">
           <p className="text-sm text-gray-600">
             By signing in, you agree to our{" "}
-            <a
-              href="#"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <a href="#" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               Terms of Service
             </a>{" "}
             and{" "}
-            <a
-              href="#"
-              className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
-            >
+            <a href="#" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
               Privacy Policy
             </a>
           </p>

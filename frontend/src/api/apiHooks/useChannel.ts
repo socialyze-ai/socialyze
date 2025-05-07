@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export const useChannelAuth = () => {
@@ -9,7 +9,7 @@ export const useChannelAuth = () => {
         BACKEND_URL + "channel/getAuthUrl",
         "POST",
         body,
-        HARD_CODED_TOKEN,
+        LOG_TOKEN,
       );
       return data;
     },
@@ -40,11 +40,11 @@ const mockChannels = {
     },
     {
       _id: "103",
-      handle: "twitter",
+      handle: "x",
       user: "user123",
       workspace: "workspace1",
       channelId: "tw_channel_1",
-      channelName: "Twitter Account",
+      channelName: "X Account",
       channelPicture: "https://randomuser.me/api/portraits/men/3.jpg",
     },
     {
@@ -68,7 +68,7 @@ export const useGetChannel = (isMockData: boolean = false) => {
       if (isMockData) {
         return mockChannels;
       }
-      return await makeRequest(BACKEND_URL + "channel", "GET", "", HARD_CODED_TOKEN);
+      return await makeRequest(BACKEND_URL + "channel", "GET", "", LOG_TOKEN);
     },
   });
 

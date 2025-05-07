@@ -2,14 +2,14 @@ import React, { useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { getSocialIcon } from "./ChannelSelector";
-import { usePosts } from "@/context/PostsContext";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
+import { selectChannels } from "@/redux/slices/posts.slice";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const SelectedChannels = ({ isDashboard = false }: { isDashboard?: boolean }) => {
-  const { channels } = usePosts();
+  const channels = useSelector(selectChannels);
   const { selectedChannels } = useSelector(selectPostCreation);
 
   const selectedPostChannels = isDashboard

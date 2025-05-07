@@ -20,11 +20,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   CalendarCheck2,
+  ChevronRight,
   Facebook,
   Info,
   Instagram,
+  Link,
   Linkedin,
   MoveRight,
+  Plus,
   Save,
   Twitter,
   Unlink,
@@ -32,15 +35,14 @@ import {
   X,
   Youtube,
 } from "lucide-react";
-import { usePosts } from "@/context/PostsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import ScheduleModal from "./ScheduleModal";
 import HashtagInput from "./HashtagInput";
 import { addHashtagsToContent } from "@/utils/formatContent";
-import { SocialChannel } from "@/context/PostsContext";
 import { useDispatch, useSelector } from "react-redux";
+import { SocialChannel, addPost, selectChannels } from "@/redux/slices/posts.slice";
 import {
   selectPostCreation,
   selectSelectedChannels,
@@ -73,19 +75,38 @@ import { TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Tooltip } from "@radix-ui/react-tooltip";
 import ImageEditor from "./editor/ImageEditor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
-import { selectSelectedLabels } from "@/redux/slices/labelManager.slice";
+import { selectSelectedLabels, unselectAllLabels } from "@/redux/slices/labelManager.slice";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
 import LabelSelector from "./LabelSelector";
+import { reset } from "@/redux/slices/aiAssistant.slice";
 
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedDate?: Date;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
-  const { channels, addPost } = usePosts();
+export const getSocialIcon = (type: string, size: number = 24) => {
+  switch (type) {
+    case "facebook":
+      return <Facebook size={size} className="text-[#1877F2]" />;
+    case "x":
+      return <X size={size} className="text-black" />;
+    case "instagram":
+      return <Instagram size={size} className="text-[#E4405F]" />;
+    case "linkedin":
+      return <Linkedin size={size} className="text-[#0A66C2]" />;
+    case "youtube":
+      return <Youtube size={size} className="text-[#FF0000]" />;
+    default:
+      return <X size={size} className="text-black" />;
+  }
+};
+
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, selectedDate }) => {
+  const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
   const postCreation = useSelector(selectPostCreation);
   const selectedChannels = useSelector(selectSelectedChannels);
@@ -103,11 +124,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [isSyncAlertOpen, setIsSyncAlertOpen] = useState(false);
+  const [isCloseAlertOpen, setIsCloseAlertOpen] = useState(false);
 
   // Initialize content by channel when modal opens
   useEffect(() => {
     if (channels.length > 0) {
-      dispatch(initializeChannelContent(channels.map((channel) => channel.id)));
+      dispatch(initializeChannelContent(channels?.map((channel) => channel.id)));
     }
   }, [channels, dispatch]);
 
@@ -192,7 +214,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       return;
     }
 
-    submitPost(channels, "schedule", scheduledAt);
+    submitPost(channels, "scheduled", scheduledAt);
   };
 
   const handlePostNow = () => {
@@ -232,9 +254,53 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     submitPost(channelsToUse, "draft");
   };
 
+  const handleCreatePostApiCall = (
+    finalData: any,
+    isDraft: boolean,
+    scheduledAt: Date,
+    selectedChannels: string[],
+  ) => {
+    if (selectedChannels?.length !== finalData?.length) return;
+
+    addPostMutation(finalData, {
+      onSuccess: () => {
+        const statusText = isDraft
+          ? "saved as draft"
+          : postCreation.isScheduled
+          ? "scheduled"
+          : "sent";
+
+        toast({
+          title: isDraft
+            ? "Draft saved"
+            : postCreation.isScheduled
+            ? "Post scheduled"
+            : "Post sent",
+          description:
+            postCreation.isScheduled && scheduledAt
+              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+              : `Your post has been ${statusText}.`,
+        });
+
+        dispatch(unselectAllLabels());
+
+        navigate("/dashboard");
+        dispatch(resetPostCreation());
+        dispatch(reset());
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to add post",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
   const submitPost = (
     channelIds: string[],
-    status: "postnow" | "schedule" | "draft",
+    status: "postnow" | "scheduled" | "draft",
     scheduledAt?: Date,
   ) => {
     const finalData = [];
@@ -243,73 +309,77 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       const content = contentByChannel[channelId] || "";
       const finalContent = addHashtagsToContent(content, postCreation.hashtags);
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+      const socialHandle = channels.find((channel) => channel.id === channelId)?.type;
 
       const postData = {
         channelId: channelId,
-        text: finalContent.includes("<br>")
+        text: finalContent?.includes("<br>")
           ? finalContent.replace(/<br>/g, "")
           : finalContent || "",
         scheduledTime: scheduledAt,
-        label: selectedLabels.map((label) => label.id),
+        label: selectedLabels?.map((label) => label.id),
         media: mediaUrls,
-        postType: status, // "postnow" | "schedule" | "draft"
+        postType: status, // "postnow" | "scheduled" | "draft"
         postStatus: "queued",
+        handle: socialHandle,
       };
 
       finalData.push(postData);
 
-      addPost({
-        content: finalContent,
-        channels: [channelId],
-        mediaUrls: mediaUrls,
-        status,
-        scheduledAt,
-      });
+      dispatch(
+        addPost({
+          content: finalContent,
+          channels: [channelId],
+          mediaUrls: mediaUrls,
+          status,
+          scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
+        }),
+      );
 
-      addPostMutation(finalData, {
-        onSuccess: () => {
-          toast({
-            title: "Post scheduled",
-            description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to schedule post",
-            variant: "destructive",
-          });
-        },
-      });
+      handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });
 
     console.log("finalData", finalData);
 
     const statusText =
-      status === "postnow" ? "sent" : status === "schedule" ? "scheduled" : "saved as draft";
+      status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
 
     toast({
       title:
         status === "postnow"
           ? "Post sent"
-          : status === "schedule"
+          : status === "scheduled"
           ? "Post scheduled"
           : "Draft saved",
       description: `Your post has been ${statusText}.`,
     });
 
     onClose();
-    resetForm();
   };
 
   const resetForm = () => {
     dispatch(resetPostCreation());
   };
 
-  const handleOpenAdvanced = () => {
-    onClose();
-    resetForm();
-    navigate("/create");
+  const handleOpenAlert = () => {
+    setIsCloseAlertOpen(true);
+  };
+
+  const handleClose = () => {
+    // Check if there's content or media before closing
+    const hasContent = selectedChannels.some(
+      (channelId) =>
+        contentByChannel[channelId]?.trim() !== "" ||
+        (mediaByChannel[channelId] && mediaByChannel[channelId].length > 0),
+    );
+
+    if (hasContent) {
+      setIsCloseAlertOpen(true);
+    } else {
+      onClose();
+      resetForm();
+      setIsCloseAlertOpen(false);
+    }
   };
 
   const getChannelById = (id: string): SocialChannel | undefined => {
@@ -328,7 +398,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     if (activeChannel) {
       // Update media for the active channel
       const channelMedia = [...(mediaByChannel[activeChannel] || [])];
-      const updatedChannelMedia = channelMedia.map((media) =>
+      const updatedChannelMedia = channelMedia?.map((media) =>
         media.id === editedMediaId ? { ...media, url: editedMediaUrl } : media,
       );
       dispatch(setMediaForChannel({ channelId: activeChannel, media: updatedChannelMedia }));
@@ -352,26 +422,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     setIsEditDialogOpen(false);
   };
 
-  const getSocialIcon = (type: string, size: number = 24) => {
-    switch (type) {
-      case "facebook":
-        return <Facebook size={size} className="text-[#1877F2]" />;
-      case "twitter":
-        return <Twitter size={size} className="text-[#1DA1F2]" />;
-      case "instagram":
-        return <Instagram size={size} className="text-[#E4405F]" />;
-      case "linkedin":
-        return <Linkedin size={size} className="text-[#0A66C2]" />;
-      case "youtube":
-        return <Youtube size={size} className="text-[#FF0000]" />;
-      default:
-        return <X size={size} className="text-[#1DA1F2]" />;
-    }
-  };
-
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
         <DialogContent
           className={cn(
             "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
@@ -417,46 +470,64 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   <LabelSelector />
                 </div>
                 <DialogDescription>
-                  Create and schedule posts for your social media channels
+                  Create and scheduled posts for your social media channels
                 </DialogDescription>
               </div>
             </DialogHeader>
 
-            <div className="flex justify-between items-center my-4">
-              <div className="flex gap-3 flex-wrap">
-                {channels.map((channel) => {
-                  console.log("selectedChannels", channel);
-
-                  return (
-                    <button
-                      key={channel.id}
-                      className={`relative rounded-full p-1.5 ${
-                        selectedChannels.includes(channel.id)
-                          ? // ? "ring-2 ring-primary"
-                            "shadow shadow-blue-500"
-                          : "opacity-60 hover:opacity-100"
-                      }`}
-                      onClick={() => handleChannelToggle(channel.id)}
-                    >
-                      <Avatar className="w-10 h-10 rounded-full">
-                        <AvatarImage src={channel.profileImage} />
-                        <AvatarFallback className="capitalize font-semibold text-xl">
-                          {channel.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={cn(
-                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
-                          selectedChannels.includes(channel.id) && "shadow-blue-500",
-                        )}
-                      >
-                        {getSocialIcon(channel.type, 16)}
-                      </div>
-                    </button>
-                  );
-                })}
+            {channels.length === 0 ? (
+              <div
+                className="flex items-center justify-between my-2 p-2 border border-gray-400 text-gray-600 text-sm rounded hover:bg-blue-600 hover:text-white hover:font-semibold hover:cursor-pointer"
+                onClick={() => {
+                  handleOpenAlert();
+                  navigate("/channels");
+                }}
+              >
+                <span>No channels available. Please add channels to create a post.</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="rounded-full text-blue-500 w-6 h-6"
+                >
+                  <ChevronRight />
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-between items-center my-4">
+                <div className="flex gap-3 flex-wrap">
+                  {channels?.map((channel) => {
+                    console.log("selectedChannels", channel);
+
+                    return (
+                      <button
+                        key={channel.id}
+                        className={`relative rounded-full p-1.5 ${
+                          selectedChannels.includes(channel.id)
+                            ? "shadow shadow-blue-500"
+                            : "opacity-60 hover:opacity-100"
+                        }`}
+                        onClick={() => handleChannelToggle(channel.id)}
+                      >
+                        <Avatar className="w-10 h-10 rounded-full">
+                          <AvatarImage src={channel.profileImage} />
+                          <AvatarFallback className="capitalize font-semibold text-xl">
+                            {channel.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={cn(
+                            "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
+                            selectedChannels.includes(channel.id) && "shadow-blue-500",
+                          )}
+                        >
+                          {getSocialIcon(channel.type, 16)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {isCustomContent ? (
               <>
@@ -466,7 +537,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                       Select channels to create your post
                     </div>
                   ) : (
-                    selectedChannels.map((channelId) => {
+                    selectedChannels?.map((channelId) => {
                       const channel = getChannelById(channelId);
                       if (!channel) return null;
 
@@ -539,57 +610,79 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
               </div>
             )}
 
-            {selectedChannels.length !== 0 && activeChannel && (
-              <div className="flex justify-between mt-2">
+            <div className="flex justify-between mt-2">
+              <Button
+                onClick={handleToggleContentSync}
+                variant="outline"
+                size="sm"
+                disabled={selectedChannels.length === 1 || !activeChannel}
+              >
+                {isCustomContent ? (
+                  <>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-2">
+                          <p>Sync content</p>
+                          <Link />
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
+                          Sync content across all selected channels
+                          <br />
+                          Note: first channel content will be consider for syncing content
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="flex items-center gap-2">
+                        <p>Unsync content</p>
+                        <Unlink />
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
+                        Customize for each network
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </Button>
+
+              <div className="flex gap-2">
                 <Button
-                  onClick={handleToggleContentSync}
-                  className="text-sm flex justify-center items-center gap-2 ring-1 ring-blue-600"
+                  onClick={handleDraftSave}
                   variant="outline"
+                  size="sm"
+                  disabled={selectedChannels.length === 0 || !activeChannel}
+                  className="flex items-center gap-2"
                 >
-                  {isCustomContent ? (
-                    <>
-                      Sync content
-                      <Unlink />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info />
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs w-64 h-fit text-wrap p-2 rounded-md bg-white">
-                            Sync content across all selected channels
-                            <br />
-                            Note: first channel content will be consider for syncing content
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </>
-                  ) : (
-                    <>
-                      Customize for each network
-                      <MoveRight />
-                    </>
-                  )}
+                  <Save />
+                  <p>Save</p>
                 </Button>
 
-                <div className="flex gap-2">
-                  <Button onClick={handleDraftSave} variant="outline" size="icon">
-                    <Save />
-                  </Button>
+                <Button
+                  onClick={() => dispatch(setScheduleModalOpen(true))}
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedChannels.length === 0 || !activeChannel}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarCheck2 />
+                  <p>Schedule</p>
+                </Button>
 
+                {!selectedDate && (
                   <Button
-                    onClick={() => dispatch(setScheduleModalOpen(true))}
-                    variant="outline"
-                    size="icon"
+                    onClick={handlePostNow}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={selectedChannels.length === 0 || !activeChannel}
+                    size="sm"
                   >
-                    <CalendarCheck2 />
-                  </Button>
-
-                  <Button onClick={handlePostNow} className="bg-blue-600 hover:bg-blue-700">
                     Post
                   </Button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Preview Section */}
@@ -606,7 +699,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   onChange={(e) => dispatch(setActiveChannel(e.target.value))}
                   className="border border-gray-300 rounded-md p-2 w-full mt-5 text-sm"
                 >
-                  {selectedChannels.map((channelId) => {
+                  {selectedChannels?.map((channelId) => {
                     const channel = getChannelById(channelId);
                     return channel ? (
                       <option key={channel.id} value={channel.id}>
@@ -635,7 +728,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
                     content={
-                      contentByChannel[activeChannel].includes("<br>")
+                      contentByChannel[activeChannel]?.includes("<br>")
                         ? contentByChannel[activeChannel].replace(/<br>/g, "")
                         : contentByChannel[activeChannel] || ""
                     }
@@ -652,9 +745,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       <ScheduleModal
         isOpen={postCreation.isScheduleModalOpen}
         onClose={() => dispatch(setScheduleModalOpen(false))}
-        selectedDate={postCreation.scheduledDate || new Date()}
+        selectedDate={selectedDate ? new Date(selectedDate) : new Date()}
         onSchedule={handleSchedule}
-        content=""
       />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -685,6 +777,31 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSync}>Sync</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog for Close Confirmation */}
+      <AlertDialog open={isCloseAlertOpen} onOpenChange={setIsCloseAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to close? Your unsaved changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsCloseAlertOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onClose();
+                resetForm();
+                dispatch(reset());
+                setIsCloseAlertOpen(false);
+              }}
+            >
+              Discard
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

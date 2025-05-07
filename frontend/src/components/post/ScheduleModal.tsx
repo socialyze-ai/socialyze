@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,8 @@ import { useSelector } from "react-redux";
 interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedDate: Date;
+  selectedDate: Date | undefined;
   onSchedule: (date: Date, channels: string[]) => void;
-  content: string;
 }
 
 const ScheduleModal: React.FC<ScheduleModalProps> = ({
@@ -31,27 +30,101 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
   onClose,
   selectedDate,
   onSchedule,
-  content,
 }) => {
-  const [time, setTime] = useState("12:00");
-  const [date, setDate] = useState<Date | undefined>(selectedDate);
+  const [hour, setHour] = useState("12");
+  const [minute, setMinute] = useState("00");
+  const [date, setDate] = useState<Date | undefined>(
+    selectedDate ? new Date(selectedDate) : new Date(),
+  );
+  const [amPm, setAmPm] = useState<"AM" | "PM">("PM");
 
   const { selectedChannels } = useSelector(selectPostCreation);
 
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTime(e.target.value);
+  useEffect(() => {
+    if (selectedDate) {
+      setDate(new Date(selectedDate));
+      const hours = selectedDate.getHours();
+      const mins = selectedDate.getMinutes();
+
+      // Convert 24hr to 12hr format
+      if (hours === 0) {
+        setHour("12");
+        setAmPm("AM");
+      } else if (hours === 12) {
+        setHour("12");
+        setAmPm("PM");
+      } else if (hours > 12) {
+        setHour((hours - 12).toString());
+        setAmPm("PM");
+      } else {
+        setHour(hours.toString());
+        setAmPm("AM");
+      }
+
+      setMinute(mins < 10 ? `0${mins}` : mins.toString());
+    }
+  }, [selectedDate]);
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setHour(e.target.value);
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMinute(e.target.value);
+  };
+
+  const handleAmPmChange = (value: "AM" | "PM") => {
+    setAmPm(value);
+  };
+
+  const resetSchedule = () => {
+    setDate(new Date());
+    setHour("12");
+    setMinute("00");
+    setAmPm("PM");
   };
 
   const handleSchedule = () => {
     if (!date || selectedChannels.length === 0) return;
 
-    const [hours, minutes] = time.split(":").map(Number);
+    const hourNum = parseInt(hour);
+    const minuteNum = parseInt(minute);
     const scheduledDate = new Date(date);
-    scheduledDate.setHours(hours, minutes);
+
+    // Adjust hours based on AM/PM
+    let adjustedHours = hourNum;
+    if (amPm === "PM" && hourNum < 12) {
+      adjustedHours = hourNum + 12;
+    } else if (amPm === "AM" && hourNum === 12) {
+      adjustedHours = 0;
+    }
+
+    scheduledDate.setHours(adjustedHours, minuteNum);
 
     onSchedule(scheduledDate, selectedChannels);
     onClose();
+    resetSchedule();
   };
+
+  // Generate hours options (1-12)
+  const hoursOptions = Array.from({ length: 12 }, (_, i) => {
+    const hourValue = (i + 1).toString();
+    return (
+      <option key={hourValue} value={hourValue}>
+        {hourValue}
+      </option>
+    );
+  });
+
+  // Generate minutes options (00-59)
+  const minutesOptions = Array.from({ length: 60 }, (_, i) => {
+    const minuteValue = i < 10 ? `0${i}` : i.toString();
+    return (
+      <option key={minuteValue} value={minuteValue}>
+        {minuteValue}
+      </option>
+    );
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,7 +139,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
           <div className="grid gap-2">
             <Label htmlFor="date">Date and Time</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="w-full flex flex-col md:flex-row justify-evenly gap-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -77,7 +150,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{date ? format(date, "PPP") : "Select date"}</span>
+                      <span>{date ? format(date, "MMMM d, yyyy") : "Select date"}</span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -92,17 +165,41 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 </PopoverContent>
               </Popover>
 
-              <div className="flex items-center gap-2">
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={handleTimeChange}
-                      className="flex w-full bg-transparent focus:outline-none"
-                    />
-                  </div>
+              <div className="flex items-center gap-1 border rounded-md p-2 w-fit">
+                <Clock className="h-4 w-4 mr-2" />
+                <select
+                  value={hour}
+                  onChange={handleHourChange}
+                  className="bg-transparent focus:outline-none w-12"
+                >
+                  {hoursOptions}
+                </select>
+                <span>:</span>
+                <select
+                  value={minute}
+                  onChange={handleMinuteChange}
+                  className="bg-transparent focus:outline-none w-12"
+                >
+                  {minutesOptions}
+                </select>
+              </div>
+
+              <div className="flex">
+                <Button
+                  type="button"
+                  variant={amPm === "AM" ? "default" : "outline"}
+                  className="rounded-r-none px-3"
+                  onClick={() => handleAmPmChange("AM")}
+                >
+                  AM
+                </Button>
+                <Button
+                  type="button"
+                  variant={amPm === "PM" ? "default" : "outline"}
+                  className="rounded-l-none px-3"
+                  onClick={() => handleAmPmChange("PM")}
+                >
+                  PM
                 </Button>
               </div>
             </div>

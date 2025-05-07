@@ -1,6 +1,5 @@
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { usePosts, SocialChannel } from "@/context/PostsContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,17 +21,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2 } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, LogOut, Edit, Trash2, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  SocialChannel,
+  addChannel,
+  deleteChannel,
+  updateChannel,
+  selectChannels,
+} from "@/redux/slices/posts.slice";
 
 const Channels = () => {
-  const { channels, addChannel, updateChannel, deleteChannel } = usePosts();
+  const channels = useSelector(selectChannels);
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newChannel, setNewChannel] = useState<Partial<SocialChannel>>({
-    type: "twitter",
+    type: "x",
     name: "",
     profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
     connected: true,
@@ -83,14 +91,14 @@ const Channels = () => {
       return;
     }
 
-    addChannel(newChannel as Omit<SocialChannel, "id">);
+    dispatch(addChannel(newChannel as Omit<SocialChannel, "id">));
     toast({
       title: "Channel added",
       description: `${newChannel.name} has been added to your channels.`,
     });
     setIsAddDialogOpen(false);
     setNewChannel({
-      type: "twitter",
+      type: "x",
       name: "",
       profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
       connected: true,
@@ -98,7 +106,7 @@ const Channels = () => {
   };
 
   const handleDeleteChannel = (id: string, name: string) => {
-    deleteChannel(id);
+    dispatch(deleteChannel(id));
     toast({
       title: "Channel disconnected",
       description: `${name} has been disconnected.`,
@@ -109,8 +117,8 @@ const Channels = () => {
     switch (type) {
       case "facebook":
         return <Facebook className="h-6 w-6 text-blue-600" />;
-      case "twitter":
-        return <Twitter className="h-6 w-6 text-sky-500" />;
+      case "x":
+        return <X className="h-6 w-6 text-sky-500" />;
       case "instagram":
         return <Instagram className="h-6 w-6 text-pink-600" />;
       case "linkedin":
@@ -174,7 +182,7 @@ const Channels = () => {
                               case "facebook":
                                 handleChannelAuthMutation("facebook");
                                 break;
-                              case "twitter":
+                              case "x":
                                 handleChannelAuthMutation("x");
                                 break;
                               case "instagram":
@@ -249,8 +257,7 @@ const Channels = () => {
                   className="justify-start"
                   onClick={() => handleChannelAuthMutation("x")}
                 >
-                  <Twitter className="h-5 w-5 text-sky-500 mr-2" />
-                  Twitter
+                  <X className="h-5 w-5 text-sky-500 mr-2" />X
                 </Button>
                 <Button
                   variant="outline"
@@ -289,7 +296,7 @@ const Channels = () => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="twitter">Twitter</SelectItem>
+                      <SelectItem value="x">X</SelectItem>
                       <SelectItem value="facebook">Facebook</SelectItem>
                       <SelectItem value="instagram">Instagram</SelectItem>
                       <SelectItem value="linkedin">LinkedIn</SelectItem>
@@ -303,7 +310,7 @@ const Channels = () => {
                   <Label htmlFor="channel-name">Channel Name</Label>
                   <Input
                     id="channel-name"
-                    placeholder="e.g. My Personal Twitter"
+                    placeholder="e.g. My Personal X"
                     value={newChannel.name}
                     onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
                   />
@@ -332,8 +339,8 @@ const Channels = () => {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <Twitter className="h-8 w-8 text-sky-500" />
-                    <h3 className="font-semibold text-lg">Twitter</h3>
+                    <X className="h-8 w-8 text-sky-500" />
+                    <h3 className="font-semibold text-lg">X</h3>
                     <p className="text-sm text-muted-foreground">
                       Schedule tweets, threads, and engage with your audience.
                     </p>
@@ -411,7 +418,7 @@ const Channels = () => {
                     </svg>
                     <h3 className="font-semibold text-lg">TikTok</h3>
                     <p className="text-sm text-muted-foreground">
-                      Plan and schedule your TikTok content strategy.
+                      Plan and scheduled your TikTok content strategy.
                     </p>
                   </div>
                 </div>

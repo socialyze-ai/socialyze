@@ -7,7 +7,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ImageEditor from "./editor/ImageEditor";
 import { v4 as uuidv4 } from "uuid";
 import ModalWrapper from "../generic/ModalWrapper";
-import UnsplashMediaModalContent from "./mediaUpload/UnsplashMediaModalContent";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import {
@@ -19,8 +18,9 @@ import {
   setMediaForChannel,
   selectMediaByChannel,
 } from "@/redux/slices/postCreation.slice";
-import { useUploadMedia, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
+import { useUploadMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "@/components/ui/use-toast";
+import MediaModalContent from "./mediaUpload/MediaModalContent";
 
 export interface Media {
   id: string;
@@ -523,8 +523,170 @@ const MediaModal = ({
             description="Add media to your post"
             triggerButtonText="Unsplash"
             children={
-              <UnsplashMediaModalContent
-                selectedMediaContent={selectedMediaContent}
+              <MediaModalContent
+                provider="unsplash"
+                setSelectedMediaContent={setSelectedMediaContent}
+                onImageSelect={(newMedia) => {
+                  if (onMediaSelect) {
+                    onMediaSelect([...mediaUrls, newMedia]);
+                  } else {
+                    // Handle media update based on sync state and active channel
+                    const updatedMedia = [...mediaUrls, newMedia];
+
+                    // If we're in a specific channel context and unsynced
+                    if (channelId && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we have an active channel and not synced
+                    else if (activeChannel && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we're synced, use the sync action to update all channels
+                    else if (isContentSynced && activeChannel) {
+                      dispatch(
+                        syncMediaAcrossChannels({
+                          sourceChannelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // Fallback for global context
+                    else {
+                      dispatch(setMediaUrls(updatedMedia));
+                    }
+                  }
+                  setIsOpen(false);
+                }}
+                closeModal={() => setIsOpen(false)}
+              />
+            }
+          />
+
+          <ModalWrapper
+            title="Google Images"
+            description="Add media to your post"
+            triggerButtonText="Google Images"
+            children={
+              <MediaModalContent
+                provider="google"
+                setSelectedMediaContent={setSelectedMediaContent}
+                onImageSelect={(newMedia) => {
+                  if (onMediaSelect) {
+                    onMediaSelect([...mediaUrls, newMedia]);
+                  } else {
+                    // Handle media update based on sync state and active channel
+                    const updatedMedia = [...mediaUrls, newMedia];
+
+                    // If we're in a specific channel context and unsynced
+                    if (channelId && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we have an active channel and not synced
+                    else if (activeChannel && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we're synced, use the sync action to update all channels
+                    else if (isContentSynced && activeChannel) {
+                      dispatch(
+                        syncMediaAcrossChannels({
+                          sourceChannelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // Fallback for global context
+                    else {
+                      dispatch(setMediaUrls(updatedMedia));
+                    }
+                  }
+                  setIsOpen(false);
+                }}
+                closeModal={() => setIsOpen(false)}
+              />
+            }
+          />
+
+          <ModalWrapper
+            title="Pexels"
+            description="Add media to your post"
+            triggerButtonText="Pexels"
+            children={
+              <MediaModalContent
+                provider="pexels"
+                setSelectedMediaContent={setSelectedMediaContent}
+                onImageSelect={(newMedia) => {
+                  if (onMediaSelect) {
+                    onMediaSelect([...mediaUrls, newMedia]);
+                  } else {
+                    // Handle media update based on sync state and active channel
+                    const updatedMedia = [...mediaUrls, newMedia];
+
+                    // If we're in a specific channel context and unsynced
+                    if (channelId && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we have an active channel and not synced
+                    else if (activeChannel && !isContentSynced) {
+                      dispatch(
+                        setMediaForChannel({
+                          channelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // If we're synced, use the sync action to update all channels
+                    else if (isContentSynced && activeChannel) {
+                      dispatch(
+                        syncMediaAcrossChannels({
+                          sourceChannelId: activeChannel,
+                          media: updatedMedia,
+                        }),
+                      );
+                    }
+                    // Fallback for global context
+                    else {
+                      dispatch(setMediaUrls(updatedMedia));
+                    }
+                  }
+                  setIsOpen(false);
+                }}
+                closeModal={() => setIsOpen(false)}
+              />
+            }
+          />
+
+          <ModalWrapper
+            title="Tenor"
+            description="Add media to your post"
+            triggerButtonText="Tenor"
+            children={
+              <MediaModalContent
+                provider="tenor"
                 setSelectedMediaContent={setSelectedMediaContent}
                 onImageSelect={(newMedia) => {
                   if (onMediaSelect) {

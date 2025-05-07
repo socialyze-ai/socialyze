@@ -11,6 +11,8 @@ import {
   resetConfirmation,
   setUnderlineType,
   setIsFocused,
+  setIsTextSelected,
+  setSelectedRange,
 } from "@/redux/slices/aiTextarea.slice";
 
 // Import components
@@ -63,9 +65,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const contentBackupRef = useRef<string>(content);
+  const previousSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const [showEditor, setShowEditor] = useState(true);
   const [showRefinePreview, setShowRefinePreview] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const contentEditableRef = useRef<ContentEditable>(null);
+  // Store selection coordinates in a ref to preserve them during regeneration
+  const selectionCoordsRef = useRef<{ top: number; left: number } | null>(null);
 
   // Use custom hooks
   const {
@@ -82,13 +88,20 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     handleTextSelection,
     handleSelectionChange: hookHandleSelectionChange,
     focusAndSelectText,
-    previousSelectionRef,
+    clearSelection: clearTextSelection,
   } = useTextSelection({
     editorRef,
     content,
     isTyping,
+    isTypingEffect,
+    showTypeControls,
+    // We'll pass placeholders for these since they're not defined yet
+    isPendingContent: false,
+    isPendingHashTags: false,
+    previousSelectionRef,
   });
 
+  // Now define the AI content handlers
   const {
     handleRefineWithAI,
     handleCompleteWithAI,
@@ -101,7 +114,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   } = useAIContent({
     content,
     startTypeEffect,
-    focusAndSelectText: () => focusAndSelectText(selectedRange),
+    focusAndSelectText: (range: { start: number; end: number } | null) => focusAndSelectText(range),
     previousSelectionRef,
   });
 
@@ -109,6 +122,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const { detectTextSelection, clearSelection: originalClearSelection } = useSelectionDetector({
     editorRef,
     isTyping,
+    isPendingContent,
+    isPendingHashTags,
     onBeforeSelectionDetected: () => {
       // Reset refine preview before detecting a new selection
       if (showRefinePreview) {
@@ -120,7 +135,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   // Wrap the original clearSelection to also close refine preview
   const clearSelection = () => {
     setShowRefinePreview(false);
+    setIsRefining(false);
     originalClearSelection();
+    clearTextSelection();
   };
 
   // Keep a reference to the current content for selection calculations
@@ -262,8 +279,52 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const handleRefineWithAIClick = () => {
     if (!selectedRange) return;
 
+    // Store the current selection coordinates
+    selectionCoordsRef.current = getSelectionCoordinates();
+
+    // Store the current selection before handling refine
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      // Save the current selection range to restore it after API call
+      previousSelectionRef.current = selectedRange;
+    }
+
+    // Dispatch to keep selection state active in Redux
+    dispatch(setIsTextSelected(true));
+    dispatch(setSelectedRange(selectedRange));
+
+    // Set refining state to true
+    setIsRefining(true);
+
+    // Call API to get refinement
     handleRefineWithAI(selectedRange);
     setShowRefinePreview(true);
+
+    // Re-apply the selection to keep text highlighted
+    setTimeout(() => {
+      focusAndSelectText(selectedRange);
+    }, 10);
+  };
+
+  // Ensure that selection tooltip only appears for selections within the editor
+  const shouldShowSelectionTooltip = () => {
+    // Only show if we have a selection
+    if (!selectedRange || !selectedText || isTyping || isTypingEffect || showRefinePreview) {
+      return false;
+    }
+
+    // Check if the selection is within the editor
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+
+    const range = selection.getRangeAt(0);
+    const editorNode = editorRef.current;
+
+    // Make sure the editor node exists
+    if (!editorNode) return false;
+
+    // Check if the selection is contained within the editor
+    return editorNode.contains(range.commonAncestorContainer);
   };
 
   // Handle editor click to update selection
@@ -284,6 +345,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     dispatch(setContent(newContent));
     setShowRefinePreview(false);
     setShowEditor(true);
+    setIsRefining(false);
 
     // Clear selection after applying refined text
     clearSelection();
@@ -435,7 +497,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const hasContent = content.trim().length > 0;
 
   return (
-    <div className="relative" ref={editorContainerRef}>
+    <div className={`relative ${isRefining ? "is-refining" : ""}`} ref={editorContainerRef}>
       <ContentEditableWrapper
         editorRef={editorRef}
         content={content}
@@ -446,6 +508,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         placeholder={placeholder}
         isPostModal={isPostModal}
         hasScrollbar={hasScrollbar}
+        disableSelection={
+          isTypingEffect || showTypeControls || isPendingContent || isPendingHashTags
+        }
         className={className}
         onInput={handleEditorInput}
         onMouseEnter={handleEditorMouseEnter}
@@ -476,7 +541,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       )}
 
       {/* Show the Refine with AI button when text is selected */}
-      {selectedRange && selectedText && !isTyping && !isTypingEffect && !showRefinePreview && (
+      {shouldShowSelectionTooltip() && (
         <SelectionTooltip
           position={getSelectionCoordinates()}
           onRefineClick={handleRefineWithAIClick}
@@ -488,19 +553,41 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         <div
           className="absolute z-50 bg-white rounded-md shadow-lg max-w-sm border border-gray-200"
           style={{
-            top: `${getSelectionCoordinates()?.top || 0}px`,
-            left: `${getSelectionCoordinates()?.left || 0}px`,
+            top: `${selectionCoordsRef.current?.top || getSelectionCoordinates()?.top || 0}px`,
+            left: `${selectionCoordsRef.current?.left || getSelectionCoordinates()?.left || 0}px`,
             transform: "translateY(-100%)",
           }}
         >
           <RefinePopover
             generatedRefineContent={generatedRefineContent}
-            setShowRefinePreview={setShowRefinePreview}
+            setShowRefinePreview={(show) => {
+              setShowRefinePreview(show);
+
+              // If closing the preview, ensure selection is restored
+              if (!show) {
+                setIsRefining(false);
+                if (selectedRange) {
+                  setTimeout(() => {
+                    focusAndSelectText(selectedRange);
+                  }, 10);
+                }
+              }
+            }}
             handleRefineAction={handleRefineAction}
-            handleRegenerateRefinedText={() =>
-              // selectedRange &&
-              handleRegenerateRefinedText(selectedRange)
-            }
+            handleRegenerateRefinedText={() => {
+              // Store current selection coordinates before regenerating
+              selectionCoordsRef.current = getSelectionCoordinates() || selectionCoordsRef.current;
+
+              // Explicitly ensure we keep the popover open during regeneration
+              setShowRefinePreview(true);
+              setIsRefining(true);
+
+              // Restore selection before regenerating
+              if (selectedRange) {
+                focusAndSelectText(selectedRange);
+              }
+              handleRegenerateRefinedText(selectedRange);
+            }}
             isPendingContent={isPendingContent}
           />
         </div>

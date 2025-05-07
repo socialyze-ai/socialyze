@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
-import { PostStatus } from "@/context/PostsContext";
 import { Media } from "@/components/post/MediaUploader";
 import { addHashtagsToContent } from "@/utils/formatContent"; // Import the function
 

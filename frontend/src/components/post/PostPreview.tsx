@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SocialChannel } from "@/context/PostsContext";
+import { SocialChannel } from "@/redux/slices/posts.slice";
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
@@ -79,7 +79,7 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
         </div>
       </div>
     );
-  } else if (mediaCount === 4 && channelType !== "twitter") {
+  } else if (mediaCount === 4 && channelType !== "x") {
     // 4 images layout
     return (
       <div className="grid grid-cols-6 gap-1 mt-3">
@@ -97,7 +97,7 @@ const MediaGrid = ({ mediaUrls, channelType }) => {
         </div>
       </div>
     );
-  } else if (mediaCount === 4 && channelType === "twitter") {
+  } else if (mediaCount === 4 && channelType === "x") {
     // 4 images layout for Twitter
     return (
       <div className="grid grid-cols-6 gap-1 mt-3">
@@ -199,7 +199,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
             <span className="text-gray-500 text-sm">{formatDate(scheduledDate || new Date())}</span>
           </div>
           <div className="mt-1 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
-          <MediaGrid mediaUrls={mediaToUse} channelType="twitter" />
+          <MediaGrid mediaUrls={mediaToUse} channelType="x" />
           <div className="flex justify-between mt-3 text-gray-500 px-2">
             <button className="flex items-center gap-1 hover:text-blue-500">
               <MessageCircle size={18} />
@@ -389,7 +389,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
 
   const renderPreviewByType = () => {
     switch (channel.type) {
-      case "twitter":
+      case "x":
         return renderTwitterPreview();
       case "facebook":
         return renderFacebookPreview();
