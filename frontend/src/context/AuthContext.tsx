@@ -1,18 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useLogin, useSignup, User as ApiUser } from "@/api/apiHooks/useAuth";
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  plan: "free" | "premium" | "business";
-};
+type User = ApiUser;
 
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 };
@@ -27,25 +22,19 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  // Auto-authenticated user for development
-  const defaultUser: User = {
-    id: "1",
-    name: "Demo User",
-    email: "demo@example.com",
-    plan: "free",
-  };
-
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const loginMutation = useLogin();
+  const signupMutation = useSignup();
 
   useEffect(() => {
     // Check for existing user session in localStorage
     const checkAuth = () => {
-      const savedUser = localStorage.getItem("buffer_user");
-      if (savedUser) {
+      const savedUser = localStorage.getItem("socialyze_user");
+      const token = localStorage.getItem("socialyze_token");
+
+      if (savedUser && token) {
         setUser(JSON.parse(savedUser));
       }
       setLoading(false);
@@ -55,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Listen for storage events to sync auth state across tabs
     window.addEventListener("storage", (e) => {
-      if (e.key === "buffer_user") {
+      if (e.key === "socialyze_user") {
         if (e.newValue) {
           setUser(JSON.parse(e.newValue));
         } else {
@@ -68,23 +57,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Development credentials
-      const validEmail = "test@example.com";
-      const validPassword = "test";
+      const response = await loginMutation.mutateAsync({ email, password } as any);
 
-      if (email === validEmail && password === validPassword) {
-        const mockUser: User = {
-          id: "1",
-          name: "Test User",
-          email: validEmail,
-          plan: "premium",
-        };
-
-        setUser(mockUser);
-        localStorage.setItem("buffer_user", JSON.stringify(mockUser));
-      } else {
-        throw new Error("Invalid credentials");
+      if (response.error) {
+        throw new Error(response.error);
       }
+
+      const { user, token } = response.data;
+
+      setUser(user);
+      localStorage.setItem("socialyze_user", JSON.stringify(user));
+      localStorage.setItem("socialyze_token", token);
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -93,19 +76,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string, confirmPassword: string) => {
     setLoading(true);
     try {
-      // Mock signup - in a real app, this would be an API call
-      const mockUser: User = {
-        id: Date.now().toString(),
+      const response = await signupMutation.mutateAsync({
         name,
         email,
-        plan: "free",
-      };
+        password,
+        confirmPassword,
+      } as any);
 
-      setUser(mockUser);
-      localStorage.setItem("buffer_user", JSON.stringify(mockUser));
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      const { user, token } = response.data;
+
+      setUser(user);
+      localStorage.setItem("socialyze_user", JSON.stringify(user));
+      localStorage.setItem("socialyze_token", token);
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -116,7 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("buffer_user");
+    localStorage.removeItem("socialyze_user");
+    localStorage.removeItem("socialyze_token");
   };
 
   return (

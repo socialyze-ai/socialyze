@@ -153,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        <div className="mt-auto p-4 border-t">
+        {/* <div className="mt-auto p-4 border-t">
           <div className={cn("flex items-center", collapsed ? "justify-center" : "space-x-3")}>
             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-sm font-medium">JD</span>
@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
         <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
       </div>

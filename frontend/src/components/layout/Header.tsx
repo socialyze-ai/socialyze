@@ -39,11 +39,7 @@ const Header: React.FC<HeaderProps> = ({ title, user, leftContent }) => {
         <div className="flex items-center space-x-2 md:space-x-4">
           {!isMobile && (
             <div className="relative hidden md:block">
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-40 md:w-64 pl-10"
-              />
+              <Input type="search" placeholder="Search..." className="w-40 md:w-64 pl-10" />
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground"
@@ -77,12 +73,9 @@ const Header: React.FC<HeaderProps> = ({ title, user, leftContent }) => {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-8 w-8 rounded-full"
-                >
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user.profilePic} alt={user.name} />
                     <AvatarFallback>
                       {user.name
                         .split(" ")
@@ -95,16 +88,13 @@ const Header: React.FC<HeaderProps> = ({ title, user, leftContent }) => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user.name}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground mt-1">
-                      {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}{" "}
-                      Plan
-                    </p>
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    {user.isVerified !== undefined && (
+                      <p className="text-xs leading-none text-muted-foreground mt-1">
+                        {user.isVerified ? "Verified Account" : "Unverified Account"}
+                      </p>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -114,9 +104,7 @@ const Header: React.FC<HeaderProps> = ({ title, user, leftContent }) => {
                 {isMobile && <DropdownMenuItem>Search</DropdownMenuItem>}
                 {isMobile && <DropdownMenuItem>Upgrade</DropdownMenuItem>}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  Log out
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

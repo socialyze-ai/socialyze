@@ -37,16 +37,16 @@ const Signup = () => {
     }
 
     try {
-      await signup(name, email, password);
+      await signup(name, email, password, confirmPassword);
       toast({
         title: "Account created successfully",
         description: "Welcome to Socialyze!",
       });
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Signup failed",
-        description: "There was a problem creating your account.",
+        description: error.message || "There was a problem creating your account.",
         variant: "destructive",
       });
     }
@@ -115,7 +115,7 @@ const Signup = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -123,7 +123,6 @@ const Signup = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Must be at least 8 characters long</p>
               </div>
             </CardContent>
 
