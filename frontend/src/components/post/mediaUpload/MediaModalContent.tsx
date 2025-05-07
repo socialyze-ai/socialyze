@@ -124,16 +124,16 @@ const MediaModalContent = ({
 
           toast({
             title: "Success",
-            description: "Unsplash image selected successfully",
+            description: "Image selected successfully",
           });
         },
         onError: (error) => {
-          console.error("Error uploading Unsplash image:", error);
+          console.error("Error uploading image:", error);
           setIsSelecting(false);
 
           toast({
             title: "Error",
-            description: "Failed to select Unsplash image",
+            description: "Failed to select image",
             variant: "destructive",
           });
         },
