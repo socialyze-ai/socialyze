@@ -128,31 +128,37 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-              {channels.map((channel) => (
-                <Button
-                  key={channel.id}
-                  variant="ghost"
-                  className={cn(
-                    "justify-start font-normal",
-                    selectedChannels?.includes(channel.id) && "bg-muted",
-                  )}
-                  onClick={() => toggleChannel(channel.id)}
-                >
-                  <div className="flex items-center space-x-2 w-full">
-                    <div className="h-5 w-5 rounded-full overflow-hidden">
-                      <img
-                        src={channel.profileImage}
-                        alt={channel.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <span>{channel.name}</span>
-                    {selectedChannels?.includes(channel.id) && (
-                      <Check className="h-4 w-4 ml-auto" />
+              {channels.length > 0 ? (
+                channels.map((channel) => (
+                  <Button
+                    key={channel.id}
+                    variant="ghost"
+                    className={cn(
+                      "justify-start font-normal",
+                      selectedChannels?.includes(channel.id) && "bg-muted",
                     )}
-                  </div>
-                </Button>
-              ))}
+                    onClick={() => toggleChannel(channel.id)}
+                  >
+                    <div className="flex items-center space-x-2 w-full">
+                      <div className="h-5 w-5 rounded-full overflow-hidden">
+                        <img
+                          src={channel.profileImage}
+                          alt={channel.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <span>{channel.name}</span>
+                      {selectedChannels?.includes(channel.id) && (
+                        <Check className="h-4 w-4 ml-auto" />
+                      )}
+                    </div>
+                  </Button>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground p-2 text-center">
+                  No Channels found
+                </div>
+              )}
             </PopoverContent>
           </Popover>
 
@@ -191,7 +197,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                   </Button>
                 ))
               ) : (
-                <div className="text-sm text-muted-foreground p-2">No Labels found</div>
+                <div className="text-sm text-muted-foreground p-2 text-center">No Labels found</div>
               )}
             </PopoverContent>
           </Popover>

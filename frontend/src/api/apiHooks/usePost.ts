@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN } from "./utils";
+import { LOG_TOKEN } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 import { makeRequest } from "./utils";
 
 export const useAddPost = () => {
   const addPost = async (body: any): Promise<any> => {
-    const { data } = await makeRequest(BACKEND_URL + "post", "POST", body, HARD_CODED_TOKEN);
+    const { data } = await makeRequest(BACKEND_URL + "post", "POST", body, LOG_TOKEN);
     return data;
   };
 
@@ -38,7 +38,7 @@ export const useGetPost = ({
   const query = useQuery({
     queryKey: ["posts", filters],
     queryFn: async () => {
-      return await makeRequest(BACKEND_URL + "post/getPosts", "POST", filters, HARD_CODED_TOKEN);
+      return await makeRequest(BACKEND_URL + "post/getPosts", "POST", filters, LOG_TOKEN);
     },
   });
 

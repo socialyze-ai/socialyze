@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export const useOAuthHandler = () => {
@@ -11,7 +11,7 @@ export const useOAuthHandler = () => {
         BACKEND_URL + "channel/authenticate",
         "POST",
         payload,
-        HARD_CODED_TOKEN,
+        LOG_TOKEN,
       );
       return data;
     },

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export interface GenerateHashTagsResponse {
@@ -24,7 +24,7 @@ export const useGenerateHashTags = () => {
       BACKEND_URL + "ai/generateHashTags",
       "POST",
       body,
-      HARD_CODED_TOKEN,
+      LOG_TOKEN,
     );
     return data;
   };
@@ -36,12 +36,7 @@ export const useGenerateHashTags = () => {
 
 export const useGenerateContent = () => {
   const generateContent = async (body: GenerateContentRequest) => {
-    const { data } = await makeRequest(
-      BACKEND_URL + "ai/generateContent",
-      "POST",
-      body,
-      HARD_CODED_TOKEN,
-    );
+    const { data } = await makeRequest(BACKEND_URL + "ai/generateContent", "POST", body, LOG_TOKEN);
     return data;
   };
 

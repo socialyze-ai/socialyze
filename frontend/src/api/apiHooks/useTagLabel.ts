@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export interface TagLabelType {
@@ -28,7 +28,7 @@ export const useGetTagLabels = () => {
   return useQuery({
     queryKey: ["tagLabels"],
     queryFn: async () => {
-      const { data } = await makeRequest(BACKEND_URL + "label", "GET", "", HARD_CODED_TOKEN);
+      const { data } = await makeRequest(BACKEND_URL + "label", "GET", "", LOG_TOKEN);
       return data as TagLabelType[];
     },
   });
@@ -38,7 +38,7 @@ export const useGetTagLabelById = (id: string) => {
   return useQuery({
     queryKey: ["tagLabel", id],
     queryFn: async () => {
-      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "GET", "", HARD_CODED_TOKEN);
+      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "GET", "", LOG_TOKEN);
       return data as TagLabelType;
     },
     enabled: !!id,
@@ -50,7 +50,7 @@ export const useCreateTagLabel = () => {
 
   return useMutation({
     mutationFn: async (payload: CreateTagLabelPayload) => {
-      const { data } = await makeRequest(BACKEND_URL + "label", "POST", payload, HARD_CODED_TOKEN);
+      const { data } = await makeRequest(BACKEND_URL + "label", "POST", payload, LOG_TOKEN);
       return data;
     },
     onSuccess: () => {
@@ -64,12 +64,7 @@ export const useUpdateTagLabel = () => {
 
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateTagLabelPayload }) => {
-      const { data } = await makeRequest(
-        `${BACKEND_URL}label/${id}`,
-        "PATCH",
-        payload,
-        HARD_CODED_TOKEN,
-      );
+      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "PATCH", payload, LOG_TOKEN);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -86,12 +81,7 @@ export const useDeleteTagLabel = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await makeRequest(
-        `${BACKEND_URL}label/${id}`,
-        "DELETE",
-        "",
-        HARD_CODED_TOKEN,
-      );
+      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "DELETE", "", LOG_TOKEN);
       return data;
     },
     onSuccess: () => {
@@ -104,12 +94,7 @@ export const useGetTags = () => {
   return useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const { data } = await makeRequest(
-        BACKEND_URL + "tag/get-all-tags",
-        "GET",
-        "",
-        HARD_CODED_TOKEN,
-      );
+      const { data } = await makeRequest(BACKEND_URL + "tag/get-all-tags", "GET", "", LOG_TOKEN);
       return data;
     },
   });

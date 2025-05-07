@@ -1,6 +1,6 @@
 import { BACKEND_URL } from "@/config/config";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { HARD_CODED_TOKEN, makeRequest } from "./utils";
+import { LOG_TOKEN, makeRequest } from "./utils";
 
 export const useUploadMedia = () => {
   return useMutation({
@@ -9,7 +9,7 @@ export const useUploadMedia = () => {
         BACKEND_URL + "media/uploadMedia",
         "POST",
         data,
-        HARD_CODED_TOKEN,
+        LOG_TOKEN,
       );
       return {
         status: response.status,
@@ -32,7 +32,7 @@ export const useGetImages = (filters?: GetImagesPayload) => {
   return useQuery({
     queryKey: ["media", filters],
     queryFn: async () => {
-      return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, HARD_CODED_TOKEN);
+      return await makeRequest(BACKEND_URL + "media/getImages", "POST", filters, LOG_TOKEN);
     },
     enabled: !!filters,
   });
@@ -44,7 +44,7 @@ export const useUploadUnsplashMedia = () => {
       BACKEND_URL + "media/uploadMediaForUnsplash",
       "POST",
       body,
-      HARD_CODED_TOKEN,
+      LOG_TOKEN,
     );
     return data;
   };

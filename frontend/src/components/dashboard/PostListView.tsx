@@ -46,16 +46,16 @@ const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
 
       return (
         <ListPostCard
-          key={post._id || Math.random().toString()}
-          id={post._id}
-          platform={getPlatform(post.channelId)}
+          key={post?._id || Math.random().toString()}
+          id={post?._id}
+          platform={getPlatform(post?.channelId)}
           profileImage={channel?.profileImage || ""}
           displayName={channel?.name || ""}
           username={channel?.username || channel?.name || ""}
-          date={post.createdAt}
-          content={post.text || ""}
-          imageUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
-          storyUrl={post.media && post.media.length > 0 ? post.media[0] : ""}
+          date={post?.createdAt}
+          content={post?.text || ""}
+          imageUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
+          storyUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
           likes={0}
           retweets={0}
           comments={0}
@@ -70,7 +70,7 @@ const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
 
   return (
     <>
-      {posts?.length === 0 ? (
+      {!channels || channels.length === 0 || !posts || posts.length === 0 ? (
         <div className="flex justify-center items-center h-full bg-white shadow-sm border border-gray-200 p-2 md:p-4 rounded-lg">
           <span className="text-muted-foreground">No posts found</span>
         </div>
