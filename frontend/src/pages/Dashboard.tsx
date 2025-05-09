@@ -9,6 +9,7 @@ import FilterSelectors from "@/components/dashboard/FilterSelectors";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { Loader2 } from "lucide-react";
+import InitialDataLoader from "@/components/InitialDataLoader";
 
 const Dashboard = () => {
   const { posts, isLoading } = useSelector((state: RootState) => state.dashboardPosts);
@@ -18,6 +19,7 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard">
+      <InitialDataLoader />
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3">
           <div className="flex-1 lg:flex-[4] flex flex-col gap-3">
