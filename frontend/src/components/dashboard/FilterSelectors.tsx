@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BookMarked, Check, Users, FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  BookMarked,
+  Check,
+  Users,
+  FileText,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSelector, useDispatch } from "react-redux";
@@ -10,6 +19,7 @@ import { selectChannels } from "@/redux/slices/posts.slice";
 import { RootState } from "@/redux/store";
 import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 import LayoutSelector, { LayoutType } from "./LayoutSelector";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FilterSelectorsProps {
   timezone: string;
@@ -112,7 +122,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
       <div className="flex flex-wrap items-center gap-2 w-full mb-2 sm:mb-0">
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Popover open={isChannelOpen} onOpenChange={setIsChannelOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild className="rounded border border-gray-200">
               <Button
                 variant="outline"
                 size="sm"
@@ -125,6 +135,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                     {selectedChannels.length}
                   </Badge>
                 )}
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
@@ -140,6 +151,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                     onClick={() => toggleChannel(channel.id)}
                   >
                     <div className="flex items-center space-x-2 w-full">
+                      <Checkbox checked={selectedChannels?.includes(channel.id)} />
                       <div className="h-5 w-5 rounded-full overflow-hidden">
                         <img
                           src={channel.profileImage}
@@ -148,9 +160,6 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                         />
                       </div>
                       <span>{channel.name}</span>
-                      {selectedChannels?.includes(channel.id) && (
-                        <Check className="h-4 w-4 ml-auto" />
-                      )}
                     </div>
                   </Button>
                 ))
@@ -163,7 +172,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
           </Popover>
 
           <Popover open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild className="rounded border border-gray-200">
               <Button
                 variant="outline"
                 size="sm"
@@ -176,6 +185,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                     {selectedLabels.length}
                   </Badge>
                 )}
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
@@ -191,8 +201,8 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                     onClick={() => toggleLabel(label?.id)}
                   >
                     <div className="flex items-center space-x-2 w-full">
+                      <Checkbox checked={selectedLabels?.includes(label?.id)} />
                       <span>{label?.name}</span>
-                      {selectedLabels?.includes(label?.id) && <Check className="h-4 w-4 ml-auto" />}
                     </div>
                   </Button>
                 ))
@@ -203,7 +213,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
           </Popover>
 
           <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild className="rounded border border-gray-200">
               <Button
                 variant="outline"
                 size="sm"
@@ -216,6 +226,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                     {selectedStatuses.length}
                   </Badge>
                 )}
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
@@ -228,9 +239,9 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                 onClick={() => toggleStatus("draft")}
               >
                 <div className="flex items-center space-x-2 w-full">
+                  <Checkbox checked={selectedStatuses?.includes("draft")} />
                   <Clock className="h-4 w-4" />
                   <span>Draft</span>
-                  {selectedStatuses?.includes("draft") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
 
@@ -243,9 +254,9 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                 onClick={() => toggleStatus("published")}
               >
                 <div className="flex items-center space-x-2 w-full">
+                  <Checkbox checked={selectedStatuses?.includes("published")} />
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Published</span>
-                  {selectedStatuses?.includes("published") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
 
@@ -258,9 +269,9 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                 onClick={() => toggleStatus("queued")}
               >
                 <div className="flex items-center space-x-2 w-full">
+                  <Checkbox checked={selectedStatuses?.includes("queued")} />
                   <FileText className="h-4 w-4" />
                   <span>Queued</span>
-                  {selectedStatuses?.includes("queued") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
 
@@ -273,20 +284,21 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                 onClick={() => toggleStatus("failed")}
               >
                 <div className="flex items-center space-x-2 w-full">
+                  <Checkbox checked={selectedStatuses?.includes("failed")} />
                   <AlertCircle className="h-4 w-4" />
                   <span>Failed</span>
-                  {selectedStatuses?.includes("failed") && <Check className="h-4 w-4 ml-auto" />}
                 </div>
               </Button>
             </PopoverContent>
           </Popover>
 
           <Popover open={isTimezoneOpen} onOpenChange={setIsTimezoneOpen}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger asChild className="rounded border border-gray-200">
               <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <span className="truncate">
                   Timezone: {timezone.split("/").pop()?.replace("_", " ") || timezone}
                 </span>
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
@@ -301,10 +313,10 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                   }}
                 >
                   <div className="flex items-center space-x-2 w-full">
+                    <Checkbox checked={timezone === tz?.name} />
                     <span>
                       {tz?.name}-{tz?.offset}
                     </span>
-                    {timezone === tz?.name && <Check className="h-4 w-4 ml-auto" />}
                   </div>
                 </Button>
               ))}
