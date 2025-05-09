@@ -28,7 +28,6 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <InitialDataLoader />
           <Routes>
             {/* Direct users to dashboard for development */}
             <Route path="/" element={<Navigate to="/login" replace />} />
