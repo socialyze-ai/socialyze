@@ -10,9 +10,6 @@ export default defineConfig(({}) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  optimizeDeps: {
-    include: ["react", "react-dom"],
-  },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
