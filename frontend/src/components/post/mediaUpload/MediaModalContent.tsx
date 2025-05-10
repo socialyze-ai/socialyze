@@ -26,11 +26,11 @@ const MediaModalContent = ({
   setSelectedMediaContent: (media: Media[]) => void;
   onImageSelect?: (image: Media) => void;
   closeModal?: () => void;
-  provider?: string;
+  provider?: "unsplash" | "pexels" | "google" | "tenor";
 }) => {
   const [images, setImages] = useState<Image[]>([]);
   const [page, setPage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState("elephant dancing");
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [isSelecting, setIsSelecting] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -38,36 +38,38 @@ const MediaModalContent = ({
   const { mutate: generateGCSUrl, isPending: isGenerateGCSUrlPending } = useUploadUnsplashMedia();
 
   const {
-    data: unsplashData,
-    isLoading: isLoadingUnsplash,
-    isError: isErrorUnsplash,
+    data: mediaData,
+    isLoading: isLoading,
+    isError: isError,
   } = useGetImages({
     provider: provider,
-    search: searchKeyword,
+    search: searchKeyword || "trending",
     page: page,
     limit: 10,
     order: "latest",
   });
 
   useEffect(() => {
-    if (unsplashData?.data?.media) {
-      setImages((prevImages) => [...prevImages, ...unsplashData.data.media]);
+    if (mediaData?.data?.media) {
+      setImages((prevImages) => [...prevImages, ...mediaData.data.media]);
       setLoadingMore(false);
     }
-  }, [unsplashData]);
+  }, [mediaData]);
 
   // Reset when search changes
   useEffect(() => {
-    setImages([]);
-    setPage(1);
+    if (searchKeyword) {
+      setImages([]);
+      setPage(1);
+    }
   }, [searchKeyword]);
 
   const loadMoreImages = useCallback(() => {
-    if (!isLoadingUnsplash && !loadingMore) {
+    if (!isLoading && !loadingMore) {
       setLoadingMore(true);
       setPage((prevPage) => prevPage + 1);
     }
-  }, [isLoadingUnsplash, loadingMore]);
+  }, [isLoading, loadingMore]);
 
   // Handle scroll for infinite loading
   useEffect(() => {
@@ -78,7 +80,7 @@ const MediaModalContent = ({
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
 
         // If scrolled to near bottom (within 200px of bottom)
-        if (scrollHeight - scrollTop - clientHeight < 200 && !isLoadingUnsplash && !loadingMore) {
+        if (scrollHeight - scrollTop - clientHeight < 200 && !isLoading && !loadingMore) {
           loadMoreImages();
         }
       }
@@ -93,7 +95,7 @@ const MediaModalContent = ({
         scrollContainer.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [loadMoreImages, isLoadingUnsplash, loadingMore]);
+  }, [loadMoreImages, isLoading, loadingMore]);
 
   const handleSelectImage = (image: Image) => {
     setIsSelecting(true);
@@ -158,22 +160,32 @@ const MediaModalContent = ({
         ref={scrollContainerRef}
         className="flex flex-col gap-2 min-h-[20dvh] max-h-[60vh] overflow-y-auto"
       >
-        {(isLoadingUnsplash && page === 1) || isSelecting || isGenerateGCSUrlPending ? (
+        {(isLoading && page === 1) || isSelecting || isGenerateGCSUrlPending ? (
           <div className="flex flex-col items-center justify-center my-10">
             <Loader2 className="animate-spin text-blue-500" size={32} />
             <p className="mt-2 text-lg font-semibold text-gray-700">
               {isGenerateGCSUrlPending ? "Processing selected Image..." : "Loading..."}
             </p>
           </div>
-        ) : isErrorUnsplash ? (
+        ) : isError ? (
           <div className="text-center text-red-500">Error loading images</div>
+        ) : images.length === 0 ? (
+          <div className="text-center text-gray-500 my-10">
+            No images found. Try a different search term.
+          </div>
         ) : (
           <div className="columns-3 gap-4 p-2">
-            {images.map((image) => {
-              const aspectRatio = (image.height / image.width) * 100;
+            {images.map((image, index) => {
+              if (!image || !image.url) {
+                console.error("Invalid image at index", index, image);
+                return null;
+              }
+
+              const aspectRatio =
+                image.height && image.width ? (image.height / image.width) * 100 : 75; // Default aspect ratio if dimensions are missing
 
               return (
-                <div key={image.url} className="mb-4 break-inside-avoid">
+                <div key={`${image.url}-${index}`} className="mb-4 break-inside-avoid">
                   <div
                     className="relative w-full"
                     style={{
@@ -182,32 +194,34 @@ const MediaModalContent = ({
                   >
                     <img
                       src={image.url}
-                      alt={image.alt_description}
+                      alt={image.alt_description || provider + " image"}
                       className="absolute top-0 left-0 w-full h-full object-cover cursor-pointer rounded-md hover:ring-2 hover:ring-sky-500"
                       onClick={() => handleSelectImage(image)}
                     />
                   </div>
 
                   <div className="flex items-center gap-1 text-xs group mt-1">
-                    <a
-                      href={image.profile_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-700 flex items-center gap-1"
-                    >
-                      <span className="underline">{image.username}</span>
-                    </a>
+                    {image.username && (
+                      <a
+                        href={image.profile_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-700 flex items-center gap-1"
+                      >
+                        <span className="underline">{image.username}</span>
+                      </a>
+                    )}
 
                     <div className="items-center transition-opacity duration-1000 ease-in-out opacity-0 group-hover:opacity-100">
-                      <span className="mr-1">for</span>
+                      <span className="mr-1">from</span>
 
                       <a
                         href={image.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="underline"
+                        className="underline capitalize"
                       >
-                        Unsplash
+                        {provider}
                       </a>
                     </div>
                   </div>
