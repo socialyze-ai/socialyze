@@ -20,6 +20,7 @@ import { RootState } from "@/redux/store";
 import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 import LayoutSelector, { LayoutType } from "./LayoutSelector";
 import { Checkbox } from "@/components/ui/checkbox";
+import AddChannelDialog from "../generic/AddChannelDialog";
 
 interface FilterSelectorsProps {
   timezone: string;
@@ -50,6 +51,8 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Count posts by status
   const postCounts = {
@@ -120,9 +123,14 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   return (
     <div className="flex flex-col sm:flex-row justify-between p-2 bg-white rounded-md shadow-sm border border-gray-200">
       <div className="flex flex-wrap items-center gap-2 w-full mb-2 sm:mb-0">
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-1 w-full sm:w-auto">
+          <AddChannelDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+
           <Popover open={isChannelOpen} onOpenChange={setIsChannelOpen}>
-            <PopoverTrigger asChild className="rounded border border-gray-200">
+            <PopoverTrigger
+              asChild
+              className="rounded border-none bg-transparent hover:bg-gray-100"
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -164,15 +172,24 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                   </Button>
                 ))
               ) : (
-                <div className="text-sm text-muted-foreground p-2 text-center">
-                  No Channels found
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm text-muted-foreground p-2 text-center">
+                    No Channels found
+                  </div>
+
+                  <Button variant="outline" size="sm" onClick={() => setIsAddDialogOpen(true)}>
+                    Add Channel
+                  </Button>
                 </div>
               )}
             </PopoverContent>
           </Popover>
 
           <Popover open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-            <PopoverTrigger asChild className="rounded border border-gray-200">
+            <PopoverTrigger
+              asChild
+              className="rounded border-none bg-transparent hover:bg-gray-100"
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -213,7 +230,10 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
           </Popover>
 
           <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
-            <PopoverTrigger asChild className="rounded border border-gray-200">
+            <PopoverTrigger
+              asChild
+              className="rounded border-none bg-transparent hover:bg-gray-100"
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -293,7 +313,10 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
           </Popover>
 
           <Popover open={isTimezoneOpen} onOpenChange={setIsTimezoneOpen}>
-            <PopoverTrigger asChild className="rounded border border-gray-200">
+            <PopoverTrigger
+              asChild
+              className="rounded border-none bg-transparent hover:bg-gray-100"
+            >
               <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <span className="truncate">
                   Timezone: {timezone.split("/").pop()?.replace("_", " ") || timezone}
