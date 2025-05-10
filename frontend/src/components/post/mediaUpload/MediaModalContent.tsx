@@ -174,60 +174,66 @@ const MediaModalContent = ({
             No images found. Try a different search term.
           </div>
         ) : (
-          <div className="columns-3 gap-4 p-2">
-            {images.map((image, index) => {
-              if (!image || !image.url) {
-                console.error("Invalid image at index", index, image);
-                return null;
-              }
+          <div className="grid grid-cols-3 gap-4 p-2">
+            {Array.from({ length: 3 }).map((_, columnIndex) => (
+              <div key={`column-${columnIndex}`} className="flex flex-col gap-4">
+                {images
+                  .filter((_, index) => index % 3 === columnIndex)
+                  .map((image, index) => {
+                    if (!image || !image.url) {
+                      console.error("Invalid image at index", index, image);
+                      return null;
+                    }
 
-              const aspectRatio =
-                image.height && image.width ? (image.height / image.width) * 100 : 75; // Default aspect ratio if dimensions are missing
+                    const aspectRatio =
+                      image.height && image.width ? (image.height / image.width) * 100 : 75;
 
-              return (
-                <div key={`${image.url}-${index}`} className="mb-4 break-inside-avoid">
-                  <div
-                    className="relative w-full"
-                    style={{
-                      paddingBottom: `${aspectRatio}%`,
-                    }}
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.alt_description || provider + " image"}
-                      className="absolute top-0 left-0 w-full h-full object-cover cursor-pointer rounded-md hover:ring-2 hover:ring-sky-500"
-                      onClick={() => handleSelectImage(image)}
-                    />
-                  </div>
+                    return (
+                      <div key={`${image.url}-${index}`} className="w-full">
+                        <div
+                          className="relative w-full"
+                          style={{
+                            paddingBottom: `${aspectRatio}%`,
+                          }}
+                        >
+                          <img
+                            src={image.url}
+                            alt={image.alt_description || provider + " image"}
+                            className="absolute top-0 left-0 w-full h-full object-cover cursor-pointer rounded-md hover:ring-2 hover:ring-sky-500"
+                            onClick={() => handleSelectImage(image)}
+                          />
+                        </div>
 
-                  <div className="flex items-center gap-1 text-xs group mt-1">
-                    {image.username && (
-                      <a
-                        href={image.profile_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-700 flex items-center gap-1"
-                      >
-                        <span className="underline">{image.username}</span>
-                      </a>
-                    )}
+                        <div className="flex items-center gap-1 text-xs group mt-1">
+                          {image.username && (
+                            <a
+                              href={image.profile_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-700 flex items-center gap-1"
+                            >
+                              <span className="underline">{image.username}</span>
+                            </a>
+                          )}
 
-                    <div className="items-center transition-opacity duration-1000 ease-in-out opacity-0 group-hover:opacity-100">
-                      <span className="mr-1">from</span>
+                          <div className="items-center transition-opacity duration-1000 ease-in-out opacity-0 group-hover:opacity-100">
+                            <span className="mr-1">from</span>
 
-                      <a
-                        href={image.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline capitalize"
-                      >
-                        {provider}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                            <a
+                              href={image.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline capitalize"
+                            >
+                              {provider}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ))}
           </div>
         )}
 
