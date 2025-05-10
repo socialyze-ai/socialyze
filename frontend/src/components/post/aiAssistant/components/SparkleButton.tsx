@@ -7,6 +7,7 @@ interface SparkleButtonProps {
   isTextSelected: boolean;
   hasScrollbar: boolean;
   isPostModal: boolean;
+  isDisabled?: boolean;
 }
 
 const SparkleButton: React.FC<SparkleButtonProps> = ({
@@ -14,6 +15,7 @@ const SparkleButton: React.FC<SparkleButtonProps> = ({
   isTextSelected,
   hasScrollbar,
   isPostModal,
+  isDisabled = false,
 }) => {
   if (isTextSelected) return null;
   return (
@@ -25,10 +27,13 @@ const SparkleButton: React.FC<SparkleButtonProps> = ({
     >
       <Sparkles
         className={cn(
-          "w-5 h-5 cursor-pointer bg-white rounded-full p-0.5 shadow-sm",
-          isTextSelected ? "text-green-500" : "text-blue-500",
+          "w-6 h-6 cursor-pointer bg-white rounded-full p-0.5 shadow-sm",
+          isDisabled ? "text-gray-500" : isTextSelected ? "text-green-500" : "text-blue-500",
         )}
-        onClick={onClick}
+        onClick={(e) => {
+          if (isDisabled) return;
+          onClick(e);
+        }}
       />
     </div>
   );
