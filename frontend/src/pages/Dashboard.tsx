@@ -2,7 +2,6 @@ import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ActiveChannels from "@/components/dashboard/ActiveChannels";
 import { LayoutType } from "@/components/dashboard/LayoutSelector";
-import PostListView from "@/components/dashboard/PostListView";
 import PostGridView from "@/components/dashboard/PostGridView";
 import PostCalendarView from "@/components/dashboard/PostCalendarView";
 import FilterSelectors from "@/components/dashboard/FilterSelectors";
@@ -10,6 +9,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { Loader2 } from "lucide-react";
 import InitialDataLoader from "@/components/InitialDataLoader";
+import PostListView from "@/components/dashboard/PostListView";
 
 const Dashboard = () => {
   const { posts, isLoading } = useSelector((state: RootState) => state.dashboardPosts);
