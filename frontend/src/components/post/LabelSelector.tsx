@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Plus, X, Pencil, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Plus, X, Pencil, Trash2, BookMarked } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +14,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDispatch, useSelector } from "react-redux";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Label,
   selectLabels,
@@ -45,12 +47,52 @@ interface LabelSelectorProps {
   initialLabels?: Label[];
   onLabelsChange?: (selectedLabels: Label[]) => void;
   workspaceId?: string;
+
+  // New props for customization
+  buttonClassName?: string;
+  buttonSize?: "default" | "sm" | "lg" | "icon";
+  buttonVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  icon?: React.ReactNode;
+  label?: string;
+
+  // Props for external control
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+
+  // Props for integration with dashboard filters
+  externalSelectedLabels?: string[];
+  onExternalToggle?: (labelId: string) => void;
+
+  // Content customization
+  popoverWidth?: string;
+  popoverAlign?: "center" | "start" | "end";
+  showSelectedCount?: boolean;
 }
 
 const LabelSelector: React.FC<LabelSelectorProps> = ({
   initialLabels,
   onLabelsChange,
   workspaceId = "default-workspace", // Fallback workspace ID
+
+  // Default values for new props
+  buttonClassName = "w-fit justify-between",
+  buttonSize,
+  buttonVariant = "outline",
+  icon = <BookMarked className="h-4 w-4" />,
+  label = "Labels",
+
+  // External control props with defaults
+  isOpen: externalIsOpen,
+  onOpenChange: externalOnOpenChange,
+
+  // Dashboard integration props
+  externalSelectedLabels,
+  onExternalToggle,
+
+  // Content customization
+  popoverWidth = "w-fit max-w-xs",
+  popoverAlign = "end",
+  showSelectedCount = true,
 }) => {
   // Redux hooks
   const dispatch = useDispatch();
@@ -69,11 +111,16 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
   const { mutate: deleteLabel, isPending: isDeletingLabel } = useDeleteTagLabel();
 
   // Local state
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [internalIsOpen, setInternalIsOpen] = useState<boolean>(false);
   const [editingLabel, setEditingLabel] = useState<TagLabelType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [editLabelName, setEditLabelName] = useState<string>("");
   const [editLabelColor, setEditLabelColor] = useState<string>("");
+
+  // Determine if we're using internal or external state for the popover
+  const isControlled = externalIsOpen !== undefined && externalOnOpenChange !== undefined;
+  const isOpen = isControlled ? externalIsOpen : internalIsOpen;
+  const setIsOpen = isControlled ? externalOnOpenChange : setInternalIsOpen;
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -106,11 +153,15 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
         id: label._id,
         name: label.name,
         color: label.color,
-        selected: initialLabels ? initialLabels.some((l) => l.id === label._id) : false,
+        selected: externalSelectedLabels
+          ? externalSelectedLabels.includes(label._id)
+          : initialLabels
+          ? initialLabels.some((l) => l.id === label._id)
+          : false,
       }));
       dispatch(setInitialLabels(formattedLabels));
     }
-  }, [apiLabels, dispatch, initialLabels]);
+  }, [apiLabels, dispatch, initialLabels, externalSelectedLabels]);
 
   // Focus input when popover opens
   useEffect(() => {
@@ -141,7 +192,11 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
 
   // Handle label toggle
   const handleToggleLabel = (labelId: string) => {
-    dispatch(toggleLabel(labelId));
+    if (onExternalToggle) {
+      onExternalToggle(labelId);
+    } else {
+      dispatch(toggleLabel(labelId));
+    }
   };
 
   // Create new label
@@ -194,15 +249,49 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
     }
   };
 
+  // Determine if a label is selected
+  const isLabelSelected = (labelId: string): boolean => {
+    if (externalSelectedLabels) {
+      return externalSelectedLabels.includes(labelId);
+    }
+    const label = labels.find((l) => l.id === labelId);
+    return label?.selected || false;
+  };
+
   // Render selected labels up to 3 and show +2 for remaining labels
   const renderSelectedLabels = () => {
-    const selectedLabels = labels.filter((label) => label.selected);
-    const displayedLabels = selectedLabels.slice(0, 3);
-    const remainingCount = selectedLabels.length - displayedLabels.length;
+    let selectedLabelsArray: Label[];
+    let count = 0;
+
+    if (externalSelectedLabels) {
+      selectedLabelsArray = labels.filter((label) => externalSelectedLabels.includes(label.id));
+      count = externalSelectedLabels.length;
+    } else {
+      selectedLabelsArray = labels.filter((label) => label.selected);
+      count = selectedLabelsCount;
+    }
+
+    const displayedLabels = selectedLabelsArray.slice(0, 3);
+    const remainingCount = selectedLabelsArray.length - displayedLabels.length;
+
+    if (buttonSize === "sm") {
+      // For small buttons, just show icon and count
+      return (
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span>{label}</span>
+          {showSelectedCount && count > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {count}
+            </Badge>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div className="flex items-center space-x-2">
-        {selectedLabels.length > 0 ? (
+        {selectedLabelsArray.length > 0 ? (
           <>
             {displayedLabels.map((label) => (
               <div key={label.id} className="flex items-center space-x-2">
@@ -216,7 +305,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
             {remainingCount > 0 && <span>+{remainingCount}</span>}
           </>
         ) : (
-          <span className="text-sm">Add Labels</span>
+          <span className="text-sm">{label}</span>
         )}
       </div>
     );
@@ -226,13 +315,18 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
     <div className="w-fit">
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-fit justify-between" aria-expanded={isOpen}>
+          <Button
+            variant={buttonVariant}
+            size={buttonSize}
+            className={cn(buttonClassName, "flex items-center justify-between")}
+            aria-expanded={isOpen}
+          >
             {renderSelectedLabels()}
             <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-fit max-w-xs p-0" align="end">
+        <PopoverContent className={cn(popoverWidth, "p-0")} align={popoverAlign}>
           <div className="p-2">
             <Input
               ref={inputRef}
@@ -249,6 +343,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
                 filteredLabels.map((label) => {
                   // Find the corresponding API label to get its full data
                   const apiLabel = apiLabels?.find((l) => l._id === label.id);
+                  const isSelected = isLabelSelected(label.id);
 
                   return (
                     <div
@@ -256,10 +351,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
                       className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
                       onClick={() => handleToggleLabel(label.id)}
                     >
-                      <Checkbox
-                        checked={label.selected}
-                        className="data-[state=checked]:bg-blue-600"
-                      />
+                      <Checkbox checked={isSelected} className="data-[state=checked]:bg-blue-600" />
                       <span
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: label.color }}

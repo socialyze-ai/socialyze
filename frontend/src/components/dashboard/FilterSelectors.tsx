@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   BookMarked,
-  Check,
   Users,
   FileText,
   Clock,
@@ -21,6 +20,7 @@ import { updateFilter } from "@/redux/slices/dashboardPosts.slice";
 import LayoutSelector, { LayoutType } from "./LayoutSelector";
 import { Checkbox } from "@/components/ui/checkbox";
 import AddChannelDialog from "../generic/AddChannelDialog";
+import LabelSelector from "../post/LabelSelector";
 
 interface FilterSelectorsProps {
   timezone: string;
@@ -51,7 +51,6 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
-
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Count posts by status
@@ -88,13 +87,13 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     );
   };
 
-  const toggleLabel = (label: string) => {
+  const toggleLabel = (labelId: string) => {
     let newLabels: string[];
 
-    if (selectedLabels?.includes(label)) {
-      newLabels = selectedLabels?.filter((l) => l !== label);
+    if (selectedLabels?.includes(labelId)) {
+      newLabels = selectedLabels?.filter((l) => l !== labelId);
     } else {
-      newLabels = [...selectedLabels, label];
+      newLabels = [...selectedLabels, labelId];
     }
 
     dispatch(
@@ -185,49 +184,21 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
             </PopoverContent>
           </Popover>
 
-          <Popover open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-            <PopoverTrigger
-              asChild
-              className="rounded border-none bg-transparent hover:bg-gray-100"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto"
-              >
-                <BookMarked className="h-4 w-4" />
-                <span>Labels</span>
-                {selectedLabels.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                    {selectedLabels.length}
-                  </Badge>
-                )}
-                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
-              {labels.length > 0 ? (
-                labels.map((label) => (
-                  <Button
-                    key={label?.id}
-                    variant="ghost"
-                    className={cn(
-                      "justify-start font-normal",
-                      selectedLabels?.includes(label?.id) && "bg-muted",
-                    )}
-                    onClick={() => toggleLabel(label?.id)}
-                  >
-                    <div className="flex items-center space-x-2 w-full">
-                      <Checkbox checked={selectedLabels?.includes(label?.id)} />
-                      <span>{label?.name}</span>
-                    </div>
-                  </Button>
-                ))
-              ) : (
-                <div className="text-sm text-muted-foreground p-2 text-center">No Labels found</div>
-              )}
-            </PopoverContent>
-          </Popover>
+          <LabelSelector
+            buttonClassName="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto rounded border-none bg-transparent hover:bg-gray-100"
+            buttonSize="sm"
+            buttonVariant="outline"
+            icon={<BookMarked className="h-4 w-4" />}
+            label="Labels"
+            isOpen={isLabelOpen}
+            onOpenChange={setIsLabelOpen}
+            externalSelectedLabels={selectedLabels}
+            onExternalToggle={toggleLabel}
+            popoverWidth="w-64"
+            popoverAlign="start"
+            showSelectedCount={true}
+            workspaceId="default-workspace"
+          />
 
           <Popover open={isStatusOpen} onOpenChange={setIsStatusOpen}>
             <PopoverTrigger
