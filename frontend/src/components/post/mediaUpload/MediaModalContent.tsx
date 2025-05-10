@@ -153,7 +153,7 @@ const MediaModalContent = ({
         debounceTimeout={500}
         value={searchKeyword}
         onChange={(e) => setSearchKeyword(e.target.value)}
-        placeholder="Search for images"
+        placeholder={`Search for ${provider}`}
         className="p-2 border rounded"
       />
       <div

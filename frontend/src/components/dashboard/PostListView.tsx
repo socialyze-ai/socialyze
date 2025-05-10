@@ -5,12 +5,10 @@ import ListPostCard from "./ListPostCard";
 import { DashboardPostType } from "@/redux/slices/dashboardPosts.slice";
 import { useMemo, useState } from "react";
 import { Button } from "../ui/button";
-import { Plus, PlusCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 import CreatePostModal from "../post/CreatePostModal";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar } from "../ui/avatar";
 
-const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
+export const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
   const channels = useSelector(selectChannels);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 

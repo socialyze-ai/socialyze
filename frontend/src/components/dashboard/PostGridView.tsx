@@ -8,7 +8,7 @@ import { Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
 import CreatePostModal from "../post/CreatePostModal";
 
-const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
+export const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
   const channels = useSelector(selectChannels);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
