@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +81,7 @@ import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
 import LabelSelector from "./LabelSelector";
 import { reset } from "@/redux/slices/aiAssistant.slice";
+import { htmlToText } from "html-to-text";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -422,6 +423,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsEditDialogOpen(false);
   };
 
+  const contentToUse = useMemo(
+    () => htmlToText(contentByChannel[activeChannel]),
+    [contentByChannel, activeChannel],
+  );
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
@@ -727,11 +733,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               <div className="h-fit">
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
-                    content={
-                      contentByChannel[activeChannel]?.includes("<br>")
-                        ? contentByChannel[activeChannel].replace(/<br>/g, "")
-                        : contentByChannel[activeChannel] || ""
-                    }
+                    content={contentToUse}
                     channel={getChannelById(activeChannel)!}
                     mediaUrls={mediaByChannel[activeChannel]?.map((media) => media.url) || []}
                   />

@@ -139,14 +139,16 @@ const AIAssistantEditor = () => {
   const handleInsert = () => {
     if (isCustomContent) {
       const channelContent = contentByChannel[activeChannel] || "";
+      const removedBreakLineFilterContent = channelContent.replace(/<br>/g, "");
       dispatch(
         setContentForChannel({
           channelId: activeChannel,
-          content: channelContent + "\n" + finalContent,
+          content: removedBreakLineFilterContent + finalContent,
         }),
       );
     } else {
-      dispatch(setContent(content + "\n" + finalContent));
+      const removedBreakLineFilterContent = content.replace(/<br>/g, "");
+      dispatch(setContent(removedBreakLineFilterContent + finalContent));
     }
   };
 

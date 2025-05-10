@@ -7,6 +7,7 @@ import { addHashtagsToContent } from "@/utils/formatContent";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 import { cn } from "@/lib/utils";
+import { htmlToText } from "html-to-text";
 
 interface PostPreviewPanelProps {
   content: string;
@@ -82,10 +83,7 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
         {selectedChannels.map((channelId) => {
           const channel = channels.find((c) => c.id === channelId);
           const filterContent = getPreviewContent();
-
-          const contentToUse = filterContent?.includes("<br>")
-            ? filterContent.replace(/<br>/g, "")
-            : filterContent;
+          const contentToUse = htmlToText(filterContent);
 
           return channel && currentPreviewTab === channel.id ? (
             <PostPreview key={channel.id} content={contentToUse} channel={channel} />
