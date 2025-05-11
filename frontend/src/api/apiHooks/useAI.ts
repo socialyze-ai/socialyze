@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { LOG_TOKEN, makeRequest } from "./utils";
+import { makeRequest, getToken, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export interface GenerateHashTagsResponse {
@@ -20,13 +20,18 @@ export type GenerateContentResponse = GenerateContentItem;
 
 export const useGenerateHashTags = () => {
   const generateHashTags = async (body: { text: string }): Promise<GenerateHashTagsResponse> => {
-    const { data } = await makeRequest(
+    const response = await makeRequest<GenerateHashTagsResponse>(
       BACKEND_URL + "ai/generateHashTags",
       "POST",
+      getToken(),
       body,
-      LOG_TOKEN,
     );
-    return data;
+
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to generate hashtags");
+    }
+
+    return response.data;
   };
 
   return useMutation({
@@ -36,8 +41,18 @@ export const useGenerateHashTags = () => {
 
 export const useGenerateContent = () => {
   const generateContent = async (body: GenerateContentRequest) => {
-    const { data } = await makeRequest(BACKEND_URL + "ai/generateContent", "POST", body, LOG_TOKEN);
-    return data;
+    const response = await makeRequest<GenerateContentResponse>(
+      BACKEND_URL + "ai/generateContent",
+      "POST",
+      getToken(),
+      body,
+    );
+
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to generate content");
+    }
+
+    return response.data;
   };
 
   return useMutation({

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LOG_TOKEN, makeRequest } from "./utils";
+import { getToken, makeRequest, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export interface TagLabelType {
@@ -25,21 +25,35 @@ export interface UpdateTagLabelPayload {
 }
 
 export const useGetTagLabels = () => {
-  return useQuery({
+  return useQuery<TagLabelType[]>({
     queryKey: ["tagLabels"],
     queryFn: async () => {
-      const { data } = await makeRequest(BACKEND_URL + "label", "GET", "", LOG_TOKEN);
-      return data as TagLabelType[];
+      const response = await makeRequest<TagLabelType[]>(BACKEND_URL + "label", "GET", getToken());
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to get tag labels");
+      }
+
+      return response.data;
     },
   });
 };
 
 export const useGetTagLabelById = (id: string) => {
-  return useQuery({
+  return useQuery<TagLabelType>({
     queryKey: ["tagLabel", id],
     queryFn: async () => {
-      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "GET", "", LOG_TOKEN);
-      return data as TagLabelType;
+      const response = await makeRequest<TagLabelType>(
+        `${BACKEND_URL}label/${id}`,
+        "GET",
+        getToken(),
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || `Failed to get tag label with id ${id}`);
+      }
+
+      return response.data;
     },
     enabled: !!id,
   });
@@ -48,10 +62,20 @@ export const useGetTagLabelById = (id: string) => {
 export const useCreateTagLabel = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<TagLabelType, Error, CreateTagLabelPayload>({
     mutationFn: async (payload: CreateTagLabelPayload) => {
-      const { data } = await makeRequest(BACKEND_URL + "label", "POST", payload, LOG_TOKEN);
-      return data;
+      const response = await makeRequest<TagLabelType>(
+        BACKEND_URL + "label",
+        "POST",
+        getToken(),
+        payload,
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to create tag label");
+      }
+
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagLabels"] });
@@ -62,10 +86,20 @@ export const useCreateTagLabel = () => {
 export const useUpdateTagLabel = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<TagLabelType, Error, { id: string; payload: UpdateTagLabelPayload }>({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateTagLabelPayload }) => {
-      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "PATCH", payload, LOG_TOKEN);
-      return data;
+      const response = await makeRequest<TagLabelType>(
+        `${BACKEND_URL}label/${id}`,
+        "PATCH",
+        getToken(),
+        payload,
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || `Failed to update tag label with id ${id}`);
+      }
+
+      return response.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tagLabels"] });
@@ -79,10 +113,15 @@ export const useUpdateTagLabel = () => {
 export const useDeleteTagLabel = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<unknown, Error, string>({
     mutationFn: async (id: string) => {
-      const { data } = await makeRequest(`${BACKEND_URL}label/${id}`, "DELETE", "", LOG_TOKEN);
-      return data;
+      const response = await makeRequest(`${BACKEND_URL}label/${id}`, "DELETE", getToken());
+
+      if (response.error) {
+        throw new Error(response.error || `Failed to delete tag label with id ${id}`);
+      }
+
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tagLabels"] });
@@ -94,8 +133,13 @@ export const useGetTags = () => {
   return useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const { data } = await makeRequest(BACKEND_URL + "tag/get-all-tags", "GET", "", LOG_TOKEN);
-      return data;
+      const response = await makeRequest(BACKEND_URL + "tag/get-all-tags", "GET", getToken());
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to get tags");
+      }
+
+      return response.data;
     },
   });
 };

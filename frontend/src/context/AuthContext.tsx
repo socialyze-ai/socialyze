@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useLogin, useSignup, User as ApiUser } from "@/api/apiHooks/useAuth";
+import { useLogin, useSignup, User as ApiUser, AuthResponse } from "@/api/apiHooks/useAuth";
+import { ApiResponse } from "@/api/apiHooks/utils";
 
 type User = ApiUser;
 
@@ -10,6 +11,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  error: string | null; // Added error state
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,11 +27,11 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // State to store error messages
   const loginMutation = useLogin();
   const signupMutation = useSignup();
 
   useEffect(() => {
-    // Check for existing user session in localStorage
     const checkAuth = () => {
       const savedUser = localStorage.getItem("socialyze_user");
       const token = localStorage.getItem("socialyze_token");
@@ -42,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkAuth();
 
-    // Listen for storage events to sync auth state across tabs
     window.addEventListener("storage", (e) => {
       if (e.key === "socialyze_user") {
         if (e.newValue) {
@@ -56,11 +57,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
-      const response = await loginMutation.mutateAsync({ email, password } as any);
+      const response = await loginMutation.mutateAsync({ email, password });
 
       if (response.error) {
+        setError(response.error); // Store error message
         throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        const errorMsg = "Login failed: No data received";
+        setError(errorMsg); // Store error message
+        throw new Error(errorMsg);
       }
 
       const { user, token } = response.data;
@@ -78,16 +87,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (name: string, email: string, password: string, confirmPassword: string) => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
       const response = await signupMutation.mutateAsync({
         name,
         email,
         password,
         confirmPassword,
-      } as any);
+      });
 
       if (response.error) {
+        setError(response.error); // Store error message
         throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        const errorMsg = "Signup failed: No data received";
+        setError(errorMsg); // Store error message
+        throw new Error(errorMsg);
       }
 
       const { user, token } = response.data;
@@ -118,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         loading,
+        error,
       }}
     >
       {children}
