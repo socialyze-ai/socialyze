@@ -21,7 +21,7 @@ import LayoutSelector, { LayoutType } from "./LayoutSelector";
 import { Checkbox } from "@/components/ui/checkbox";
 import AddChannelDialog from "../generic/AddChannelDialog";
 import LabelSelector from "../post/LabelSelector";
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface FilterSelectorsProps {
   timezone: string;
   onTimezoneChange: (timezone: string) => void;
@@ -159,13 +159,12 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                   >
                     <div className="flex items-center space-x-2 w-full">
                       <Checkbox checked={selectedChannels?.includes(channel.id)} />
-                      <div className="h-5 w-5 rounded-full overflow-hidden">
-                        <img
-                          src={channel.profileImage}
-                          alt={channel.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={channel.profileImage} alt={channel.name} />
+                        <AvatarFallback className="capitalize font-semibold text-xs bg-primary/10 text-primary">
+                          {channel.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <span>{channel.name}</span>
                     </div>
                   </Button>
