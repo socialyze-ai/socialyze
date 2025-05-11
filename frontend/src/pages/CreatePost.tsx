@@ -358,9 +358,9 @@ const CreatePost = () => {
 
   return (
     <MainLayout title="Create Post">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll lg:overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll scrollbar-hide lg:overflow-hidden">
         {/* Left column - Post composer */}
-        <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
+        <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll scrollbar-hide">
           <div className="flex gap-2 md:flex-row flex-col-reverse justify-between">
             <div className="flex gap-3 flex-wrap">
               {channels.map((channel) => (
@@ -506,7 +506,7 @@ const CreatePost = () => {
         </div>
 
         {/* Right column - Preview and controls */}
-        <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll flex flex-col gap-3">
+        <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll scrollbar-hide flex flex-col gap-3">
           {selectedChannels.length > 0 && activeChannel && (
             <Card>
               <CardContent className="pt-6">

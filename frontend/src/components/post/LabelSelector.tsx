@@ -336,7 +336,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
               className="mb-2"
             />
 
-            <ScrollArea className="h-fit max-h-64 pr-4 overflow-y-scroll">
+            <ScrollArea className="h-fit max-h-64 pr-4 overflow-y-scroll scrollbar-hide">
               {isLoadingLabels ? (
                 <div className="py-6 text-center text-gray-500">Loading labels...</div>
               ) : filteredLabels.length > 0 ? (
