@@ -7,10 +7,15 @@ import { CreateUserDto } from './dto/createUser.dto';
 import { LoginUserDto } from './dto/loginUser.dto';
 import { OtpVerifyDto } from './dto/otpVerify.dto';
 import { User } from './user.model';
+import { EmailService } from '../service/email.service';
+import { sendOtpTemplate } from 'src/templates/email.templates';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private readonly emailService: EmailService,
+  ) {}
 
   async register(createUserDto: CreateUserDto): Promise<any> {
     try {
@@ -60,6 +65,13 @@ export class UserService {
         await ureateUser.save();
         user = ureateUser;
       }
+
+      const template = sendOtpTemplate(user.otp, user.name);
+      this.emailService.sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+      });
 
       delete user.password;
       delete user.otp;
@@ -124,7 +136,7 @@ export class UserService {
   }
 
   async isLoggedIn(userId: string): Promise<any> {
-    const user = await this.userModel.findById(userId).select('-password');
+    const user = await this.userModel.findById(userId).select('-password -otp');
 
     if (!user || !user.isVerified) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);

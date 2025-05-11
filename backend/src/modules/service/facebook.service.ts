@@ -84,7 +84,6 @@ export class FacebookService {
         );
       }
 
-      console.log('Pages connected successfully');
       return {
         success: true,
         message: 'Facebook pages connected successfully',

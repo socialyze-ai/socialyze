@@ -12,6 +12,7 @@ import { GetImagesDto } from './dto/getImages.dto';
 import { UploadMediaDto } from './dto/uploadMedia.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
+import { UploadMediaWithLinkDto } from './dto/uploadMediaWithLink.dto';
 
 @Controller('media')
 @UseInterceptors(AuthInterceptor)
@@ -33,6 +34,19 @@ export class MediaController {
   ) {
     const userId = req.user.userId;
     return this.mediaService.uploadMedia(media, uploadMediaDto, userId);
+  }
+
+  @Post('uploadMediaWithLink')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadMediaWithLink(
+    @Body() uploadMediaWithLinkDto: UploadMediaWithLinkDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.mediaService.uploadMediaWithLink(
+      uploadMediaWithLinkDto,
+      userId,
+    );
   }
 
   @Post('uploadMediaForUnsplash')

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from './post.model';
@@ -13,6 +14,7 @@ import { InstagramService } from '../service/instagram.service';
 import { XService } from '../service/x.service';
 import { GetPostsRequestDto } from './dto/getPostsRequest.dto';
 import { GetPostResponseDto } from './dto/getPostsResponse.dto';
+import axios from 'axios';
 
 @Injectable()
 export class PostService {
@@ -33,26 +35,59 @@ export class PostService {
         label: postDto.label.map((labelId) => new Types.ObjectId(labelId)),
       }));
 
-      console.log(postsToCreate);
       const createdPosts = await this.postModel.create(postsToCreate);
 
       for (const post of createdPosts) {
-        await this.publish({ postId: post._id }, userId);
+        if (post.postType === 'postnow') {
+          post.scheduledTime = new Date();
+        }
+
+        const scheduled = await axios.post(
+          `${process.env.SCHEDULER_URL}/schedule`,
+          {
+            accessToken: process.env.SCHEDULER_ACCESS_TOKEN,
+            backendUrl: `${process.env.BACKEND_URL}/post/publish`,
+            timestamp: post.scheduledTime,
+            postId: post._id,
+          },
+        );
+
+        console.log('scheduled', scheduled.data);
+        if (scheduled.data.success) {
+          post.postStatus = 'queued';
+        } else {
+          post.postStatus = 'failed';
+          post.failedReason = 'Failed to queue post';
+        }
+        post.jobId = scheduled.data.jobId;
+        await post.save();
+        // await this.publish({ postId: post._id }, userId);
       }
 
       return createdPosts;
     } catch (error) {
-      console.error('Post error:', error);
+      let message;
+      if (error?.response?.data?.message) {
+        message = error.response.data.message;
+        console.error('Error message:', message);
+      } else {
+        message = error.message;
+        console.error('Unexpected error:', message);
+      }
       throw new InternalServerErrorException({
         success: false,
-        message: error.message,
+        message,
       });
     }
   }
 
-  async publish(publishDto: PublishDto, userId: string) {
+  async publish(publishDto: PublishDto) {
     try {
-      const { postId } = publishDto;
+      const { postId, accessToken } = publishDto;
+
+      if (accessToken !== process.env.SCHEDULER_ACCESS_TOKEN) {
+        throw new UnauthorizedException('Invalid publish token');
+      }
 
       const post = await this.postModel.findById(postId).exec();
       if (!post) {
@@ -73,8 +108,6 @@ export class PostService {
       } else if (handle === 'x') {
         response = await this.xService.publish(post);
       }
-
-      console.log('response', response);
 
       if (response.success) {
         post.postStatus = 'published';

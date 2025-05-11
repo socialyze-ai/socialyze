@@ -8,6 +8,8 @@ import { GcsService } from '../service/gcs.service';
 import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
 import { TenorService } from '../service/tenor.service';
 import { PexelsService } from '../service/pexels.service';
+import { UploadMediaWithLinkDto } from './dto/uploadMediaWithLink.dto';
+import { CommonService } from '../service/common.service';
 
 @Injectable()
 export class MediaService {
@@ -18,6 +20,7 @@ export class MediaService {
     private readonly tenorService: TenorService,
     private readonly pexelsService: PexelsService,
     private readonly gcsService: GcsService,
+    private readonly commonService: CommonService,
   ) {}
 
   async getImages(getImagesDto: GetImagesDto, userId: string) {
@@ -62,6 +65,23 @@ export class MediaService {
     }
   }
 
+  async uploadMediaWithLink(
+    uploadMediaWithLinkDto: UploadMediaForUnsplashDto,
+    userId: string,
+  ) {
+    try {
+      const { url, postId } = uploadMediaWithLinkDto;
+      const foldering = `${userId}/${postId}`;
+      const media = await this.commonService.downloadMedia(url);
+      const response = await this.gcsService.uploadMedia(media, foldering);
+
+      return response;
+    } catch (error) {
+      console.error('Failed to upload with link:', error);
+      throw new Error('Failed to upload with link');
+    }
+  }
+
   async uploadMediaForUnsplash(
     uploadMediaForUnsplashDto: UploadMediaForUnsplashDto,
     userId: string,
@@ -74,8 +94,8 @@ export class MediaService {
 
       return response;
     } catch (error) {
-      console.error('Error fetching channels:', error);
-      throw new Error('Failed to fetch channels');
+      console.error('Failed to upload media for unsplash:', error);
+      throw new Error('Failed to upload media for unsplash');
     }
   }
 }

@@ -47,4 +47,8 @@ export class PostDto {
   @IsISO8601()
   @Transform(({ value }) => new Date(value))
   scheduledTime?: Date;
+
+  @IsOptional()
+  @IsString()
+  jobId?: Date;
 }

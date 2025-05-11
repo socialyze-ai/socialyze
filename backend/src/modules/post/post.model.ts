@@ -68,6 +68,9 @@ export class Post {
 
   @Prop({ type: String })
   failedReason: string;
+
+  @Prop({ type: String })
+  jobId: string;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

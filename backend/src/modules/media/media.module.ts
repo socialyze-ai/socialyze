@@ -7,6 +7,7 @@ import { GoogleImageService } from '../service/googleImage.service';
 import { GcsService } from '../service/gcs.service';
 import { TenorService } from '../service/tenor.service';
 import { PexelsService } from '../service/pexels.service';
+import { CommonService } from '../service/common.service';
 
 @Module({
   controllers: [MediaController],
@@ -18,6 +19,7 @@ import { PexelsService } from '../service/pexels.service';
     TenorService,
     PexelsService,
     GcsService,
+    CommonService,
   ],
 })
 export class MediaModule {}

@@ -7,4 +7,7 @@ export class PublishDto {
     message: 'channelId must be a valid ObjectId',
   })
   postId: Types.ObjectId;
+
+  @IsString()
+  accessToken;
 }
