@@ -18,6 +18,7 @@ import PublicRoute from "./components/PublicRoute";
 import { Authenticate } from "./pages/Authenticate";
 import InitialDataLoader from "./components/InitialDataLoader";
 import CalenderPage from "./pages/CalenderPage";
+import OTP from "./pages/OTP";
 
 const queryClient = new QueryClient();
 
@@ -40,11 +41,21 @@ const App = () => (
                 </PublicRoute>
               }
             />
+
             <Route
               path="/signup"
               element={
                 <PublicRoute>
                   <Signup />
+                </PublicRoute>
+              }
+            />
+
+            <Route
+              path="/otp"
+              element={
+                <PublicRoute>
+                  <OTP />
                 </PublicRoute>
               }
             />

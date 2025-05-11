@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react"; // Importing Lucide icons
+import { Eye, EyeOff } from "lucide-react";
 
 const signupSchema = z
   .object({
@@ -77,14 +77,9 @@ const Signup = () => {
   const onSubmit = async (data: SignupFormValues) => {
     try {
       await signup(data.name, data.email, data.password, data.confirmPassword);
-      toast.success("Account created successfully", {
-        description: "Welcome to Socialyze!",
-      });
-      navigate("/dashboard");
+
+      navigate("/otp");
     } catch (error: any) {
-      toast.error("Signup failed", {
-        description: error.message || "There was a problem creating your account.",
-      });
       setShowError(true);
     }
   };

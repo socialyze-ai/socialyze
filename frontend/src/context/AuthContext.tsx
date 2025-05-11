@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useLogin, useSignup, User as ApiUser, AuthResponse } from "@/api/apiHooks/useAuth";
-import { ApiResponse } from "@/api/apiHooks/utils";
+import { useLogin, useSignup, User as ApiUser } from "@/api/apiHooks/useAuth";
 
 type User = ApiUser;
 
@@ -11,7 +10,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
-  error: string | null; // Added error state
+  error: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

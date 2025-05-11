@@ -2,6 +2,7 @@ import { BACKEND_URL } from "@/config/config";
 import { makeRequest, ApiResponse, getToken } from "./utils";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export interface User {
   _id: string;
@@ -79,6 +80,7 @@ export const useSignup = () => {
     onSuccess: (data) => {
       if (data.error) {
         toast.error(data.error, {
+          description: "Welcome to Socialyze!",
           position: "top-center",
         });
         return;
@@ -89,6 +91,46 @@ export const useSignup = () => {
         toast.success(data.data.message, {
           position: "top-center",
         });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        position: "top-center",
+      });
+    },
+  });
+};
+
+interface OTPData {
+  otpValue: string;
+}
+
+export const useVerifyOTP = () => {
+  const navigate = useNavigate();
+  return useMutation<ApiResponse<AuthResponse>, Error, OTPData>({
+    mutationFn: async (data) => {
+      const response = await makeRequest<AuthResponse>(
+        BACKEND_URL + "user/otpVerify",
+        "POST",
+        getToken(),
+        data,
+      );
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error, {
+          position: "top-center",
+        });
+        return;
+      }
+
+      // Success case
+      if (data.data?.message) {
+        toast.success(data.data.message, {
+          position: "top-center",
+        });
+        navigate("/dashboard");
       }
     },
     onError: (error) => {
