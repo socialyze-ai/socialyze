@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,6 +18,16 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   // }
 
   if (isAuthenticated && user?.isVerified) {
+    // Check if there's a saved redirect path
+    const redirectPath = sessionStorage.getItem("redirectPath");
+
+    // If there is, use it and clear the storage
+    if (redirectPath) {
+      sessionStorage.removeItem("redirectPath");
+      return <Navigate to={redirectPath} replace />;
+    }
+
+    // Default redirect to dashboard
     return <Navigate to="/dashboard" replace />;
   }
 

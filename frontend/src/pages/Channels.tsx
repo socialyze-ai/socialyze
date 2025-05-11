@@ -9,6 +9,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { SocialChannel, deleteChannel, selectChannels } from "@/redux/slices/posts.slice";
 import AddChannelDialog from "@/components/generic/AddChannelDialog";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Channels = () => {
   const channels = useSelector(selectChannels);
@@ -88,13 +89,12 @@ const Channels = () => {
                 <Card key={channel.id} className="overflow-hidden">
                   <CardContent className="p-0">
                     <div className="p-4 bg-muted/30 flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full overflow-hidden">
-                        <img
-                          src={channel.profileImage}
-                          alt={channel.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
+                      <Avatar className="w-10 h-10 rounded-full">
+                        <AvatarImage src={channel.profileImage} />
+                        <AvatarFallback className="capitalize font-semibold text-xl">
+                          {channel.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <h3 className="font-medium">{channel.name}</h3>
                         <div className="flex items-center text-sm text-muted-foreground">

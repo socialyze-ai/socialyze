@@ -1,7 +1,7 @@
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -20,6 +20,16 @@ import CalenderPage from "./pages/CalenderPage";
 import OTP from "./pages/OTP";
 
 const queryClient = new QueryClient();
+
+// Layout component that includes InitialDataLoader for authenticated routes
+const AuthenticatedLayout = () => {
+  return (
+    <>
+      <InitialDataLoader />
+      <Outlet />
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -58,64 +68,22 @@ const App = () => (
               }
             />
 
-            {/* Protected routes with authentication bypassed for development */}
+            {/* Protected routes with layout that includes InitialDataLoader */}
             <Route
-              path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <AuthenticatedLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/create"
-              element={
-                <ProtectedRoute>
-                  <CreatePost />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/calendar"
-              element={
-                <ProtectedRoute>
-                  <CalenderPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/channels"
-              element={
-                <ProtectedRoute>
-                  <Channels />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/authenticate"
-              element={
-                <ProtectedRoute>
-                  <Authenticate />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/create" element={<CreatePost />} />
+              <Route path="/calendar" element={<CalenderPage />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/channels" element={<Channels />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/authenticate" element={<Authenticate />} />
+            </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>

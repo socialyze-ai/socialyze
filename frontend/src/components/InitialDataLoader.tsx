@@ -8,9 +8,11 @@ import { setPosts, setLoading, setError } from "@/redux/slices/dashboardPosts.sl
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import { useAuth } from "@/context/AuthContext";
 
 const InitialDataLoader = () => {
   const dispatch = useDispatch();
+  const { isAuthenticated } = useAuth();
   const filters = useSelector((state: RootState) => state.dashboardPosts.filters);
 
   const { data: channelsData } = useGetChannel();
@@ -26,11 +28,13 @@ const InitialDataLoader = () => {
 
   // Update loading state
   useEffect(() => {
+    if (!isAuthenticated) return;
     dispatch(setLoading(postsLoading));
-  }, [postsLoading, dispatch]);
+  }, [postsLoading, dispatch, isAuthenticated]);
 
   // Update error state
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (postsError) {
       // Extract error message from the error object
       const errorMessage =
@@ -41,10 +45,11 @@ const InitialDataLoader = () => {
     } else {
       dispatch(setError(null));
     }
-  }, [postsError, postsErrorDetails, dispatch]);
+  }, [postsError, postsErrorDetails, dispatch, isAuthenticated]);
 
   // Labels
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (apiLabels && apiLabels.length > 0) {
       const formattedLabels: Label[] = apiLabels.map((label) => ({
         id: label._id,
@@ -54,10 +59,11 @@ const InitialDataLoader = () => {
       }));
       dispatch(setInitialLabels(formattedLabels || []));
     }
-  }, [apiLabels, dispatch]);
+  }, [apiLabels, dispatch, isAuthenticated]);
 
   // Channels
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (channelsData?.data?.length) {
       const channels = channelsData.data.map((channel) => ({
         id: channel._id,
@@ -74,10 +80,11 @@ const InitialDataLoader = () => {
       dispatch(addChannels((channels || []) as any));
       dispatch(addPostsChannels((channels || []) as any));
     }
-  }, [channelsData, dispatch]);
+  }, [channelsData, dispatch, isAuthenticated]);
 
   // Posts
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (postsData?.length) {
       // Ensure we're using serializable data
       const formattedPosts =
@@ -100,7 +107,7 @@ const InitialDataLoader = () => {
     } else {
       dispatch(setPosts([]));
     }
-  }, [postsData, dispatch]);
+  }, [postsData, dispatch, isAuthenticated]);
 
   return null;
 };

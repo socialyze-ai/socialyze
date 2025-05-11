@@ -59,7 +59,16 @@ const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       await login(data.email, data.password);
-      navigate("/dashboard");
+
+      // Check if there's a saved redirect path
+      const redirectPath = sessionStorage.getItem("redirectPath");
+      if (redirectPath) {
+        navigate(redirectPath);
+        // Clear the stored path after using it
+        sessionStorage.removeItem("redirectPath");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error(error);
       setShowError(true);

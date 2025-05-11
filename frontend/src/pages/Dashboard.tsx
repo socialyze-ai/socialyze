@@ -19,7 +19,6 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard">
-      <InitialDataLoader />
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3">
           <div className="flex-1 lg:flex-[4] flex flex-col gap-3">

@@ -33,25 +33,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = () => {
       const savedUser = localStorage.getItem("socialyze_user");
-      const token = localStorage.getItem("socialyze_token");
+      const token = localStorage.getItem("socialyze_token") || localStorage.getItem("LOG_TOKEN");
 
       if (savedUser && token) {
         setUser(JSON.parse(savedUser));
+      } else if (token) {
+        // If we only have LOG_TOKEN but no user, create a minimal user
+        // This approach handles cases where only the token is stored
+        setUser({
+          _id: "token-user",
+          name: "User",
+          email: "",
+          isVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
       }
       setLoading(false);
     };
 
     checkAuth();
 
-    window.addEventListener("storage", (e) => {
-      if (e.key === "socialyze_user") {
-        if (e.newValue) {
-          setUser(JSON.parse(e.newValue));
-        } else {
-          setUser(null);
-        }
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "socialyze_user" || e.key === "LOG_TOKEN") {
+        checkAuth();
       }
-    });
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -76,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
+      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -111,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
+      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -123,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem("socialyze_user");
     localStorage.removeItem("socialyze_token");
+    localStorage.removeItem("LOG_TOKEN");
   };
 
   return (
