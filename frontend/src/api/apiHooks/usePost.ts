@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getToken, makeRequest, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
+import { AnyARecord } from "node:dns";
 
 export interface PostType {
   _id?: string;
@@ -45,16 +46,28 @@ export interface PostsFilter {
   offset: number;
 }
 
-export interface GetPostsResponse {
-  posts: PostType[];
-  total: number;
+export interface PostResponse {
+  _id: string;
+  channelId: string;
+  createdBy: string;
+  text: string;
+  handle: string;
+  postType: "postnow" | "draft" | "scheduled";
+  postStatus: "queued" | "sent" | "failed" | "published";
+  scheduledTime: string;
+  media: string[];
+  label: string[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  failedReason: string;
 }
 
 export const useGetPost = ({ filters }: { filters: PostsFilter }) => {
-  return useQuery<GetPostsResponse>({
+  return useQuery<PostResponse[]>({
     queryKey: ["posts", filters],
     queryFn: async () => {
-      const response = await makeRequest<GetPostsResponse>(
+      const response = await makeRequest<PostResponse[]>(
         BACKEND_URL + "post/getPosts",
         "POST",
         getToken(),

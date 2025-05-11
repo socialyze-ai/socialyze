@@ -30,7 +30,7 @@ const Channels = () => {
     handleChannelAuth(
       { handle: handle },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: any) => {
           console.log(data);
           const authWindow = window.open(data.url, "_blank", "width=600,height=600");
 

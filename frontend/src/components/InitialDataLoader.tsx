@@ -1,5 +1,5 @@
 import { useGetChannel } from "@/api/apiHooks/useChannel";
-import { useGetPost } from "@/api/apiHooks/usePost";
+import { PostResponse, useGetPost } from "@/api/apiHooks/usePost";
 import { useGetTagLabels } from "@/api/apiHooks/useTagLabel";
 import { addChannels } from "@/redux/slices/channels.slice";
 import { Label, setInitialLabels } from "@/redux/slices/labelManager.slice";
@@ -52,74 +52,51 @@ const InitialDataLoader = () => {
         color: label.color,
         selected: false,
       }));
-      dispatch(setInitialLabels(formattedLabels));
+      dispatch(setInitialLabels(formattedLabels || []));
     }
   }, [apiLabels, dispatch]);
 
   // Channels
   useEffect(() => {
     if (channelsData?.data?.length) {
-      const channels = channelsData.data.map(
-        (channel: {
-          _id: string;
-          handle: string;
-          channelName: string;
-          channelPicture: string;
-          workspace: string;
-          channelId: string;
-        }) => ({
-          id: channel._id,
-          type: channel.handle,
-          name: channel.channelName,
-          username: channel.channelName,
-          description: "",
-          profileImage: channel.channelPicture,
-          connected: true,
-          workspace: channel.workspace,
-          channelId: channel.channelId,
-        }),
-      );
+      const channels = channelsData.data.map((channel) => ({
+        id: channel._id,
+        type: channel.handle,
+        name: channel.channelName,
+        username: channel.channelName,
+        description: "",
+        profileImage: channel.channelPicture,
+        connected: true,
+        workspace: channel.workspace,
+        channelId: channel.channelId,
+      }));
 
-      dispatch(addChannels(channels));
-      dispatch(addPostsChannels(channels));
+      dispatch(addChannels((channels || []) as any));
+      dispatch(addPostsChannels((channels || []) as any));
     }
   }, [channelsData, dispatch]);
 
   // Posts
   useEffect(() => {
-    if (postsData?.data?.length) {
+    if (postsData?.length) {
       // Ensure we're using serializable data
       const formattedPosts =
-        postsData.data.map(
-          (post: {
-            _id: string;
-            channelId: string;
-            text: string;
-            label: string[];
-            media: string[];
-            postType: string;
-            postStatus: string;
-            scheduledTime: string;
-            handle: string;
-            createdAt: string;
-            updatedAt: string;
-          }) => ({
-            _id: post._id,
-            channelId: post.channelId,
-            text: post.text,
-            label: post.label || [],
-            media: post.media || [],
-            postType: post.postType,
-            postStatus: post.postStatus,
-            // Store dates as ISO strings instead of Date objects
-            scheduledTime: post.scheduledTime ? post.scheduledTime : null,
-            handle: post.handle,
-            createdAt: post.createdAt,
-            updatedAt: post.updatedAt,
-          }),
-        ) || [];
+        postsData.map((post: PostResponse) => ({
+          _id: post._id,
+          channelId: post.channelId,
+          text: post.text,
+          label: post.label || [],
+          media: post.media || [],
+          postType: post.postType,
+          postStatus: post.postStatus,
+          // Store dates as ISO strings instead of Date objects
+          scheduledTime: post.scheduledTime ? post.scheduledTime : null,
+          handle: post.handle,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        })) || [];
 
-      dispatch(setPosts(formattedPosts));
+      dispatch(setPosts((formattedPosts || []) as any));
     } else {
       dispatch(setPosts([]));
     }
