@@ -19,8 +19,8 @@ import {
   selectMediaByChannel,
 } from "@/redux/slices/postCreation.slice";
 import { useUploadMedia } from "@/api/apiHooks/useMedia";
-import { toast } from "@/components/ui/use-toast";
 import MediaModalContent from "./mediaUpload/MediaModalContent";
+import { toast } from "sonner";
 
 export interface Media {
   id: string;
@@ -446,9 +446,8 @@ const MediaModal = ({
               }
             }
 
-            toast({
-              title: "Success",
-              description: "Media uploaded successfully",
+            toast.success("Media uploaded successfully", {
+              position: "top-center",
             });
           } else {
             throw new Error("Invalid response format");
@@ -456,10 +455,8 @@ const MediaModal = ({
         },
         onError: (error) => {
           console.error("Error uploading media:", error);
-          toast({
-            title: "Error",
-            description: "Failed to upload media",
-            variant: "destructive",
+          toast.error("Failed to upload media", {
+            position: "top-center",
           });
         },
       });
@@ -467,10 +464,8 @@ const MediaModal = ({
       setIsOpen(false);
     } catch (error) {
       console.error("Error uploading media:", error);
-      toast({
-        title: "Error",
-        description: "Failed to upload media",
-        variant: "destructive",
+      toast.error("Failed to upload media", {
+        position: "top-center",
       });
     } finally {
       setIsUploading(false);

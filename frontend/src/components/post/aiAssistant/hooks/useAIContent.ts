@@ -1,5 +1,4 @@
 import { useDispatch } from "react-redux";
-import { useToast } from "@/hooks/use-toast";
 import { useGenerateContent, useGenerateHashTags } from "@/api/apiHooks/useAI";
 import {
   setGeneratedContent,
@@ -9,6 +8,7 @@ import {
   setSelectedRange,
   setIsTextSelected,
 } from "@/redux/slices/aiTextarea.slice";
+import { toast } from "sonner";
 
 type ContentType = "refine" | "complete" | "hashtags";
 
@@ -25,7 +25,6 @@ export const useAIContent = ({
   focusAndSelectText,
   previousSelectionRef,
 }: UseAIContentParams) => {
-  const { toast } = useToast();
   const dispatch = useDispatch();
 
   const { mutate: generateHashTags, isPending: isPendingHashTags } = useGenerateHashTags();
@@ -80,10 +79,8 @@ export const useAIContent = ({
             }, 50);
           },
           onError: () => {
-            toast({
-              title: "Error refining with AI",
-              description: "Please try again.",
-              variant: "destructive",
+            toast.error("Error refining with AI", {
+              position: "top-center",
             });
 
             // Still restore selection on error
@@ -113,10 +110,8 @@ export const useAIContent = ({
           startTypeEffect(data.text, "complete");
         },
         onError: () => {
-          toast({
-            title: "Error completing with AI",
-            description: "Please try again.",
-            variant: "destructive",
+          toast.error("Error completing with AI", {
+            position: "top-center",
           });
         },
       },
@@ -139,10 +134,8 @@ export const useAIContent = ({
           startTypeEffect(data.text, "hashtags");
         },
         onError: () => {
-          toast({
-            title: "Error generating hashtags",
-            description: "Please try again.",
-            variant: "destructive",
+          toast.error("Error generating hashtags", {
+            position: "top-center",
           });
         },
       },
@@ -202,10 +195,8 @@ export const useAIContent = ({
           }, 50);
         },
         onError: () => {
-          toast({
-            title: "Error regenerating refined text",
-            description: "Please try again.",
-            variant: "destructive",
+          toast.error("Error regenerating refined text", {
+            position: "top-center",
           });
 
           // Still restore selection on error
@@ -233,10 +224,8 @@ export const useAIContent = ({
           startTypeEffect(data.text, "complete");
         },
         onError: () => {
-          toast({
-            title: "Error regenerating content",
-            description: "Please try again.",
-            variant: "destructive",
+          toast.error("Error regenerating content", {
+            position: "top-center",
           });
         },
       },
@@ -258,10 +247,8 @@ export const useAIContent = ({
           startTypeEffect(data.text, "hashtags");
         },
         onError: () => {
-          toast({
-            title: "Error regenerating hashtags",
-            description: "Please try again.",
-            variant: "destructive",
+          toast.error("Error regenerating hashtags", {
+            position: "top-center",
           });
         },
       },

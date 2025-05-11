@@ -2,14 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { getToken, makeRequest, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
-export interface ChannelAuthResponse {
-  authUrl: string;
-}
-
 export const useChannelAuth = () => {
-  return useMutation<ApiResponse<ChannelAuthResponse>, Error, { handle: string }>({
+  return useMutation({
     mutationFn: async (body: { handle: string }) => {
-      const response = await makeRequest<ChannelAuthResponse>(
+      const response = await makeRequest(
         BACKEND_URL + "channel/getAuthUrl",
         "POST",
         getToken(),

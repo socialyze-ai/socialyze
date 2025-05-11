@@ -8,11 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { Facebook, Instagram, Linkedin, X } from "lucide-react";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
 import { useQueryClient } from "@tanstack/react-query";
-import { SocialChannel } from "@/redux/slices/posts.slice";
+import { toast } from "sonner";
 
 interface AddChannelDialogProps {
   isOpen: boolean;
@@ -22,20 +21,18 @@ interface AddChannelDialogProps {
 const AddChannelDialog = ({ isOpen, onOpenChange }: AddChannelDialogProps) => {
   const { mutate: handleChannelAuth } = useChannelAuth();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const handleChannelAuthMutation = (handle: string) => {
     handleChannelAuth(
       { handle: handle },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: any) => {
           console.log(data);
           const authWindow = window.open(data.url, "_blank", "width=600,height=600");
 
           if (!authWindow) {
-            toast({
-              title: "Popup blocked or failed to open.",
-              description: "Please try again.",
+            toast.error("Popup blocked or failed to open.", {
+              position: "top-center",
             });
             return;
           }
@@ -46,10 +43,8 @@ const AddChannelDialog = ({ isOpen, onOpenChange }: AddChannelDialogProps) => {
           window.addEventListener("message", handleMessage);
         },
         onError: (error) => {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
+          toast.error(error.message, {
+            position: "top-center",
           });
         },
       },

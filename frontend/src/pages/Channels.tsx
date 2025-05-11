@@ -2,27 +2,25 @@ import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Facebook, Instagram, Linkedin, LogOut, Edit, Trash2, X } from "lucide-react";
 import { useChannelAuth } from "@/api/apiHooks/useChannel";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
 import { SocialChannel, deleteChannel, selectChannels } from "@/redux/slices/posts.slice";
 import AddChannelDialog from "@/components/generic/AddChannelDialog";
+import { toast } from "sonner";
 
 const Channels = () => {
   const channels = useSelector(selectChannels);
   const dispatch = useDispatch();
-  const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { mutate: handleChannelAuth } = useChannelAuth();
   const queryClient = useQueryClient();
 
   const handleDeleteChannel = (id: string, name: string) => {
     dispatch(deleteChannel(id));
-    toast({
-      title: "Channel disconnected",
-      description: `${name} has been disconnected.`,
+    toast.success(`${name} has been disconnected.`, {
+      position: "top-center",
     });
   };
 
@@ -35,9 +33,8 @@ const Channels = () => {
           const authWindow = window.open(data.url, "_blank", "width=600,height=600");
 
           if (!authWindow) {
-            toast({
-              title: "Popup blocked or failed to open.",
-              description: "Please try again.",
+            toast.error("Popup blocked or failed to open.", {
+              position: "top-center",
             });
             return;
           }
@@ -48,10 +45,8 @@ const Channels = () => {
           window.addEventListener("message", handleMessage);
         },
         onError: (error) => {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
+          toast.error(error.message, {
+            position: "top-center",
           });
         },
       },

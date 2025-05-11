@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { DebounceInput } from "react-debounce-input";
 
 import { Media } from "../MediaUploader";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 interface Image {
@@ -50,7 +50,9 @@ const MediaModalContent = ({
   });
 
   useEffect(() => {
-    if (mediaData?.data?.media) {
+    // @ts-ignore
+    if (mediaData?.data?.media?.length !== 0) {
+      // @ts-ignore
       setImages((prevImages) => [...prevImages, ...mediaData.data.media]);
       setLoadingMore(false);
     }
@@ -124,19 +126,16 @@ const MediaModalContent = ({
             closeModal();
           }
 
-          toast({
-            title: "Success",
-            description: "Image selected successfully",
+          toast.success("Image selected successfully", {
+            position: "top-center",
           });
         },
         onError: (error) => {
           console.error("Error uploading image:", error);
           setIsSelecting(false);
 
-          toast({
-            title: "Error",
-            description: "Failed to select image",
-            variant: "destructive",
+          toast.error("Failed to select image", {
+            position: "top-center",
           });
         },
         onSettled: () => {

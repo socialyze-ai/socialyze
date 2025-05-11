@@ -35,7 +35,6 @@ import {
   X,
   Youtube,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import ScheduleModal from "./ScheduleModal";
@@ -82,6 +81,7 @@ import { format } from "date-fns";
 import LabelSelector from "./LabelSelector";
 import { reset } from "@/redux/slices/aiAssistant.slice";
 import { htmlToText } from "html-to-text";
+import { toast } from "sonner";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -116,7 +116,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
@@ -189,10 +188,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const handleSchedule = (scheduledAt: Date, channels: string[]) => {
     if (channels.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Channel selection required", {
+        position: "top-center",
       });
       return;
     }
@@ -207,10 +204,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         (channelId) => !mediaByChannel[channelId] || mediaByChannel[channelId].length === 0,
       )
     ) {
-      toast({
-        title: "Content required",
-        description: "Please enter some content, hashtags, or add an image for your post.",
-        variant: "destructive",
+      toast.error("Content required", {
+        position: "top-center",
       });
       return;
     }
@@ -220,10 +215,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const handlePostNow = () => {
     if (selectedChannels.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Channel selection required", {
+        position: "top-center",
       });
       return;
     }
@@ -238,10 +231,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         (channelId) => !mediaByChannel[channelId] || mediaByChannel[channelId].length === 0,
       )
     ) {
-      toast({
-        title: "Content required",
-        description: "Please enter some content, hashtags, or add an image for your post.",
-        variant: "destructive",
+      toast.error("Content required", {
+        position: "top-center",
       });
       return;
     }
@@ -271,16 +262,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           ? "scheduled"
           : "sent";
 
-        toast({
-          title: isDraft
-            ? "Draft saved"
-            : postCreation.isScheduled
-            ? "Post scheduled"
-            : "Post sent",
+        toast(isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent", {
           description:
             postCreation.isScheduled && scheduledAt
               ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
               : `Your post has been ${statusText}.`,
+          position: "top-center",
         });
 
         dispatch(unselectAllLabels());
@@ -290,10 +277,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         dispatch(reset());
       },
       onError: () => {
-        toast({
-          title: "Error",
-          description: "Failed to add post",
-          variant: "destructive",
+        toast.error("Failed to add post", {
+          position: "top-center",
         });
       },
     });
@@ -345,15 +330,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     const statusText =
       status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
 
-    toast({
-      title:
-        status === "postnow"
-          ? "Post sent"
-          : status === "scheduled"
-          ? "Post scheduled"
-          : "Draft saved",
-      description: `Your post has been ${statusText}.`,
-    });
+    toast(
+      status === "postnow"
+        ? "Post sent"
+        : status === "scheduled"
+        ? "Post scheduled"
+        : "Draft saved",
+      {
+        description: `Your post has been ${statusText}.`,
+        position: "top-center",
+      },
+    );
 
     onClose();
   };

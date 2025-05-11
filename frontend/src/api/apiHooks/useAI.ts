@@ -40,8 +40,8 @@ export const useGenerateHashTags = () => {
 };
 
 export const useGenerateContent = () => {
-  const generateContent = async (body: GenerateContentRequest) => {
-    const response = await makeRequest<GenerateContentResponse>(
+  const generateContent = async (body) => {
+    const response = await makeRequest(
       BACKEND_URL + "ai/generateContent",
       "POST",
       getToken(),
