@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Wand2 } from "lucide-react";
 import AIAssistantTextarea from "./aiAssistant/AIAssistantTextarea";
+import ThirdPartyContentGenerator from "./ThirdPartyContentGenerator";
 
 interface PostComposerProps {
   isPostModal?: boolean;
@@ -111,6 +112,8 @@ const PostComposer: React.FC<PostComposerProps> = ({
           <EmojiPicker onEmojiSelect={handleInsertEmoji} />
 
           <Mentions onMention={handleMention} />
+
+          <ThirdPartyContentGenerator />
         </div>
       </CardContent>
     </Card>
