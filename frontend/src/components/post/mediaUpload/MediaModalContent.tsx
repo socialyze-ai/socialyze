@@ -50,10 +50,8 @@ const MediaModalContent = ({
   });
 
   useEffect(() => {
-    // @ts-ignore
-    if (mediaData?.data?.media?.length !== 0) {
-      // @ts-ignore
-      setImages((prevImages) => [...prevImages, ...mediaData.data.media]);
+    if (mediaData?.data?.media && mediaData?.data?.media?.length !== 0) {
+      setImages((prevImages) => [...prevImages, ...mediaData?.data?.media]);
       setLoadingMore(false);
     }
   }, [mediaData]);

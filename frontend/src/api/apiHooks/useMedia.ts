@@ -38,15 +38,18 @@ export interface ImageResult {
 }
 
 export interface GetImagesResponse {
-  images: ImageResult[];
+  media: any[];
   total: number;
+  unsplash_url?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const useGetImages = (filters?: GetImagesPayload) => {
-  return useQuery<ApiResponse<GetImagesResponse>>({
+  return useQuery<ApiResponse<GetImagesResponse | any>>({
     queryKey: ["media", filters],
     queryFn: async () => {
-      return await makeRequest<GetImagesResponse>(
+      return await makeRequest<GetImagesResponse | any>(
         BACKEND_URL + "media/getImages",
         "POST",
         getToken(),
