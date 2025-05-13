@@ -7,6 +7,7 @@ import {
   PlusCircle,
   Replace,
   Sparkles,
+  Check,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -34,6 +35,10 @@ const ThirdPartyContentGenerator = () => {
   const [prompt, setPrompt] = useState("");
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [buttonState, setButtonState] = useState<{ [key: string]: boolean }>({
+    insert: false,
+    replace: false,
+  });
   const dispatch = useDispatch();
   const { activeChannel } = useSelector((state: RootState) => state.postCreation);
   const { contentByChannel } = useSelector((state: RootState) => state.postCreation);
@@ -99,6 +104,8 @@ const ThirdPartyContentGenerator = () => {
     } else {
       dispatch(setContent(generatedContent));
     }
+    setButtonState((prev) => ({ ...prev, replace: true }));
+    setTimeout(() => setButtonState((prev) => ({ ...prev, replace: false })), 1000);
   };
 
   const handleInsert = () => {
@@ -115,6 +122,8 @@ const ThirdPartyContentGenerator = () => {
       const removedBreakLineFilterContent = content.replace(/<br>/g, "");
       dispatch(setContent(removedBreakLineFilterContent + generatedContent));
     }
+    setButtonState((prev) => ({ ...prev, insert: true }));
+    setTimeout(() => setButtonState((prev) => ({ ...prev, insert: false })), 1000);
   };
 
   return (
@@ -269,10 +278,20 @@ const ThirdPartyContentGenerator = () => {
                       Regenerate
                     </Button>
                     <Button variant="outline" size="sm" className="flex-1" onClick={handleInsert}>
-                      <PlusCircle className="h-4 w-4 mr-1" /> Insert
+                      {buttonState.insert ? (
+                        <Check className="h-4 w-4 mr-1 text-green-500" />
+                      ) : (
+                        <PlusCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Insert
                     </Button>
                     <Button variant="outline" size="sm" className="flex-1" onClick={handleReplace}>
-                      <Replace className="h-4 w-4 mr-1" /> Replace
+                      {buttonState.replace ? (
+                        <Check className="h-4 w-4 mr-1 text-green-500" />
+                      ) : (
+                        <Replace className="h-4 w-4 mr-1" />
+                      )}
+                      Replace
                     </Button>
                   </div>
                 )}
