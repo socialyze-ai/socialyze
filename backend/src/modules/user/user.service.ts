@@ -180,4 +180,51 @@ export class UserService {
       );
     }
   }
+
+  async otpResend(userId: string): Promise<any> {
+    try {
+      const user = await this.userModel.findOne({
+        _id: new Types.ObjectId(userId),
+      });
+      if (!user) {
+        throw new HttpException(
+          'User not found. Please Register',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (user.isVerified) {
+        throw new HttpException(
+          'User already verified',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = newOtp;
+
+      await user.save();
+
+      const template = sendOtpTemplate(user.otp, user.name);
+      this.emailService.sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'New otp sent successfully',
+      };
+    } catch (error) {
+      console.log(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Login failed: Internal Server Error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

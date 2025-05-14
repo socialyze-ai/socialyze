@@ -39,4 +39,11 @@ export class UserController {
     const userId = req.user.userId;
     return await this.userService.verifyOtp(otpVerifyDto, userId);
   }
+
+  @UseInterceptors(AuthInterceptor)
+  @Post('otpResend')
+  async otpResend(@Req() req: any) {
+    const userId = req.user.userId;
+    return await this.userService.otpResend(userId);
+  }
 }
