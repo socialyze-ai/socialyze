@@ -26,9 +26,9 @@ const AddChannelDialog = ({ isOpen, onOpenChange }: AddChannelDialogProps) => {
     handleChannelAuth(
       { handle: handle },
       {
-        onSuccess: (data: any) => {
-          console.log(data);
-          const authWindow = window.open(data.url, "_blank", "width=600,height=600");
+        onSuccess: (response: any) => {
+          console.log("data", response);
+          const authWindow = window.open(response.data.url, "_blank", "width=600,height=600");
 
           if (!authWindow) {
             toast.error("Popup blocked or failed to open.", {
