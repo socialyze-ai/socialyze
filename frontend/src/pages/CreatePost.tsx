@@ -8,7 +8,7 @@ import { Calendar as CalendarIcon, Info, Unlink, MoveRight } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import ScheduleModal from "@/components/post/ScheduleModal";
@@ -81,7 +81,6 @@ const CreatePost = () => {
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
   const selectedLabels = useSelector(selectSelectedLabels);
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
 
@@ -159,10 +158,8 @@ const CreatePost = () => {
       selectedChannels.length === 0 ||
       Object.values(contentByChannel).every((content) => content.trim() === "")
     ) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Please select at least one channel for your post.", {
+        position: "top-center",
       });
       return;
     }
@@ -170,10 +167,8 @@ const CreatePost = () => {
     const scheduledAt = postCreation.isScheduled ? combineDateTime() : undefined;
 
     if (postCreation.isScheduled && !scheduledAt) {
-      toast({
-        title: "Schedule time required",
-        description: "Please select a date and time to scheduled your post.",
-        variant: "destructive",
+      toast.error("Please select a date and time to scheduled your post.", {
+        position: "top-center",
       });
       return;
     }
@@ -186,10 +181,8 @@ const CreatePost = () => {
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
 
       if (!hasContent && mediaUrls.length === 0) {
-        toast({
-          title: "Content required",
-          description: "Please enter some content, hashtags, or add an image for your post.",
-          variant: "destructive",
+        toast.error("Please enter some content, hashtags, or add an image for your post.", {
+          position: "top-center",
         });
         return;
       }
@@ -240,17 +233,16 @@ const CreatePost = () => {
           ? "scheduled"
           : "sent";
 
-        toast({
-          title: isDraft
-            ? "Draft saved"
-            : postCreation.isScheduled
-            ? "Post scheduled"
-            : "Post sent",
-          description:
-            postCreation.isScheduled && scheduledAt
-              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
-              : `Your post has been ${statusText}.`,
-        });
+        toast.success(
+          isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
+          {
+            description:
+              postCreation.isScheduled && scheduledAt
+                ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+                : `Your post has been ${statusText}.`,
+            position: "top-center",
+          },
+        );
 
         dispatch(unselectAllLabels());
 
@@ -258,10 +250,8 @@ const CreatePost = () => {
         dispatch(resetPostCreation());
       },
       onError: () => {
-        toast({
-          title: "Error",
-          description: "Failed to add post",
-          variant: "destructive",
+        toast.error("Failed to add post", {
+          position: "top-center",
         });
       },
     });
@@ -273,10 +263,8 @@ const CreatePost = () => {
 
   const handleScheduleFromModal = (scheduledAt: Date, channelIds: string[]) => {
     if (channelIds.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Please select at least one channel for your post.", {
+        position: "top-center",
       });
       return;
     }
@@ -289,10 +277,8 @@ const CreatePost = () => {
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
 
       if (!hasContent && mediaUrls.length === 0) {
-        toast({
-          title: "Content required",
-          description: "Please enter some content, hashtags, or add an image for your post.",
-          variant: "destructive",
+        toast.error("Please enter some content, hashtags, or add an image for your post.", {
+          position: "top-center",
         });
         return;
       }
@@ -326,9 +312,8 @@ const CreatePost = () => {
 
     handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);
 
-    toast({
-      title: "Post scheduled",
-      description: `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`,
+    toast.success(`Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`, {
+      position: "top-center",
     });
 
     navigate("/dashboard");
@@ -358,9 +343,9 @@ const CreatePost = () => {
 
   return (
     <MainLayout title="Create Post">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-scroll lg:overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-y-auto lg:overflow-hidden">
         {/* Left column - Post composer */}
-        <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-scroll">
+        <div className="flex flex-col gap-5 p-1 md:col-span-7 h-fit lg:h-full lg:overflow-y-auto">
           <div className="flex gap-2 md:flex-row flex-col-reverse justify-between">
             <div className="flex gap-3 flex-wrap">
               {channels.map((channel) => (
@@ -506,7 +491,7 @@ const CreatePost = () => {
         </div>
 
         {/* Right column - Preview and controls */}
-        <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-scroll flex flex-col gap-3">
+        <div className="md:col-span-5 h-fit lg:h-full lg:overflow-y-auto flex flex-col gap-3">
           {selectedChannels.length > 0 && activeChannel && (
             <Card>
               <CardContent className="pt-6">

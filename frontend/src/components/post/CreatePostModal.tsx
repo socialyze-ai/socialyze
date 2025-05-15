@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,6 @@ import {
   X,
   Youtube,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import ScheduleModal from "./ScheduleModal";
@@ -81,6 +80,8 @@ import { useAddPost } from "@/api/apiHooks/usePost";
 import { format } from "date-fns";
 import LabelSelector from "./LabelSelector";
 import { reset } from "@/redux/slices/aiAssistant.slice";
+import { htmlToText } from "html-to-text";
+import { toast } from "sonner";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -115,7 +116,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
@@ -188,10 +188,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const handleSchedule = (scheduledAt: Date, channels: string[]) => {
     if (channels.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Channel selection required", {
+        position: "top-center",
       });
       return;
     }
@@ -206,10 +204,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         (channelId) => !mediaByChannel[channelId] || mediaByChannel[channelId].length === 0,
       )
     ) {
-      toast({
-        title: "Content required",
-        description: "Please enter some content, hashtags, or add an image for your post.",
-        variant: "destructive",
+      toast.error("Content required", {
+        position: "top-center",
       });
       return;
     }
@@ -219,10 +215,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const handlePostNow = () => {
     if (selectedChannels.length === 0) {
-      toast({
-        title: "Channel selection required",
-        description: "Please select at least one channel for your post.",
-        variant: "destructive",
+      toast.error("Channel selection required", {
+        position: "top-center",
       });
       return;
     }
@@ -237,10 +231,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         (channelId) => !mediaByChannel[channelId] || mediaByChannel[channelId].length === 0,
       )
     ) {
-      toast({
-        title: "Content required",
-        description: "Please enter some content, hashtags, or add an image for your post.",
-        variant: "destructive",
+      toast.error("Content required", {
+        position: "top-center",
       });
       return;
     }
@@ -270,16 +262,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           ? "scheduled"
           : "sent";
 
-        toast({
-          title: isDraft
-            ? "Draft saved"
-            : postCreation.isScheduled
-            ? "Post scheduled"
-            : "Post sent",
+        toast(isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent", {
           description:
             postCreation.isScheduled && scheduledAt
               ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
               : `Your post has been ${statusText}.`,
+          position: "top-center",
         });
 
         dispatch(unselectAllLabels());
@@ -289,10 +277,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         dispatch(reset());
       },
       onError: () => {
-        toast({
-          title: "Error",
-          description: "Failed to add post",
-          variant: "destructive",
+        toast.error("Failed to add post", {
+          position: "top-center",
         });
       },
     });
@@ -344,15 +330,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     const statusText =
       status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
 
-    toast({
-      title:
-        status === "postnow"
-          ? "Post sent"
-          : status === "scheduled"
-          ? "Post scheduled"
-          : "Draft saved",
-      description: `Your post has been ${statusText}.`,
-    });
+    toast(
+      status === "postnow"
+        ? "Post sent"
+        : status === "scheduled"
+        ? "Post scheduled"
+        : "Draft saved",
+      {
+        description: `Your post has been ${statusText}.`,
+        position: "top-center",
+      },
+    );
 
     onClose();
   };
@@ -422,6 +410,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsEditDialogOpen(false);
   };
 
+  const contentToUse = useMemo(
+    () => htmlToText(contentByChannel[activeChannel]),
+    [contentByChannel, activeChannel],
+  );
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
@@ -452,7 +445,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           {/* Post Composer */}
           <div
             className={cn(
-              "overflow-y-scroll bg-white p-5 rounded h-full",
+              "overflow-y-auto bg-white p-5 rounded h-full",
               postCreation.isAIAssistantOpen && selectedChannels.length === 0
                 ? "w-[60%]"
                 : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
@@ -689,7 +682,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           {selectedChannels.length !== 0 && activeChannel && (
             <div
               className={cn(
-                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-scroll",
+                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
                 postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
@@ -727,11 +720,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               <div className="h-fit">
                 {activeChannel && getChannelById(activeChannel) && (
                   <PostPreview
-                    content={
-                      contentByChannel[activeChannel]?.includes("<br>")
-                        ? contentByChannel[activeChannel].replace(/<br>/g, "")
-                        : contentByChannel[activeChannel] || ""
-                    }
+                    content={contentToUse}
                     channel={getChannelById(activeChannel)!}
                     mediaUrls={mediaByChannel[activeChannel]?.map((media) => media.url) || []}
                   />

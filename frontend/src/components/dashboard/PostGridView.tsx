@@ -2,11 +2,15 @@ import { useSelector } from "react-redux";
 import { selectChannels } from "@/redux/slices/posts.slice";
 import GridPostCard from "./GridPostCard";
 import { DashboardPostType } from "@/redux/slices/dashboardPosts.slice";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { SocialPlatform } from "./ListPostCard";
+import { Avatar } from "../ui/avatar";
+import { Button } from "../ui/button";
+import CreatePostModal from "../post/CreatePostModal";
 
-const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
+export const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
   const channels = useSelector(selectChannels);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Function to get platform from channel type
   const getPlatform = useMemo(() => {
@@ -71,9 +75,28 @@ const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
 
   return (
     <>
+      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+
       {!channels || channels?.length === 0 || !posts || posts?.length === 0 ? (
         <div className="flex justify-center items-center h-full bg-white shadow-sm border border-gray-200 p-2 md:p-4 rounded-lg">
-          <span className="text-muted-foreground">No posts found</span>
+          <div className="flex flex-col gap-1 items-center justify-center">
+            <Avatar className="h-52 w-full">
+              <img
+                src="https://cdni.iconscout.com/illustration/premium/thumb/woman-have-no-post-yet-so-she-is-in-pose-to-click-photo-for-illustration-download-svg-png-gif-file-formats--posts-empty-states-pack-network-communication-illustrations-3309945.png"
+                alt="fallback"
+              />
+            </Avatar>
+
+            <span className="text-muted-foreground">No posts found</span>
+
+            <Button
+              className={"mb-4 w-full"}
+              variant="default"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              Create Post
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="columns-1 md:columns-3 gap-2 md:gap-4 bg-white shadow-2xl border border-gray-200 p-2 md:p-4 rounded-lg">

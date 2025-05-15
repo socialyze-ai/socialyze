@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, startOfDay, differenceInDays } from "date-fns";
+import { format, startOfDay, differenceInDays, isBefore, isToday } from "date-fns";
 import moment from "moment";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,7 +28,7 @@ interface CalendarEvent {
   channelType: string;
 }
 
-const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
+export const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -224,27 +224,28 @@ const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
     const today = startOfDay(new Date());
     const cellDate = startOfDay(new Date(value));
     const isCurrentOrFuture = cellDate >= today;
-
-    const handleAddPost = (date: Date) => {
-      setSelectedDate(date);
-      setIsCreateModalOpen(true);
-    };
+    const isPastDate = isBefore(cellDate, today) && !isToday(cellDate);
 
     return (
-      <div className="relative group w-full h-full flex flex-col">
+      <div
+        className={`relative group w-full h-full flex flex-col border-r border-gray-200 ${
+          isPastDate ? "bg-gray-100" : "bg-white"
+        }`}
+      >
         <div className="flex-shrink-0 text-xs sm:text-sm">{children}</div>
 
         {isCurrentOrFuture && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 sm:right-1 bottom-0 sm:bottom-1 hidden group-hover:flex h-4 w-4 sm:h-6 sm:w-6 p-0"
+            className="absolute right-0 sm:right-1 bottom-0 sm:bottom-1 hidden group-hover:flex h-4 w-4 md:h-6 md:w-6 p-0"
             onClick={(e) => {
               e.stopPropagation();
-              handleAddPost(value);
+              setSelectedDate(value);
+              setIsCreateModalOpen(true);
             }}
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Plus className="h-4 w-4 md:h-10 md:w-10" />
           </Button>
         )}
       </div>

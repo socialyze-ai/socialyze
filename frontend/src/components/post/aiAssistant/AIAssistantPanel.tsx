@@ -54,8 +54,9 @@ import {
   useGenerateContent,
   GenerateContentResponse,
   GenerateContentRequest,
+  GenerateContentItem,
 } from "@/api/apiHooks/useAI";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const AIAssistantPanel = () => {
   return <AIAssistantEditor />;
@@ -65,7 +66,6 @@ export default AIAssistantPanel;
 
 const AIAssistantEditor = () => {
   const dispatch = useDispatch();
-  const { toast } = useToast();
 
   const { content } = useSelector((state: RootState) => state.postCreation);
   const { contentByChannel } = useSelector((state: RootState) => state.postCreation);
@@ -139,14 +139,16 @@ const AIAssistantEditor = () => {
   const handleInsert = () => {
     if (isCustomContent) {
       const channelContent = contentByChannel[activeChannel] || "";
+      const removedBreakLineFilterContent = channelContent.replace(/<br>/g, "");
       dispatch(
         setContentForChannel({
           channelId: activeChannel,
-          content: channelContent + "\n" + finalContent,
+          content: removedBreakLineFilterContent + finalContent,
         }),
       );
     } else {
-      dispatch(setContent(content + "\n" + finalContent));
+      const removedBreakLineFilterContent = content.replace(/<br>/g, "");
+      dispatch(setContent(removedBreakLineFilterContent + finalContent));
     }
   };
 
@@ -164,10 +166,8 @@ const AIAssistantEditor = () => {
           handleNext();
         },
         onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to generate content",
-            variant: "destructive",
+          toast.error("Failed to generate content", {
+            position: "top-center",
           });
         },
       },
@@ -191,10 +191,8 @@ const AIAssistantEditor = () => {
         },
         onError: () => {
           setLoadingAction(null);
-          toast({
-            title: "Error",
-            description: "Failed to regenerate content",
-            variant: "destructive",
+          toast.error("Failed to regenerate content", {
+            position: "top-center",
           });
         },
       },
@@ -234,10 +232,8 @@ const AIAssistantEditor = () => {
         },
         onError: () => {
           setLoadingAction(null);
-          toast({
-            title: "Error",
-            description: "Failed to regenerate content",
-            variant: "destructive",
+          toast.error("Failed to regenerate content", {
+            position: "top-center",
           });
         },
       },

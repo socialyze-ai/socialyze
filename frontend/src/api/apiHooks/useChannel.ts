@@ -1,17 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LOG_TOKEN, makeRequest } from "./utils";
+import { getToken, makeRequest, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
 
 export const useChannelAuth = () => {
   return useMutation({
     mutationFn: async (body: { handle: string }) => {
-      const { data } = await makeRequest(
+      const response = await makeRequest(
         BACKEND_URL + "channel/getAuthUrl",
         "POST",
+        getToken(),
         body,
-        LOG_TOKEN,
       );
-      return data;
+      return response;
     },
   });
 };
@@ -61,14 +61,31 @@ const mockChannels = {
   message: "Mock channels data fetched successfully",
 };
 
+export interface SocialChannel {
+  _id: string;
+  handle: string;
+  user: string;
+  workspace: string;
+  channelId: string;
+  channelName: string;
+  channelPicture?: string;
+}
+
+export interface ChannelResponse {
+  data: SocialChannel[];
+  status: string;
+  error: string | null;
+  message?: string;
+}
+
 export const useGetChannel = (isMockData: boolean = false) => {
-  const query = useQuery({
+  const query = useQuery<ApiResponse<SocialChannel[]>>({
     queryKey: ["channels"],
     queryFn: async () => {
       if (isMockData) {
-        return mockChannels;
+        return mockChannels as unknown as ApiResponse<SocialChannel[]>;
       }
-      return await makeRequest(BACKEND_URL + "channel", "GET", "", LOG_TOKEN);
+      return await makeRequest<SocialChannel[]>(BACKEND_URL + "channel", "GET", getToken());
     },
   });
 

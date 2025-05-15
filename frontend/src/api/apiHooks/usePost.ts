@@ -1,20 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LOG_TOKEN } from "./utils";
+import { getToken, makeRequest, ApiResponse } from "./utils";
 import { BACKEND_URL } from "@/config/config";
-import { makeRequest } from "./utils";
+import { AnyARecord } from "node:dns";
 
-export const useAddPost = () => {
-  const addPost = async (body: any): Promise<any> => {
-    const { data } = await makeRequest(BACKEND_URL + "post", "POST", body, LOG_TOKEN);
-    return data;
-  };
-
-  return useMutation({
-    mutationFn: addPost,
-  });
-};
-
-interface PostType {
+export interface PostType {
+  _id?: string;
   channelId: string;
   text: string;
   label: string[];
@@ -24,23 +14,71 @@ interface PostType {
   scheduledTime?: string;
 }
 
-export const useGetPost = ({
-  filters,
-}: {
-  filters: {
-    channel: string[];
-    postStatus: string[];
-    label: string[];
-    limit: number;
-    offset: number;
-  };
-}) => {
-  const query = useQuery({
-    queryKey: ["posts", filters],
-    queryFn: async () => {
-      return await makeRequest(BACKEND_URL + "post/getPosts", "POST", filters, LOG_TOKEN);
+export interface AddPostResponse {
+  _id: string;
+  message: string;
+}
+
+export const useAddPost = () => {
+  return useMutation<AddPostResponse, Error, PostType>({
+    mutationFn: async (data: PostType) => {
+      const response = await makeRequest<AddPostResponse>(
+        BACKEND_URL + "post",
+        "POST",
+        getToken(),
+        data,
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to add post");
+      }
+
+      return response.data;
     },
   });
+};
 
-  return query;
+export interface PostsFilter {
+  channel: string[];
+  postStatus: string[];
+  label: string[];
+  limit: number;
+  offset: number;
+}
+
+export interface PostResponse {
+  _id: string;
+  channelId: string;
+  createdBy: string;
+  text: string;
+  handle: string;
+  postType: "postnow" | "draft" | "scheduled";
+  postStatus: "queued" | "sent" | "failed" | "published";
+  scheduledTime: string;
+  media: string[];
+  label: string[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  failedReason: string;
+}
+
+export const useGetPost = ({ filters }: { filters: PostsFilter }) => {
+  return useQuery<PostResponse[]>({
+    queryKey: ["posts", filters],
+    queryFn: async () => {
+      const response = await makeRequest<PostResponse[]>(
+        BACKEND_URL + "post/getPosts",
+        "POST",
+        getToken(),
+        filters,
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to get posts");
+      }
+
+      return response.data;
+    },
+  });
 };

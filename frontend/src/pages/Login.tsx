@@ -1,6 +1,4 @@
-import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,30 +11,67 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    // .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter (e.g., A, B)")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter (e.g., a, b)")
+    .regex(/[0-9]/, "Password must contain at least one number (e.g., 1, 2)")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character (e.g., @, #, $)"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { login, loading } = useAuth();
-  const { toast } = useToast();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isDirty },
+    watch,
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const { login, loading, error } = useAuth();
+  const [showError, setShowError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
+  const watchedFields = watch();
+
+  // Reset error display when form values change
+  useEffect(() => {
+    setShowError(false);
+  }, [watchedFields.email, watchedFields.password]);
+
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(email, password);
-      toast({
-        title: "Logged in successfully",
-        description: "Welcome back to Socialyze!",
-      });
-      navigate("/dashboard");
+      await login(data.email, data.password);
+
+      // Check if there's a saved redirect path
+      const redirectPath = sessionStorage.getItem("redirectPath");
+      if (redirectPath) {
+        navigate(redirectPath);
+        // Clear the stored path after using it
+        sessionStorage.removeItem("redirectPath");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
-      toast({
-        title: "Login failed",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      console.error(error);
+      setShowError(true);
     }
   };
 
@@ -64,7 +99,7 @@ const Login = () => {
             <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -72,10 +107,12 @@ const Login = () => {
                   id="email"
                   type="email"
                   placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  {...register("email")}
+                  aria-invalid={errors.email ? "true" : "false"}
                 />
+                {errors.email && (
+                  <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -88,19 +125,43 @@ const Login = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    aria-invalid={errors.password ? "true" : "false"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
+                )}
               </div>
+
+              {error && showError && (
+                <div
+                  className="p-2 px-4 mb-4 text-sm text-red-700 bg-red-100 border border-red-300 rounded-lg shadow-md"
+                  role="alert"
+                >
+                  <span className="font-medium">Error:</span> {error}
+                </div>
+              )}
             </CardContent>
 
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
+              <Button type="submit" className="w-full" disabled={isSubmitting || loading}>
+                {isSubmitting || loading ? "Signing in..." : "Sign in"}
               </Button>
             </CardFooter>
           </form>

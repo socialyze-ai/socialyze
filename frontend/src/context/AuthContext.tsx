@@ -10,6 +10,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  error: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,42 +26,62 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // State to store error messages
   const loginMutation = useLogin();
   const signupMutation = useSignup();
 
   useEffect(() => {
-    // Check for existing user session in localStorage
     const checkAuth = () => {
       const savedUser = localStorage.getItem("socialyze_user");
-      const token = localStorage.getItem("socialyze_token");
+      const token = localStorage.getItem("socialyze_token") || localStorage.getItem("LOG_TOKEN");
 
       if (savedUser && token) {
         setUser(JSON.parse(savedUser));
+      } else if (token) {
+        // If we only have LOG_TOKEN but no user, create a minimal user
+        // This approach handles cases where only the token is stored
+        setUser({
+          _id: "token-user",
+          name: "User",
+          email: "",
+          isVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
       }
       setLoading(false);
     };
 
     checkAuth();
 
-    // Listen for storage events to sync auth state across tabs
-    window.addEventListener("storage", (e) => {
-      if (e.key === "socialyze_user") {
-        if (e.newValue) {
-          setUser(JSON.parse(e.newValue));
-        } else {
-          setUser(null);
-        }
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "socialyze_user" || e.key === "LOG_TOKEN") {
+        checkAuth();
       }
-    });
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
-      const response = await loginMutation.mutateAsync({ email, password } as any);
+      const response = await loginMutation.mutateAsync({ email, password });
 
       if (response.error) {
+        setError(response.error); // Store error message
         throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        const errorMsg = "Login failed: No data received";
+        setError(errorMsg); // Store error message
+        throw new Error(errorMsg);
       }
 
       const { user, token } = response.data;
@@ -68,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
+      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -78,16 +100,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (name: string, email: string, password: string, confirmPassword: string) => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
       const response = await signupMutation.mutateAsync({
         name,
         email,
         password,
         confirmPassword,
-      } as any);
+      });
 
       if (response.error) {
+        setError(response.error); // Store error message
         throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        const errorMsg = "Signup failed: No data received";
+        setError(errorMsg); // Store error message
+        throw new Error(errorMsg);
       }
 
       const { user, token } = response.data;
@@ -95,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
+      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -107,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem("socialyze_user");
     localStorage.removeItem("socialyze_token");
+    localStorage.removeItem("LOG_TOKEN");
   };
 
   return (
@@ -118,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         loading,
+        error,
       }}
     >
       {children}

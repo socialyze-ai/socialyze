@@ -17,7 +17,6 @@ import {
   setContent,
 } from "@/redux/slices/postCreation.slice";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { useToast } from "@/hooks/use-toast";
 import {
   useGetHashtagManagers,
   useCreateHashtagManager,
@@ -26,9 +25,9 @@ import {
   HashtagManagerType,
   CreateHashtagManagerPayload,
 } from "@/api/apiHooks/useHashtag";
+import { toast } from "sonner";
 
 const HashtagModal = () => {
-  const { toast } = useToast();
   const dispatch = useDispatch();
   const { hashtagGroups, hashtags } = useSelector(selectPostCreation);
   const [newGroupName, setNewGroupName] = useState("");
@@ -91,10 +90,8 @@ const HashtagModal = () => {
   // Show errors as toasts
   useEffect(() => {
     if (isHashtagManagersError && hashtagManagersError) {
-      toast({
-        title: "Error fetching hashtag groups",
-        description: "Please try again later.",
-        variant: "destructive",
+      toast.error("Error fetching hashtag groups", {
+        position: "top-center",
       });
     }
   }, [isHashtagManagersError, hashtagManagersError, toast]);
@@ -111,7 +108,7 @@ const HashtagModal = () => {
         updateHashtagManager(
           { id: editingGroupId, payload },
           {
-            onSuccess: (data) => {
+            onSuccess: (data: { _id: string; name: string; hashtags: string[] }) => {
               dispatch(
                 addHashtagGroup({
                   _id: data._id,
@@ -120,23 +117,20 @@ const HashtagModal = () => {
                 }),
               );
               resetForm();
-              toast({
-                title: "Hashtag Group Updated",
-                description: `Your hashtag group "${newGroupName}" has been updated.`,
+              toast.success(`Your hashtag group "${newGroupName}" has been updated.`, {
+                position: "top-center",
               });
             },
             onError: (error) => {
-              toast({
-                title: "Error updating hashtag group",
-                description: "Please try again later.",
-                variant: "destructive",
+              toast.error("Error updating hashtag group", {
+                position: "top-center",
               });
             },
           },
         );
       } else {
         createHashtagManager(payload, {
-          onSuccess: (data) => {
+          onSuccess: (data: { _id: string; name: string; hashtags: string[] }) => {
             dispatch(
               addHashtagGroup({
                 _id: data._id,
@@ -145,16 +139,13 @@ const HashtagModal = () => {
               }),
             );
             resetForm();
-            toast({
-              title: "Hashtag Group Saved",
-              description: `Your hashtag group "${newGroupName}" has been saved.`,
+            toast.success(`Your hashtag group "${newGroupName}" has been saved.`, {
+              position: "top-center",
             });
           },
           onError: (error) => {
-            toast({
-              title: "Error saving hashtag group",
-              description: "Please try again later.",
-              variant: "destructive",
+            toast.error("Error saving hashtag group", {
+              position: "top-center",
             });
           },
         });
@@ -183,16 +174,13 @@ const HashtagModal = () => {
     deleteHashtagManager(groupId, {
       onSuccess: () => {
         dispatch(removeHashtagGroup(groupId));
-        toast({
-          title: "Hashtag Group Deleted",
-          description: "The hashtag group has been removed.",
+        toast.success("The hashtag group has been removed.", {
+          position: "top-center",
         });
       },
       onError: (error) => {
-        toast({
-          title: "Error deleting hashtag group",
-          description: "Please try again later.",
-          variant: "destructive",
+        toast.error("Error deleting hashtag group", {
+          position: "top-center",
         });
       },
     });

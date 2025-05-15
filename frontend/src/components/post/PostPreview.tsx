@@ -181,48 +181,123 @@ const PostPreview: React.FC<PostPreviewProps> = ({
   const globalMediaUrls = useSelector(selectPostCreation).mediaUrls;
   const mediaToUse = mediaUrls.length > 0 ? mediaUrls : globalMediaUrls;
 
-  const renderTwitterPreview = () => (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden max-w-md">
-      <div className="flex p-3 items-start">
-        <img
-          src={channel.profileImage}
-          alt={channel.name}
-          className="w-10 h-10  rounded-full mr-3"
-        />
-        <div className="w-full">
-          <div className="flex items-center">
-            <span className="font-bold text-sm">{channel.name}</span>
-            <span className="text-gray-500 text-sm ml-1">
-              @{channel.username || channel.name.toLowerCase().replace(/\s/g, "")}
-            </span>
-            <span className="mx-1 text-gray-500">·</span>
-            <span className="text-gray-500 text-sm">{formatDate(scheduledDate || new Date())}</span>
+  const renderTwitterPreview = () => {
+    if (!content && (!mediaToUse || mediaToUse.length === 0)) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 max-w-md">
+          <p className="text-gray-500 text-center">Add content or media to see Twitter preview</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden max-w-md">
+        <div className="flex p-3 items-start">
+          <Avatar className="w-10 h-10 rounded-full mr-3">
+            <AvatarImage src={channel.profileImage} />
+            <AvatarFallback className="capitalize font-semibold text-xl">
+              {channel.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="w-full">
+            <div className="flex items-center">
+              <span className="font-bold text-sm">{channel.name}</span>
+              <span className="text-gray-500 text-sm ml-1">
+                @{channel.username || channel.name.toLowerCase().replace(/\s/g, "")}
+              </span>
+              <span className="mx-1 text-gray-500">·</span>
+              <span className="text-gray-500 text-sm">
+                {formatDate(scheduledDate || new Date())}
+              </span>
+            </div>
+            <div className="mt-1 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+            <MediaGrid mediaUrls={mediaToUse} channelType="x" />
+            <div className="flex justify-between mt-3 text-gray-500 px-2">
+              <button className="flex items-center gap-1 hover:text-blue-500">
+                <MessageCircle size={18} />
+              </button>
+              <button className="flex items-center gap-1 hover:text-green-500">
+                <Repeat size={18} />
+              </button>
+              <button className="flex items-center gap-1 hover:text-red-500">
+                <Heart size={18} />
+              </button>
+              <button className="flex items-center gap-1 hover:text-blue-500">
+                <Share size={18} />
+              </button>
+            </div>
           </div>
-          <div className="mt-1 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
-          <MediaGrid mediaUrls={mediaToUse} channelType="x" />
-          <div className="flex justify-between mt-3 text-gray-500 px-2">
-            <button className="flex items-center gap-1 hover:text-blue-500">
-              <MessageCircle size={18} />
+        </div>
+      </div>
+    );
+  };
+
+  const renderFacebookPreview = () => {
+    if (!content || !mediaToUse || mediaToUse.length === 0) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
+          <p className="text-gray-500 text-center">
+            Add both content and media to see Facebook preview
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
+        <div className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Avatar className="w-10 h-10 rounded-full mr-2">
+                <AvatarImage src={channel.profileImage} />
+                <AvatarFallback className="capitalize font-semibold text-xl">
+                  {channel.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+
+              <div>
+                <div className="font-medium">{channel.name}</div>
+                <div className="text-xs text-gray-500">
+                  {formatDate(scheduledDate || new Date())} · <span>🌎</span>
+                </div>
+              </div>
+            </div>
+            <button className="text-gray-500">
+              <MoreHorizontal size={20} />
             </button>
-            <button className="flex items-center gap-1 hover:text-green-500">
-              <Repeat size={18} />
+          </div>
+          <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+          <MediaGrid mediaUrls={mediaToUse} channelType="facebook" />
+          <div className="border-t border-b border-gray-200 mt-3 py-1 flex justify-between text-gray-600">
+            <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
+              <Heart size={18} /> Like
             </button>
-            <button className="flex items-center gap-1 hover:text-red-500">
-              <Heart size={18} />
+            <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
+              <MessageCircle size={18} /> Comment
             </button>
-            <button className="flex items-center gap-1 hover:text-blue-500">
-              <Share size={18} />
+            <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
+              <Share size={18} /> Share
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderFacebookPreview = () => (
-    <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
-      <div className="p-3">
-        <div className="flex items-center justify-between">
+  const renderInstagramPreview = () => {
+    if (!content || !mediaToUse || mediaToUse.length === 0) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
+          <p className="text-gray-500 text-center">
+            Add both content and media to see Instagram preview
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
+        <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center">
             <Avatar className="w-10 h-10 rounded-full mr-2">
               <AvatarImage src={channel.profileImage} />
@@ -230,152 +305,124 @@ const PostPreview: React.FC<PostPreviewProps> = ({
                 {channel.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
-
-            <div>
-              <div className="font-medium">{channel.name}</div>
-              <div className="text-xs text-gray-500">
-                {formatDate(scheduledDate || new Date())} · <span>🌎</span>
-              </div>
-            </div>
-          </div>
-          <button className="text-gray-500">
-            <MoreHorizontal size={20} />
-          </button>
-        </div>
-        <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
-        <MediaGrid mediaUrls={mediaToUse} channelType="facebook" />
-        <div className="border-t border-b border-gray-200 mt-3 py-1 flex justify-between text-gray-600">
-          <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
-            <Heart size={18} /> Like
-          </button>
-          <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
-            <MessageCircle size={18} /> Comment
-          </button>
-          <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
-            <Share size={18} /> Share
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderInstagramPreview = () => (
-    <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
-      <div className="flex items-center justify-between p-2 border-b">
-        <div className="flex items-center">
-          <Avatar className="w-10 h-10 rounded-full mr-2">
-            <AvatarImage src={channel.profileImage} />
-            <AvatarFallback className="capitalize font-semibold text-xl">
-              {channel.name.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-sm">
-            {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
-          </span>
-        </div>
-        <button>
-          <MoreHorizontal size={20} />
-        </button>
-      </div>
-
-      <MediaGrid mediaUrls={mediaToUse} channelType="instagram" />
-
-      <div className="p-3">
-        <div className="flex justify-between mb-2">
-          <div className="flex gap-4">
-            <button>
-              <Heart size={24} />
-            </button>
-            <button>
-              <MessageCircle size={24} />
-            </button>
-            <button>
-              <Send size={24} />
-            </button>
+            <span className="font-medium text-sm">
+              {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
+            </span>
           </div>
           <button>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M17 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10z" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="text-sm">
-          <span className="font-medium mr-2">
-            {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
-          </span>
-          {formatContentWithHashtags(content)}
-        </div>
-        <p className="text-gray-500 text-xs mt-1">{formatDate(scheduledDate || new Date())}</p>
-      </div>
-    </div>
-  );
-
-  const renderLinkedinPreview = () => (
-    <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
-      <div className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <img
-              src={channel.profileImage}
-              alt={channel.name}
-              className="w-10 h-10  rounded-full mr-3"
-            />
-            <div>
-              <div className="font-medium">{channel.name}</div>
-              <div className="text-xs text-gray-500">
-                {formatDate(scheduledDate || new Date())} · <span>🌎</span>
-              </div>
-            </div>
-          </div>
-          <button className="text-gray-500">
             <MoreHorizontal size={20} />
           </button>
         </div>
-        <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
-        <MediaGrid mediaUrls={mediaToUse} channelType="linkedin" />
-        <div className="mt-3 flex justify-between text-gray-600 border-t pt-2">
-          <button className="flex flex-col items-center">
-            <Heart size={18} />
-            <span className="text-xs">Like</span>
-          </button>
-          <button className="flex flex-col items-center">
-            <MessageCircle size={18} />
-            <span className="text-xs">Comment</span>
-          </button>
-          <button className="flex flex-col items-center">
-            <Repeat size={18} />
-            <span className="text-xs">Repost</span>
-          </button>
-          <button className="flex flex-col items-center">
-            <Send size={18} />
-            <span className="text-xs">Send</span>
-          </button>
+
+        <MediaGrid mediaUrls={mediaToUse} channelType="instagram" />
+
+        <div className="p-3">
+          <div className="flex justify-between mb-2">
+            <div className="flex gap-4">
+              <button>
+                <Heart size={24} />
+              </button>
+              <button>
+                <MessageCircle size={24} />
+              </button>
+              <button>
+                <Send size={24} />
+              </button>
+            </div>
+            <button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M17 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10z" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="text-sm">
+            <span className="font-medium mr-2">
+              {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
+            </span>
+            {formatContentWithHashtags(content)}
+          </div>
+          <p className="text-gray-500 text-xs mt-1">{formatDate(scheduledDate || new Date())}</p>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderLinkedinPreview = () => {
+    if (!content && (!mediaToUse || mediaToUse.length === 0)) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
+          <p className="text-gray-500 text-center">Add content or media to see LinkedIn preview</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
+        <div className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Avatar className="w-10 h-10 rounded-full mr-3">
+                <AvatarImage src={channel.profileImage} />
+                <AvatarFallback className="capitalize font-semibold text-xl">
+                  {channel.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-medium">{channel.name}</div>
+                <div className="text-xs text-gray-500">
+                  {formatDate(scheduledDate || new Date())} · <span>🌎</span>
+                </div>
+              </div>
+            </div>
+            <button className="text-gray-500">
+              <MoreHorizontal size={20} />
+            </button>
+          </div>
+          <div className="mt-3 whitespace-pre-wrap">{formatContentWithHashtags(content)}</div>
+          <MediaGrid mediaUrls={mediaToUse} channelType="linkedin" />
+          <div className="mt-3 flex justify-between text-gray-600 border-t pt-2">
+            <button className="flex flex-col items-center">
+              <Heart size={18} />
+              <span className="text-xs">Like</span>
+            </button>
+            <button className="flex flex-col items-center">
+              <MessageCircle size={18} />
+              <span className="text-xs">Comment</span>
+            </button>
+            <button className="flex flex-col items-center">
+              <Repeat size={18} />
+              <span className="text-xs">Repost</span>
+            </button>
+            <button className="flex flex-col items-center">
+              <Send size={18} />
+              <span className="text-xs">Send</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderDefaultPreview = () => (
     <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-md">
       <div className="flex items-center space-x-3 mb-2">
-        <div className="h-10 w-10 rounded-full overflow-hidden bg-muted">
-          <img
-            src={channel.profileImage}
-            alt={channel.name}
-            className="h-full w-full object-cover"
-          />
-        </div>
+        <Avatar className="h-10 w-10 rounded-full">
+          <AvatarImage src={channel.profileImage} />
+          <AvatarFallback className="capitalize font-semibold text-xl">
+            {channel.name.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
         <div>
           <p className="font-medium">{channel.name}</p>
           <p className="text-xs text-gray-500">{formatDate(scheduledDate || new Date())}</p>

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Undo, Redo, X, Check, Loader2 } from "lucide-react";
 import EditorToolbar from "./EditorToolbar";
@@ -36,7 +36,6 @@ interface ImageEditorProps {
 }
 
 const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCancel }) => {
-  const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
@@ -487,10 +486,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
       state.cropEndX === undefined ||
       state.cropEndY === undefined
     ) {
-      toast({
-        title: "Crop error",
-        description: "Please select a crop area first.",
-        variant: "destructive",
+      toast.error("Crop error", {
+        position: "top-center",
       });
       return;
     }
@@ -522,7 +519,12 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
       newImage.crossOrigin = "Anonymous";
 
       newImage.onload = () => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current) {
+          toast.error("Canvas reference not available", {
+            position: "top-center",
+          });
+          return;
+        }
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
@@ -557,18 +559,21 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
 
       newImage.src = croppedImageUrl;
     } catch (error) {
-      console.error("Error cropping image:", error);
-      toast({
-        title: "Crop error",
-        description: "An error occurred while cropping the image.",
-        variant: "destructive",
+      console.error("Error during crop:", error);
+      toast.error("Failed to crop image", {
+        position: "top-center",
       });
     }
   };
 
   // This is called when the user clicks "Save Changes"
   const handleSave = () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      toast.error("Canvas reference not available", {
+        position: "top-center",
+      });
+      return;
+    }
 
     try {
       // First, apply all preview state changes to Redux
@@ -619,9 +624,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
                 onSave(response.data.url, selectedImage);
                 // Reset crop data to default
                 dispatch(resetCropMode());
-                toast({
-                  title: "Image edited",
-                  description: "Your image has been edited and uploaded successfully.",
+                toast.success("Image edited and uploaded successfully", {
+                  position: "top-center",
                 });
               } else {
                 throw new Error("Invalid response format");
@@ -629,10 +633,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
             },
             onError: (error) => {
               console.error("Error uploading edited image:", error);
-              toast({
-                title: "Error uploading image",
-                description: "There was an error uploading your edited image.",
-                variant: "destructive",
+              toast.error("Failed to save edited image", {
+                position: "top-center",
               });
 
               // Fallback to local data URL if upload fails
@@ -642,20 +644,17 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ selectedImage, onSave, onCanc
         })
         .catch((error) => {
           console.error("Error processing image:", error);
-          toast({
-            title: "Error processing image",
-            description: "There was an error processing your image.",
-            variant: "destructive",
+          toast.error("Failed to process image", {
+            position: "top-center",
           });
 
           // Fallback to local data URL if processing fails
           onSave(dataURL, selectedImage);
         });
     } catch (error) {
-      toast({
-        title: "Error saving image",
-        description: "There was an error saving your edited image.",
-        variant: "destructive",
+      console.error("Error saving image:", error);
+      toast.error("Failed to save edited image", {
+        position: "top-center",
       });
     }
   };

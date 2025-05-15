@@ -594,12 +594,13 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       )}
 
       {/* Sparkles icon at the top right */}
-      {hasContent && !isTyping && !isTypingEffect && !showTypeControls && (
+      {hasContent && !isTypingEffect && !showTypeControls && (
         <SparkleButton
           onClick={handleSparkleClick}
           isTextSelected={isTextSelected}
           hasScrollbar={hasScrollbar}
           isPostModal={isPostModal}
+          isDisabled={isTyping}
         />
       )}
 
