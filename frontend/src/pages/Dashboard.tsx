@@ -36,7 +36,7 @@ const Dashboard = () => {
         </div>
 
         {/* Content area */}
-        <div className="rounded-lg overflow-y-scroll scrollbar-hide h-[calc(100vh-20rem)]">
+        <div className="rounded-lg overflow-y-auto h-[calc(100vh-20rem)]">
           {isLoading ? (
             <div className="flex justify-center items-center h-full">
               <Loader2 className="h-16 w-16 animate-spin text-blue-500" />

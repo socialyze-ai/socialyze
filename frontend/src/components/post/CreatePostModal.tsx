@@ -445,7 +445,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           {/* Post Composer */}
           <div
             className={cn(
-              "overflow-y-scroll scrollbar-hide bg-white p-5 rounded h-full",
+              "overflow-y-auto bg-white p-5 rounded h-full",
               postCreation.isAIAssistantOpen && selectedChannels.length === 0
                 ? "w-[60%]"
                 : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
@@ -682,7 +682,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           {selectedChannels.length !== 0 && activeChannel && (
             <div
               className={cn(
-                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-scroll scrollbar-hide",
+                "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
                 postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
