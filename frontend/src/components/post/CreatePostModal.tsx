@@ -324,10 +324,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
         }),
       );
-
-      handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });
 
+    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     onClose();
   };
 
