@@ -15,6 +15,7 @@ import { XService } from '../service/x.service';
 import { GetPostsRequestDto } from './dto/getPostsRequest.dto';
 import { GetPostResponseDto } from './dto/getPostsResponse.dto';
 import axios from 'axios';
+import { GetPostsForCalendarRequestDto } from './dto/getPostsForCalendarRequest.dto';
 
 @Injectable()
 export class PostService {
@@ -129,7 +130,7 @@ export class PostService {
   }
 
   async getPosts(getPostsRequestDto: GetPostsRequestDto) {
-    const { channel, handle, postStatus, label, limit, offset } =
+    const { channel, handle, postStatus, label, limit, offset, sortBy } =
       getPostsRequestDto;
 
     if (
@@ -163,11 +164,68 @@ export class PostService {
       filter.label = { $in: label.map((label) => new Types.ObjectId(label)) };
     }
 
+    let sort: any = {};
+
+    switch (sortBy) {
+      case 'latest':
+        sort = { createdAt: -1 };
+        break;
+      case 'oldest':
+        sort = { createdAt: 1 };
+        break;
+      case 'mostLiked':
+        sort = { likes: -1 };
+        break;
+      case 'leastLiked':
+        sort = { likes: 1 };
+        break;
+      default:
+        sort = { createdAt: -1 };
+        break;
+    }
+
     const posts = await this.postModel
       .find(filter)
+      .sort(sort)
       .skip(offset || 0)
       .limit(limit || 10)
       .exec();
+
+    return posts;
+  }
+
+  async getPostsForCalendar(getPostsRequestDto: GetPostsForCalendarRequestDto) {
+    const { channel, handle, postStatus, label, startDate, endDate } =
+      getPostsRequestDto;
+
+    const filter: any = {};
+
+    if (channel?.length) {
+      filter.channelId = {
+        $in: channel.map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    if (handle?.length) {
+      filter.handle = { $in: handle };
+    }
+
+    if (postStatus?.length) {
+      filter.postStatus = { $in: postStatus };
+    }
+
+    if (label?.length) {
+      filter.label = {
+        $in: label.map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    filter.scheduleDate = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
+    };
+
+    const posts = await this.postModel.find(filter).exec();
 
     return posts;
   }

@@ -1,7 +1,14 @@
-import { IsArray, IsEnum, IsOptional, IsMongoId } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsMongoId,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class GetPostsRequestDto {
+export class GetPostsForCalendarRequestDto {
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
@@ -22,15 +29,11 @@ export class GetPostsRequestDto {
   @IsMongoId({ each: true })
   label?: string[];
 
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
+  @IsDateString()
+  @IsNotEmpty()
+  startDate: string;
 
-  @IsOptional()
-  @Type(() => Number)
-  offset?: number;
-
-  @IsOptional()
-  @IsEnum(['latest', 'oldest', 'mostLiked', 'leastLiked'])
-  sortBy?: 'latest' | 'oldest' | 'mostLiked' | 'leastLiked';
+  @IsDateString()
+  @IsNotEmpty()
+  endDate: string;
 }

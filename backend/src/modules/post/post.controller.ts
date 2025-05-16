@@ -11,6 +11,7 @@ import { AuthInterceptor } from 'src/interceptor/authInterceptor.interceptor';
 import { PostDto } from './dto/post.dto';
 import { PublishDto } from './dto/publish.dto';
 import { GetPostsRequestDto } from './dto/getPostsRequest.dto';
+import { GetPostsForCalendarRequestDto } from './dto/getPostsForCalendarRequest.dto';
 
 @Controller('post')
 export class PostController {
@@ -36,5 +37,15 @@ export class PostController {
   ) {
     const userId = req.user.userId;
     return this.postService.getPosts(getPostsRequestDto);
+  }
+
+  @UseInterceptors(AuthInterceptor)
+  @Post('getPostsForCalendar')
+  async getPostsForCalendar(
+    @Body() getPostsForCalendarRequestDto: GetPostsForCalendarRequestDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.postService.getPostsForCalendar(getPostsForCalendarRequestDto);
   }
 }
