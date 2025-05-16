@@ -20,7 +20,7 @@ interface FilterType {
   label: string[];
   limit: number;
   offset: number;
-  filter: string;
+  sortBy: "latest" | "oldest" | "mostLiked" | "leastLiked";
 }
 
 interface DashboardPostsState {
@@ -39,7 +39,7 @@ const initialState: DashboardPostsState = {
     label: [],
     limit: 10,
     offset: 0,
-    filter: "latest",
+    sortBy: "latest", // 'latest' | 'oldest' | 'mostLiked' | 'leastLiked'
   },
   isLoading: false,
   error: null,
