@@ -20,6 +20,7 @@ interface FilterType {
   label: string[];
   limit: number;
   offset: number;
+  filter: string;
 }
 
 interface DashboardPostsState {
@@ -38,6 +39,7 @@ const initialState: DashboardPostsState = {
     label: [],
     limit: 10,
     offset: 0,
+    filter: "latest",
   },
   isLoading: false,
   error: null,

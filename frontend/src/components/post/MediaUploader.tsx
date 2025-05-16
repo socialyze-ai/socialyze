@@ -53,8 +53,20 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   const isContentSynced = useSelector(selectIsContentSynced);
   const mediaByChannel = useSelector(selectMediaByChannel);
 
-  // Use external media if provided, otherwise use global state
-  const mediaUrls = externalMediaUrls !== undefined ? externalMediaUrls : globalMediaUrls;
+  // Determine which media to use based on the context
+  const getMediaToRender = () => {
+    if (externalMediaUrls !== undefined) {
+      return externalMediaUrls;
+    }
+
+    if (channelId && mediaByChannel && mediaByChannel[channelId]) {
+      return mediaByChannel[channelId];
+    }
+
+    return globalMediaUrls;
+  };
+
+  const mediaToRender = getMediaToRender();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -68,34 +80,16 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
       // If external media handling is provided, use that
       if (onMediaChange) {
         // Add new media to existing array without replacing
-        onMediaChange([...mediaUrls, ...newMediaArray]);
+        onMediaChange([...mediaToRender, ...newMediaArray]);
       } else {
         // Handle media update based on sync state and active channel
-        const updatedMedia = [...mediaUrls, ...newMediaArray];
+        const updatedMedia = [...mediaToRender, ...newMediaArray];
 
-        // If we're in a specific channel context and unsynced
-        if (channelId && !isContentSynced) {
+        // If we're in a specific channel context
+        if (channelId) {
           dispatch(
             setMediaForChannel({
               channelId,
-              media: updatedMedia,
-            }),
-          );
-        }
-        // If we have an active channel and not synced
-        else if (activeChannel && !isContentSynced) {
-          dispatch(
-            setMediaForChannel({
-              channelId: activeChannel,
-              media: updatedMedia,
-            }),
-          );
-        }
-        // If we're synced, use the sync action to update all channels
-        else if (isContentSynced && activeChannel) {
-          dispatch(
-            syncMediaAcrossChannels({
-              sourceChannelId: activeChannel,
               media: updatedMedia,
             }),
           );
@@ -125,7 +119,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
     const editedMediaId = selectedImage.id;
     // Make sure we're updating the correct media array
-    const updatedMediaUrls = mediaUrls.map((media) =>
+    const updatedMediaUrls = mediaToRender.map((media) =>
       media.id === editedMediaId ? { ...media, url: editedMediaUrl } : media,
     );
 
@@ -133,29 +127,11 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
     if (onMediaChange) {
       onMediaChange(updatedMediaUrls);
     } else {
-      // Handle media update based on sync state and active channel
-      if (channelId && !isContentSynced) {
+      // If we're in a specific channel context
+      if (channelId) {
         dispatch(
           setMediaForChannel({
             channelId,
-            media: updatedMediaUrls,
-          }),
-        );
-      }
-      // If we have an active channel and not synced
-      else if (activeChannel && !isContentSynced) {
-        dispatch(
-          setMediaForChannel({
-            channelId: activeChannel,
-            media: updatedMediaUrls,
-          }),
-        );
-      }
-      // If we're synced, use the sync action to update all channels
-      else if (isContentSynced && activeChannel) {
-        dispatch(
-          syncMediaAcrossChannels({
-            sourceChannelId: activeChannel,
             media: updatedMediaUrls,
           }),
         );
@@ -170,36 +146,18 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   };
 
   const handleRemoveMedia = (id: string) => {
-    if (mediaUrls) {
-      const updatedMedia = mediaUrls.filter((media) => media.id !== id);
+    if (mediaToRender) {
+      const updatedMedia = mediaToRender.filter((media) => media.id !== id);
 
       // If external media handling is provided, use that
       if (onMediaChange) {
         onMediaChange(updatedMedia);
       } else {
-        // Handle media update based on sync state and active channel
-        if (channelId && !isContentSynced) {
+        // If we're in a specific channel context
+        if (channelId) {
           dispatch(
             setMediaForChannel({
               channelId,
-              media: updatedMedia,
-            }),
-          );
-        }
-        // If we have an active channel and not synced
-        else if (activeChannel && !isContentSynced) {
-          dispatch(
-            setMediaForChannel({
-              channelId: activeChannel,
-              media: updatedMedia,
-            }),
-          );
-        }
-        // If we're synced, use the sync action to update all channels
-        else if (isContentSynced && activeChannel) {
-          dispatch(
-            syncMediaAcrossChannels({
-              sourceChannelId: activeChannel,
               media: updatedMedia,
             }),
           );
@@ -237,11 +195,11 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
               channelId={channelId}
             />
 
-            {mediaByChannel[channelId] && mediaByChannel[channelId].length > 0 && (
+            {mediaToRender && mediaToRender.length > 0 && (
               <Card className="relative">
                 <CardContent className="p-0 overflow-hidden">
                   <div className="flex flex-wrap">
-                    {mediaByChannel[channelId].map((media) => (
+                    {mediaToRender.map((media) => (
                       <div key={media.id} className="relative m-1">
                         {media.type === "video" ? (
                           <video
@@ -319,12 +277,22 @@ const MediaModal = ({
   channelId?: string;
 }) => {
   const dispatch = useDispatch();
-  const { mediaUrls } = useSelector(selectPostCreation);
-  const activeChannel = useSelector(selectActiveChannel);
+  const { mediaUrls: globalMediaUrls } = useSelector(selectPostCreation);
+  const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const [selectedMediaContent, setSelectedMediaContent] = useState<Media[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const { mutate: uploadMedia, isPending: isPendingUploadMedia } = useUploadMedia();
+
+  // Determine which media to use based on the context
+  const getMediaToUse = () => {
+    if (channelId && mediaByChannel && mediaByChannel[channelId]) {
+      return mediaByChannel[channelId];
+    }
+    return globalMediaUrls;
+  };
+
+  const mediaUrls = getMediaToUse();
 
   // Reset selected media content when modal opens/closes
   useEffect(() => {
@@ -343,32 +311,14 @@ const MediaModal = ({
       // Add to existing media without replacing
       onMediaSelect([...mediaUrls, ...selectedMediaContent]);
     } else {
-      // Handle media update based on sync state and active channel
+      // Handle media update based on channel context
       const updatedMedia = [...mediaUrls, ...selectedMediaContent];
 
-      // If we're in a specific channel context and unsynced
-      if (channelId && !isContentSynced) {
+      // If we're in a specific channel context
+      if (channelId) {
         dispatch(
           setMediaForChannel({
             channelId,
-            media: updatedMedia,
-          }),
-        );
-      }
-      // If we have an active channel and not synced
-      else if (activeChannel && !isContentSynced) {
-        dispatch(
-          setMediaForChannel({
-            channelId: activeChannel,
-            media: updatedMedia,
-          }),
-        );
-      }
-      // If we're synced, use the sync action to update all channels
-      else if (isContentSynced && activeChannel) {
-        dispatch(
-          syncMediaAcrossChannels({
-            sourceChannelId: activeChannel,
             media: updatedMedia,
           }),
         );
@@ -403,39 +353,19 @@ const MediaModal = ({
               type: filesArray[0].type.startsWith("video/") ? "video" : "image",
             };
 
-            console.log("newMedia", newMedia);
-
             // If external media handling is provided, use that
             if (onMediaSelect) {
               // Add new media to existing array without replacing
               onMediaSelect([...mediaUrls, newMedia]);
             } else {
-              // Handle media update based on sync state and active channel
+              // Handle media update based on channel context
               const updatedMedia = [...mediaUrls, newMedia];
 
-              // If we're in a specific channel context and unsynced
-              if (channelId && !isContentSynced) {
+              // If we're in a specific channel context
+              if (channelId) {
                 dispatch(
                   setMediaForChannel({
                     channelId,
-                    media: updatedMedia,
-                  }),
-                );
-              }
-              // If we have an active channel and not synced
-              else if (activeChannel && !isContentSynced) {
-                dispatch(
-                  setMediaForChannel({
-                    channelId: activeChannel,
-                    media: updatedMedia,
-                  }),
-                );
-              }
-              // If we're synced, use the sync action to update all channels
-              else if (isContentSynced && activeChannel) {
-                dispatch(
-                  syncMediaAcrossChannels({
-                    sourceChannelId: activeChannel,
                     media: updatedMedia,
                   }),
                 );
@@ -485,6 +415,30 @@ const MediaModal = ({
     }
   };
 
+  const handleImageProviderSelect = (newMedia: Media) => {
+    if (onMediaSelect) {
+      onMediaSelect([...mediaUrls, newMedia]);
+    } else {
+      // Handle media update based on channel context
+      const updatedMedia = [...mediaUrls, newMedia];
+
+      // If we're in a specific channel context
+      if (channelId) {
+        dispatch(
+          setMediaForChannel({
+            channelId,
+            media: updatedMedia,
+          }),
+        );
+      }
+      // Fallback for global context
+      else {
+        dispatch(setMediaUrls(updatedMedia));
+      }
+    }
+    setIsOpen(false);
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -521,47 +475,7 @@ const MediaModal = ({
               <MediaModalContent
                 provider="unsplash"
                 setSelectedMediaContent={setSelectedMediaContent}
-                onImageSelect={(newMedia) => {
-                  if (onMediaSelect) {
-                    onMediaSelect([...mediaUrls, newMedia]);
-                  } else {
-                    // Handle media update based on sync state and active channel
-                    const updatedMedia = [...mediaUrls, newMedia];
-
-                    // If we're in a specific channel context and unsynced
-                    if (channelId && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we have an active channel and not synced
-                    else if (activeChannel && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we're synced, use the sync action to update all channels
-                    else if (isContentSynced && activeChannel) {
-                      dispatch(
-                        syncMediaAcrossChannels({
-                          sourceChannelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // Fallback for global context
-                    else {
-                      dispatch(setMediaUrls(updatedMedia));
-                    }
-                  }
-                  setIsOpen(false);
-                }}
+                onImageSelect={handleImageProviderSelect}
                 closeModal={() => setIsOpen(false)}
               />
             }
@@ -575,47 +489,7 @@ const MediaModal = ({
               <MediaModalContent
                 provider="google"
                 setSelectedMediaContent={setSelectedMediaContent}
-                onImageSelect={(newMedia) => {
-                  if (onMediaSelect) {
-                    onMediaSelect([...mediaUrls, newMedia]);
-                  } else {
-                    // Handle media update based on sync state and active channel
-                    const updatedMedia = [...mediaUrls, newMedia];
-
-                    // If we're in a specific channel context and unsynced
-                    if (channelId && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we have an active channel and not synced
-                    else if (activeChannel && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we're synced, use the sync action to update all channels
-                    else if (isContentSynced && activeChannel) {
-                      dispatch(
-                        syncMediaAcrossChannels({
-                          sourceChannelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // Fallback for global context
-                    else {
-                      dispatch(setMediaUrls(updatedMedia));
-                    }
-                  }
-                  setIsOpen(false);
-                }}
+                onImageSelect={handleImageProviderSelect}
                 closeModal={() => setIsOpen(false)}
               />
             }
@@ -629,47 +503,7 @@ const MediaModal = ({
               <MediaModalContent
                 provider="pexels"
                 setSelectedMediaContent={setSelectedMediaContent}
-                onImageSelect={(newMedia) => {
-                  if (onMediaSelect) {
-                    onMediaSelect([...mediaUrls, newMedia]);
-                  } else {
-                    // Handle media update based on sync state and active channel
-                    const updatedMedia = [...mediaUrls, newMedia];
-
-                    // If we're in a specific channel context and unsynced
-                    if (channelId && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we have an active channel and not synced
-                    else if (activeChannel && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we're synced, use the sync action to update all channels
-                    else if (isContentSynced && activeChannel) {
-                      dispatch(
-                        syncMediaAcrossChannels({
-                          sourceChannelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // Fallback for global context
-                    else {
-                      dispatch(setMediaUrls(updatedMedia));
-                    }
-                  }
-                  setIsOpen(false);
-                }}
+                onImageSelect={handleImageProviderSelect}
                 closeModal={() => setIsOpen(false)}
               />
             }
@@ -683,47 +517,7 @@ const MediaModal = ({
               <MediaModalContent
                 provider="tenor"
                 setSelectedMediaContent={setSelectedMediaContent}
-                onImageSelect={(newMedia) => {
-                  if (onMediaSelect) {
-                    onMediaSelect([...mediaUrls, newMedia]);
-                  } else {
-                    // Handle media update based on sync state and active channel
-                    const updatedMedia = [...mediaUrls, newMedia];
-
-                    // If we're in a specific channel context and unsynced
-                    if (channelId && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we have an active channel and not synced
-                    else if (activeChannel && !isContentSynced) {
-                      dispatch(
-                        setMediaForChannel({
-                          channelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // If we're synced, use the sync action to update all channels
-                    else if (isContentSynced && activeChannel) {
-                      dispatch(
-                        syncMediaAcrossChannels({
-                          sourceChannelId: activeChannel,
-                          media: updatedMedia,
-                        }),
-                      );
-                    }
-                    // Fallback for global context
-                    else {
-                      dispatch(setMediaUrls(updatedMedia));
-                    }
-                  }
-                  setIsOpen(false);
-                }}
+                onImageSelect={handleImageProviderSelect}
                 closeModal={() => setIsOpen(false)}
               />
             }

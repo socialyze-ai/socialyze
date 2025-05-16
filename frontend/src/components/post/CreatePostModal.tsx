@@ -409,10 +409,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsEditDialogOpen(false);
   };
 
-  const contentToUse = useMemo(
-    () => htmlToText(contentByChannel[activeChannel]),
-    [contentByChannel, activeChannel],
-  );
+  const contentToUse = useMemo(() => {
+    const removeBreakTags = contentByChannel[activeChannel]?.replace(/<br>/g, "");
+
+    return htmlToText(removeBreakTags);
+  }, [contentByChannel, activeChannel]);
 
   return (
     <>
