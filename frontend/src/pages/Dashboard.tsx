@@ -100,7 +100,7 @@ const Dashboard = () => {
             <>
               {activeLayout === "list" && <PostListView posts={posts} />}
               {activeLayout === "grid" && <PostGridView posts={posts} />}
-              {activeLayout === "calendar" && <PostCalendarView posts={posts} />}
+              {activeLayout === "calendar" && <PostCalendarView />}
 
               {loadingMore && (
                 <div className="flex justify-center py-4">
