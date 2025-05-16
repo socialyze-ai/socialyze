@@ -69,6 +69,7 @@ import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { addPost, selectChannels } from "@/redux/slices/posts.slice";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CreatePost = () => {
   const channels = useSelector(selectChannels);
@@ -83,6 +84,7 @@ const CreatePost = () => {
   const selectedLabels = useSelector(selectSelectedLabels);
   const navigate = useNavigate();
   const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
+  const queryClient = useQueryClient();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
 
@@ -243,6 +245,9 @@ const CreatePost = () => {
           },
         );
 
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+
         dispatch(unselectAllLabels());
 
         navigate("/dashboard");
@@ -309,10 +314,6 @@ const CreatePost = () => {
     });
 
     handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);
-
-    toast.success(`Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`, {
-      position: "top-center",
-    });
 
     navigate("/dashboard");
     dispatch(resetPostCreation());

@@ -82,6 +82,7 @@ import LabelSelector from "./LabelSelector";
 import { reset } from "@/redux/slices/aiAssistant.slice";
 import { htmlToText } from "html-to-text";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -117,10 +118,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
   const selectedLabels = useSelector(selectSelectedLabels);
-
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [isSyncAlertOpen, setIsSyncAlertOpen] = useState(false);
@@ -270,6 +271,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           position: "top-center",
         });
 
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+
         dispatch(unselectAllLabels());
 
         navigate("/dashboard");
@@ -323,23 +327,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
       handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });
-
-    console.log("finalData", finalData);
-
-    const statusText =
-      status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
-
-    toast(
-      status === "postnow"
-        ? "Post sent"
-        : status === "scheduled"
-        ? "Post scheduled"
-        : "Draft saved",
-      {
-        description: `Your post has been ${statusText}.`,
-        position: "top-center",
-      },
-    );
 
     onClose();
   };
