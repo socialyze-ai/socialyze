@@ -154,7 +154,7 @@ const MediaModalContent = ({
       );
     } else {
       generateMediaWithLink(
-        { url: image.download_location, postId },
+        { url: image.download_location || image.url, postId },
         {
           onSuccess: (data) => {
             const newMedia: Media = {
