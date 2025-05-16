@@ -429,6 +429,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               ? "max-w-[60dvw]"
               : "flex-1 h-fit",
           )}
+          id="create-post-modal-content"
         >
           {/* AI Assistant */}
           {postCreation.isAIAssistantOpen && (
