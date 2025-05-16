@@ -79,8 +79,11 @@ const MediaModalContent = ({
       if (scrollContainer) {
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
 
-        // If scrolled to near bottom (within 200px of bottom)
-        if (scrollHeight - scrollTop - clientHeight < 200 && !isLoading && !loadingMore) {
+        // Calculate the scroll percentage (0 to 1)
+        const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+
+        // If scrolled to 80% or more of the container and not already loading
+        if (scrollPercentage >= 0.8 && !isLoading && !loadingMore) {
           loadMoreImages();
         }
       }
