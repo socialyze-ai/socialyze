@@ -4,7 +4,7 @@ import { useGetTagLabels } from "@/api/apiHooks/useTagLabel";
 import { addChannels } from "@/redux/slices/channels.slice";
 import { Label, setInitialLabels } from "@/redux/slices/labelManager.slice";
 import { addChannels as addPostsChannels } from "@/redux/slices/posts.slice";
-import { setPosts, setLoading, setError } from "@/redux/slices/dashboardPosts.slice";
+import { setPosts, setLoading, setError, appendPosts } from "@/redux/slices/dashboardPosts.slice";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
@@ -14,6 +14,7 @@ const InitialDataLoader = () => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
   const filters = useSelector((state: RootState) => state.dashboardPosts.filters);
+  const currentPosts = useSelector((state: RootState) => state.dashboardPosts.posts);
 
   const { data: channelsData } = useGetChannel();
   const { data: apiLabels } = useGetTagLabels();
@@ -103,11 +104,18 @@ const InitialDataLoader = () => {
           updatedAt: post.updatedAt,
         })) || [];
 
-      dispatch(setPosts((formattedPosts || []) as any));
-    } else {
+      // For initial load or filter changes (offset === 0), replace posts
+      // For pagination (offset > 0), append posts
+      if (filters.offset === 0) {
+        dispatch(setPosts((formattedPosts || []) as any));
+      } else {
+        dispatch(appendPosts((formattedPosts || []) as any));
+      }
+    } else if (filters.offset === 0) {
+      // Only clear posts if it's an initial load with no results
       dispatch(setPosts([]));
     }
-  }, [postsData, dispatch, isAuthenticated]);
+  }, [postsData, dispatch, isAuthenticated, filters.offset]);
 
   return null;
 };
