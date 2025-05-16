@@ -32,7 +32,6 @@ export class Post {
   @Prop({
     type: String,
     enum: ['queued', 'failed', 'published'],
-    required: true,
   })
   postStatus: 'queued' | 'failed' | 'published' | 'draft';
 
