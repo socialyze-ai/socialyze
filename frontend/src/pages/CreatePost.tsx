@@ -198,7 +198,6 @@ const CreatePost = () => {
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
-        postStatus: "queued",
       };
 
       finalData.push(postData);
@@ -294,7 +293,6 @@ const CreatePost = () => {
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: "scheduled",
-        postStatus: "queued",
       };
 
       finalData.push(postData);

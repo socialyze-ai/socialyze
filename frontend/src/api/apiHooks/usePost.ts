@@ -10,7 +10,6 @@ export interface PostType {
   label: string[];
   media: string[];
   postType: "postnow" | "draft" | "scheduled";
-  postStatus: "queued" | "sent" | "failed" | "published";
   scheduledTime?: string;
 }
 
@@ -53,7 +52,6 @@ export interface PostResponse {
   text: string;
   handle: string;
   postType: "postnow" | "draft" | "scheduled";
-  postStatus: "queued" | "sent" | "failed" | "published";
   scheduledTime: string;
   media: string[];
   label: string[];

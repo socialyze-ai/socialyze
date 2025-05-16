@@ -306,7 +306,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         label: selectedLabels?.map((label) => label.id),
         media: mediaUrls,
         postType: status, // "postnow" | "scheduled" | "draft"
-        postStatus: "queued",
         handle: socialHandle,
       };
 
