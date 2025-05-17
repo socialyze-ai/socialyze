@@ -211,73 +211,79 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   return (
     <Card
       className={cn(
-        "overflow-hidden h-full w-full hover:shadow-md transition-shadow break-inside-avoid",
+        "overflow-hidden h-full w-full flex flex-col justify-between hover:shadow-md transition-shadow break-inside-avoid",
         isGrid && "mb-4",
       )}
     >
-      <CardContent className="p-2 sm:p-3">
-        {/* Header with avatar and platform icon */}
-        <div className="flex justify-between items-center mb-2 sm:mb-3 gap-2">
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-            <div className="relative shrink-0">
-              <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
-                <AvatarImage src={profileImage} />
-                <AvatarFallback className="capitalize font-semibold text-xs sm:text-sm">
-                  {displayName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center bg-white z-10">
-                {getSocialIcon(platform, 10)}
+      <CardContent className="p-2 sm:p-3 flex flex-col justify-between h-full">
+        <div className="flex flex-col">
+          {/* Header with avatar and platform icon */}
+          <div className="flex justify-between items-center mb-2 sm:mb-3 gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <div className="relative shrink-0">
+                <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
+                  <AvatarImage src={profileImage} />
+                  <AvatarFallback className="capitalize font-semibold text-xs sm:text-sm">
+                    {displayName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center bg-white z-10">
+                  {getSocialIcon(platform, 10)}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium leading-none truncate">
+                  {displayName}
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{username}</p>
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium leading-none truncate">{displayName}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{username}</p>
+
+            {/* Status badge */}
+            <div className="shrink-0">{getStatusBadge()}</div>
+          </div>
+
+          {/* Content */}
+          <div className="mb-2 sm:mb-3">
+            <p className="text-xs sm:text-sm whitespace-pre-wrap">
+              {contentToDisplay}
+              {content.length > 150 && (
+                <span
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-gray-500 hover:underline cursor-pointer ml-1"
+                >
+                  {isExpanded ? "see less" : "see more"}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Media */}
+          {imageUrl && (
+            <div className="mb-2 sm:mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
+              <img src={imageUrl} alt="Post media" className="h-full w-full object-cover" />
             </div>
+          )}
+        </div>
+
+        <div className="flex flex-col">
+          {/* Date and time */}
+          <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
+            <Clock size={10} className="mr-1" />
+            <span>{formatPostDate(date)}</span>
           </div>
 
-          {/* Status badge */}
-          <div className="shrink-0">{getStatusBadge()}</div>
-        </div>
-
-        {/* Content */}
-        <div className="mb-2 sm:mb-3">
-          <p className="text-xs sm:text-sm whitespace-pre-wrap">
-            {contentToDisplay}
-            {content.length > 150 && (
-              <span
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-gray-500 hover:underline cursor-pointer ml-1"
-              >
-                {isExpanded ? "see less" : "see more"}
-              </span>
-            )}
-          </p>
-        </div>
-
-        {/* Media */}
-        {imageUrl && (
-          <div className="mb-2 sm:mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
-            <img src={imageUrl} alt="Post media" className="h-full w-full object-cover" />
-          </div>
-        )}
-
-        {/* Date and time */}
-        <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
-          <Clock size={10} className="mr-1" />
-          <span>{formatPostDate(date)}</span>
-        </div>
-
-        <div className="flex justify-between items-center gap-2">
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-gray-600">
-            {engagementRatings.map((item) => (
-              <PostSocialEngagement
-                key={item.id}
-                icon={item.icon}
-                text={item.name}
-                count={item.value}
-              />
-            ))}
+          <div className="flex justify-between items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-gray-600">
+              {engagementRatings.map((item) => (
+                <PostSocialEngagement
+                  key={item.id}
+                  icon={item.icon}
+                  text={item.name}
+                  count={item.value}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>

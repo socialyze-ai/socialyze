@@ -93,6 +93,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     dispatch(
       updateFilter({
         channel: newChannels,
+        offset: 0,
       }),
     );
   };
@@ -109,6 +110,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     dispatch(
       updateFilter({
         label: newLabels,
+        offset: 0,
       }),
     );
   };
@@ -125,6 +127,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     dispatch(
       updateFilter({
         postStatus: newStatuses,
+        offset: 0,
       }),
     );
   };
@@ -133,7 +136,7 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     dispatch(
       updateFilter({
         sortBy: value,
-        offset: 0, // Reset pagination when changing sort
+        offset: 0,
       }),
     );
     setIsSortByOpen(false);
