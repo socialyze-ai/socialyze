@@ -56,7 +56,7 @@ export const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
           profileImage={channel?.profileImage}
           username={channel?.username || channel?.id}
           displayName={channel?.name}
-          date={post?.createdAt}
+          date={post?.scheduledTime}
           content={post?.text || ""}
           imageUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
           storyUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
@@ -68,6 +68,7 @@ export const PostGridView = ({ posts }: { posts: DashboardPostType[] }) => {
           clicks={0}
           createdDaysAgo={calculateDaysAgo(post.scheduledTime)}
           isGrid
+          postStatus={post?.postStatus}
         />
       );
     });

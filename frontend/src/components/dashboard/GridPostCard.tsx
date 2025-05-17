@@ -56,6 +56,7 @@ interface GridPostCardProps {
   createdDaysAgo?: number;
   isGrid?: boolean;
   clicks?: number;
+  postStatus: string;
 }
 
 // Helper function for social icons
@@ -91,6 +92,7 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   createdDaysAgo = 20,
   clicks = 0,
   isGrid = false,
+  postStatus = "queued",
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -107,30 +109,26 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   };
 
   const getStatusBadge = () => {
-    // Determine status based on date and custom flag
-    let status = "sent";
-    if (new Date(date) > new Date()) status = "scheduled";
-
     const statusColors = {
-      scheduled: "bg-amber-100 text-amber-800",
-      sent: "bg-green-100 text-green-800",
+      queued: "bg-amber-100 text-amber-800",
+      published: "bg-green-100 text-green-800",
       draft: "bg-blue-100 text-blue-800",
-      custom: "bg-purple-100 text-purple-800",
+      failed: "bg-red-100 text-red-800",
     };
 
     const statusIcons = {
-      scheduled: <Calendar className="h-3 w-3 mr-1" />,
+      queued: <Calendar className="h-3 w-3 mr-1" />,
+      published: <Clock className="h-3 w-3 mr-1" />,
       draft: <PenTool className="h-3 w-3 mr-1" />,
-      sent: <Clock className="h-3 w-3 mr-1" />,
-      custom: <Clock className="h-3 w-3 mr-1" />,
+      failed: <Clock className="h-3 w-3 mr-1" />,
     };
 
     return (
       <span
-        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[status]} whitespace-nowrap`}
+        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[postStatus]} whitespace-nowrap`}
       >
-        {statusIcons[status]}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusIcons[postStatus]}
+        {postStatus.charAt(0).toUpperCase() + postStatus.slice(1)}
       </span>
     );
   };
@@ -293,13 +291,19 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
           <Tags size={14} className="sm:w-4 sm:h-4" />
         </Button>
 
-        <div className="flex gap-1 sm:gap-2">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             className="border border-gray-300 text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
           >
             <SquareArrowOutUpRight size={14} className="sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <p>View Post</p>
+            {postStatus === "queued" ? (
+              <p>Publish Now</p>
+            ) : postStatus === "failed" ? (
+              <p>Try Again</p>
+            ) : (
+              <p>View Post</p>
+            )}
           </Button>
 
           <DropdownMenu>
@@ -312,11 +316,15 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
                 <MoreVertical size={14} className="sm:w-4 sm:h-4" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
-                <Link size={14} className="sm:w-4 sm:h-4" />
-                <p>Copy link</p>
-              </DropdownMenuItem>
+              {postStatus === "published" && (
+                <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Link size={14} className="sm:w-4 sm:h-4" />
+                  <p>Copy link</p>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
                 <Copy size={14} className="sm:w-4 sm:h-4" />
                 <p>Duplicate</p>

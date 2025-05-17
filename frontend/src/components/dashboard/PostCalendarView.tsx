@@ -38,6 +38,7 @@ interface CalendarEvent {
   post: DashboardPostType;
   channelId: string;
   channelType: string;
+  postStatus: string;
 }
 
 export const PostCalendarView = () => {
@@ -98,6 +99,7 @@ export const PostCalendarView = () => {
             post: post as unknown as DashboardPostType,
             channelId,
             channelType: channel.type,
+            postStatus: post.postStatus,
           });
         }
       }
@@ -176,7 +178,7 @@ export const PostCalendarView = () => {
         profileImage={channel.profileImage}
         username={channel.username || channel.id}
         displayName={channel.name}
-        date={event.post.createdAt}
+        date={event.post.scheduledTime}
         content={event.post.text || ""}
         imageUrl={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
         likes={0}
@@ -186,6 +188,7 @@ export const PostCalendarView = () => {
         engagementRate={0}
         clicks={0}
         createdDaysAgo={0}
+        postStatus={event.post.postStatus}
       />
     );
 
@@ -341,7 +344,7 @@ export const PostCalendarView = () => {
                   profileImage={channel.profileImage}
                   username={channel.username || channel.id}
                   displayName={channel.name}
-                  date={selectedEvent.post.createdAt}
+                  date={selectedEvent.post.scheduledTime}
                   content={selectedEvent.post.text || ""}
                   imageUrl={
                     selectedEvent.post.media && selectedEvent.post.media.length > 0
@@ -359,6 +362,7 @@ export const PostCalendarView = () => {
                       ? differenceInDays(new Date(), new Date(selectedEvent.post.createdAt))
                       : 0
                   }
+                  postStatus={selectedEvent.post.postStatus}
                 />
               );
             })()}

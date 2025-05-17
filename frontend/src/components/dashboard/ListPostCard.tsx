@@ -23,6 +23,7 @@ interface ListPostCardProps {
   engagementRate?: number;
   createdDaysAgo?: number;
   clicks?: number;
+  postStatus: string;
 }
 
 // Function to format date
@@ -51,6 +52,7 @@ const ListPostCard: React.FC<ListPostCardProps> = ({
   engagementRate = 0,
   createdDaysAgo = 20,
   clicks = 0,
+  postStatus,
 }) => {
   return (
     <div className="w-[90%] mx-auto">
@@ -99,6 +101,7 @@ const ListPostCard: React.FC<ListPostCardProps> = ({
           clicks={clicks}
           createdDaysAgo={createdDaysAgo}
           storyUrl={storyUrl}
+          postStatus={postStatus}
         />
       </div>
     </div>
