@@ -39,6 +39,13 @@ export class PostService {
       const createdPosts = await this.postModel.create(postsToCreate);
 
       for (const post of createdPosts) {
+        if (post.postType === 'draft') {
+          post.scheduledTime = new Date();
+          post.postStatus = 'draft';
+          await post.save();
+          continue;
+        }
+
         if (post.postType === 'postnow') {
           post.scheduledTime = new Date();
         }
@@ -168,10 +175,10 @@ export class PostService {
 
     switch (sortBy) {
       case 'latest':
-        sort = { createdAt: -1 };
+        sort = { scheduledTime: -1 };
         break;
       case 'oldest':
-        sort = { createdAt: 1 };
+        sort = { scheduledTime: 1 };
         break;
       case 'mostLiked':
         sort = { likes: -1 };
@@ -180,7 +187,7 @@ export class PostService {
         sort = { likes: 1 };
         break;
       default:
-        sort = { createdAt: -1 };
+        sort = { scheduledTime: -1 };
         break;
     }
 
@@ -194,9 +201,11 @@ export class PostService {
     return posts;
   }
 
-  async getPostsForCalendar(getPostsRequestDto: GetPostsForCalendarRequestDto) {
+  async getPostsForCalendar(
+    getPostsForCalendarRequestDto: GetPostsForCalendarRequestDto,
+  ) {
     const { channel, handle, postStatus, label, startDate, endDate } =
-      getPostsRequestDto;
+      getPostsForCalendarRequestDto;
 
     const filter: any = {};
 
@@ -220,7 +229,7 @@ export class PostService {
       };
     }
 
-    filter.scheduleDate = {
+    filter.scheduledTime = {
       $gte: new Date(startDate),
       $lte: new Date(endDate),
     };
