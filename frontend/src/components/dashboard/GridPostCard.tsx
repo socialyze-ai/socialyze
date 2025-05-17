@@ -213,7 +213,7 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   return (
     <Card
       className={cn(
-        "overflow-hidden h-full hover:shadow-md transition-shadow break-inside-avoid",
+        "overflow-hidden h-full w-full hover:shadow-md transition-shadow break-inside-avoid",
         isGrid && "mb-4",
       )}
     >

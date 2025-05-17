@@ -56,7 +56,7 @@ const ListPostCard: React.FC<ListPostCardProps> = ({
     <div className="w-[90%] mx-auto">
       <div className="text-xl font-semibold text-gray-500 mb-3">{formatDate(date)}</div>
 
-      <div className="flex gap-5">
+      <div className="flex gap-5 w-full">
         {/* Left Section */}
         <div className="flex flex-col gap-2">
           {date && (

@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Info, Unlink, MoveRight } from "lucide-react";
+import { Calendar as CalendarIcon, Info, Unlink, MoveRight, CalendarCheck2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,7 +26,6 @@ import {
   setIsScheduled,
   setScheduledDate,
   setScheduledTime,
-  setScheduleModalOpen,
   resetPostCreation,
   setContentForChannel,
   setMediaUrls,
@@ -69,6 +68,8 @@ import { Facebook, Twitter, Instagram, Linkedin, Youtube, X } from "lucide-react
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAddPost } from "@/api/apiHooks/usePost";
 import { addPost, selectChannels } from "@/redux/slices/posts.slice";
+import { useQueryClient } from "@tanstack/react-query";
+import DateTimeSelector from "@/components/post/DateTimeSelector";
 
 const CreatePost = () => {
   const channels = useSelector(selectChannels);
@@ -83,6 +84,10 @@ const CreatePost = () => {
   const selectedLabels = useSelector(selectSelectedLabels);
   const navigate = useNavigate();
   const [isSyncAlertOpen, setIsSyncAlertOpen] = React.useState(false);
+  const queryClient = useQueryClient();
+  const [scheduledDateTime, setScheduledDateTime] = useState<Date | undefined>(
+    postCreation.scheduledDate ? new Date(postCreation.scheduledDate) : new Date(),
+  );
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
 
@@ -179,6 +184,7 @@ const CreatePost = () => {
       const content = contentByChannel[channelId] || "";
       const hasContent = content.trim() !== "" || postCreation.hashtags.length > 0;
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+      const socialHandle = channels.find((channel) => channel.id === channelId)?.type;
 
       if (!hasContent && mediaUrls.length === 0) {
         toast.error("Please enter some content, hashtags, or add an image for your post.", {
@@ -198,7 +204,7 @@ const CreatePost = () => {
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: isDraft ? "draft" : postCreation.isScheduled ? "scheduled" : "postnow",
-        postStatus: "queued",
+        handle: socialHandle,
       };
 
       finalData.push(postData);
@@ -244,6 +250,9 @@ const CreatePost = () => {
           },
         );
 
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+
         dispatch(unselectAllLabels());
 
         navigate("/dashboard");
@@ -275,6 +284,7 @@ const CreatePost = () => {
       const content = contentByChannel[channelId] || "";
       const hasContent = content.trim() !== "" || postCreation.hashtags.length > 0;
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
+      const socialHandle = channels.find((channel) => channel.id === channelId)?.type;
 
       if (!hasContent && mediaUrls.length === 0) {
         toast.error("Please enter some content, hashtags, or add an image for your post.", {
@@ -294,7 +304,7 @@ const CreatePost = () => {
         label: selectedLabels.map((label) => label.id),
         media: mediaUrls,
         postType: "scheduled",
-        postStatus: "queued",
+        handle: socialHandle,
       };
 
       finalData.push(postData);
@@ -311,10 +321,6 @@ const CreatePost = () => {
     });
 
     handleCreatePostApiCall(finalData, false, scheduledAt, channelIds);
-
-    toast.success(`Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`, {
-      position: "top-center",
-    });
 
     navigate("/dashboard");
     dispatch(resetPostCreation());
@@ -526,83 +532,50 @@ const CreatePost = () => {
           )}
 
           {/* Scheduler */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">Schedule</h3>
-                <Checkbox
-                  id="scheduled-toggle"
-                  checked={postCreation.isScheduled}
-                  onCheckedChange={(checked) => dispatch(setIsScheduled(checked as boolean))}
-                />
-              </div>
+          {postCreation.isScheduled && (
+            <div className="bg-white rounded-md shadow-md border border-gray-200 p-3">
+              <DateTimeSelector
+                selectedDate={scheduledDateTime}
+                onDateTimeChange={(date) => {
+                  setScheduledDateTime(date);
+                  if (date) {
+                    dispatch(setScheduledDate(date));
+                    dispatch(setScheduledTime(format(date, "HH:mm")));
+                  }
+                }}
+                setIsScheduleMode={() => {
+                  dispatch(setIsScheduled(false));
+                }}
+              />
+            </div>
+          )}
 
-              {postCreation.isScheduled && (
-                <div className="mt-4">
-                  <div>
-                    <Label>Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-1",
-                            !postCreation.scheduledDate && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {postCreation.scheduledDate
-                            ? format(postCreation.scheduledDate, "PPP")
-                            : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={postCreation.scheduledDate}
-                          onSelect={(date) => dispatch(setScheduledDate(date))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="time">Time</Label>
-                    <input
-                      id="time"
-                      type="time"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
-                      value={postCreation.scheduledTime}
-                      onChange={handleTimeChange}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end gap-5">
+          <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => handleSubmit(true)}>
               Save as Draft
             </Button>
 
-            {postCreation.isScheduled ? (
-              <Button onClick={() => handleSubmit(false)}>Schedule Post</Button>
-            ) : (
+            <Button
+              onClick={() => {
+                dispatch(setIsScheduled(!postCreation.isScheduled));
+                if (!postCreation.isScheduled) {
+                  dispatch(setScheduledDate(scheduledDateTime));
+                } else {
+                  handleSubmit(false);
+                }
+              }}
+              variant={postCreation.isScheduled ? "default" : "outline"}
+            >
+              <CalendarCheck2 />
+              <p>{postCreation.isScheduled ? "Schedule Post" : "Schedule"}</p>
+            </Button>
+
+            {!postCreation.isScheduled && (
               <Button onClick={() => handleSubmit(false)}>Post Now</Button>
             )}
           </div>
         </div>
       </div>
-
-      <ScheduleModal
-        isOpen={postCreation.isScheduleModalOpen}
-        onClose={() => dispatch(setScheduleModalOpen(false))}
-        selectedDate={postCreation.scheduledDate || new Date()}
-        onSchedule={handleScheduleFromModal}
-      />
 
       {/* Alert Dialog for Sync Confirmation */}
       <AlertDialog open={isSyncAlertOpen} onOpenChange={setIsSyncAlertOpen}>

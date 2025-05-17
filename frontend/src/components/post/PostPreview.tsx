@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SocialChannel } from "@/redux/slices/posts.slice";
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
@@ -233,12 +233,10 @@ const PostPreview: React.FC<PostPreviewProps> = ({
   };
 
   const renderFacebookPreview = () => {
-    if (!content || !mediaToUse || mediaToUse.length === 0) {
+    if (!content && (!mediaToUse || mediaToUse.length === 0)) {
       return (
-        <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
-          <p className="text-gray-500 text-center">
-            Add both content and media to see Facebook preview
-          </p>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 max-w-md">
+          <p className="text-gray-500 text-center">Add content or media to see Twitter preview</p>
         </div>
       );
     }
@@ -285,11 +283,11 @@ const PostPreview: React.FC<PostPreviewProps> = ({
   };
 
   const renderInstagramPreview = () => {
-    if (!content || !mediaToUse || mediaToUse.length === 0) {
+    if (!mediaToUse || mediaToUse.length === 0) {
       return (
         <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
           <p className="text-gray-500 text-center">
-            Add both content and media to see Instagram preview
+            Add at least one image to see Instagram preview
           </p>
         </div>
       );

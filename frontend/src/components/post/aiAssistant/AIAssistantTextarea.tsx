@@ -72,6 +72,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const contentEditableRef = useRef<ContentEditable>(null);
   // Store selection coordinates in a ref to preserve them during regeneration
   const selectionCoordsRef = useRef<{ top: number; left: number } | null>(null);
+  // Add a new state to track ongoing AI operations
+  const [activeAIOperation, setActiveAIOperation] = useState<string | null>(null);
 
   // Use custom hooks
   const {
@@ -184,19 +186,22 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }
   }, [content, isTyping, detectTextSelection]);
 
-  // When clicking outside editor, hide all popups
+  // When clicking outside editor, hide all popups only if not in an active operation
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         editorContainerRef.current &&
         !editorContainerRef.current.contains(event.target as Node)
       ) {
-        dispatch(setShowAIOptions(false));
-        dispatch(resetTextState());
+        // Only hide AI options and reset state if there's no active AI operation
+        if (!activeAIOperation && !isRefining && !isPendingContent && !isPendingHashTags) {
+          dispatch(setShowAIOptions(false));
+          dispatch(resetTextState());
 
-        // Explicitly reset refine preview state
-        if (showRefinePreview) {
-          setShowRefinePreview(false);
+          // Explicitly reset refine preview state
+          if (showRefinePreview && !isRefining) {
+            setShowRefinePreview(false);
+          }
         }
       }
     };
@@ -208,7 +213,14 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [dispatch, showRefinePreview]);
+  }, [
+    dispatch,
+    showRefinePreview,
+    activeAIOperation,
+    isRefining,
+    isPendingContent,
+    isPendingHashTags,
+  ]);
 
   // Handle editor input
   const handleEditorInput = (e: React.FormEvent<HTMLElement>) => {
@@ -216,11 +228,19 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     onContentChange(newContent);
     dispatch(setContent(newContent));
     dispatch(setIsTyping(true));
-    dispatch(setShowAIOptions(false));
+
+    // Only hide AI options if there's no active AI operation
+    if (!activeAIOperation) {
+      dispatch(setShowAIOptions(false));
+    }
 
     // Clear any selection when typing
     dispatch(resetTextState());
-    setShowRefinePreview(false);
+
+    // Only hide refine preview if not actively refining
+    if (!isRefining) {
+      setShowRefinePreview(false);
+    }
 
     // Clear any existing timeout
     if (typingTimeoutRef.current) {
@@ -239,8 +259,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const handleUpdatedTextSelection = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (!editorRef.current || isTyping) return;
 
-    // If there's an active refine preview, close it first
-    if (showRefinePreview) {
+    // If there's an active refine preview, only close it if we're not in an active refining operation
+    if (showRefinePreview && !isRefining) {
       setShowRefinePreview(false);
     }
 
@@ -295,6 +315,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
     // Set refining state to true
     setIsRefining(true);
+    // Set active AI operation
+    setActiveAIOperation("refine");
 
     // Call API to get refinement
     handleRefineWithAI(selectedRange);
@@ -346,6 +368,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     setShowRefinePreview(false);
     setShowEditor(true);
     setIsRefining(false);
+    // Clear active AI operation
+    setActiveAIOperation(null);
 
     // Clear selection after applying refined text
     clearSelection();
@@ -366,6 +390,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     onContentChange(newContent);
     dispatch(setContent(newContent));
     resetTypeEffect();
+    // Clear active AI operation
+    setActiveAIOperation(null);
 
     // Clear selection
     clearSelection();
@@ -385,6 +411,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     onContentChange(newContent);
     dispatch(setContent(newContent));
     resetTypeEffect();
+    // Clear active AI operation
+    setActiveAIOperation(null);
 
     // Clear selection
     clearSelection();
@@ -423,6 +451,9 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     // First, reset all the typed effect state
     resetTypeEffect();
     setShowRefinePreview(false);
+    setIsRefining(false);
+    // Clear active AI operation
+    setActiveAIOperation(null);
 
     // When canceling, make sure we're not keeping any generated content
     if (contentType === "complete" || contentType === "hashtags") {
@@ -494,6 +525,18 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
     }, 100);
   };
 
+  // Handle "Complete with AI" button click
+  const handleCompletionClick = () => {
+    setActiveAIOperation("complete");
+    handleCompleteWithAI();
+  };
+
+  // Handle "Generate Hashtags" button click
+  const handleHashtagsClick = () => {
+    setActiveAIOperation("hashtags");
+    handleGenerateHashtags();
+  };
+
   const hasContent = content.trim().length > 0;
 
   return (
@@ -527,6 +570,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
       {showTypeControls && (
         <GeneratedContentControlsPortal
           targetId="typing-effect-end"
+          type="text"
           controls={
             <GeneratedContentControls
               showTypeControls={showTypeControls}
@@ -545,6 +589,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         <SelectionTooltip
           position={getSelectionCoordinates()}
           onRefineClick={handleRefineWithAIClick}
+          isPendingContent={isPendingContent}
         />
       )}
 
@@ -561,11 +606,15 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
           <RefinePopover
             generatedRefineContent={generatedRefineContent}
             setShowRefinePreview={(show) => {
+              // Don't allow closing if an operation is in progress
+              if (!show && isRefining) return;
+
               setShowRefinePreview(show);
 
               // If closing the preview, ensure selection is restored
               if (!show) {
                 setIsRefining(false);
+                setActiveAIOperation(null);
                 if (selectedRange) {
                   setTimeout(() => {
                     focusAndSelectText(selectedRange);
@@ -581,6 +630,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
               // Explicitly ensure we keep the popover open during regeneration
               setShowRefinePreview(true);
               setIsRefining(true);
+              setActiveAIOperation("refine");
 
               // Restore selection before regenerating
               if (selectedRange) {
@@ -609,8 +659,8 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         <AIOptions
           underlineType={underlineType}
           onClose={handleCloseOptions}
-          handleCompleteWithAI={handleCompleteWithAI}
-          handleGenerateHashtags={handleGenerateHashtags}
+          handleCompleteWithAI={handleCompletionClick}
+          handleGenerateHashtags={handleHashtagsClick}
           isPendingContent={isPendingContent}
           isPendingHashTags={isPendingHashTags}
         />

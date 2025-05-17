@@ -44,11 +44,10 @@ export interface PostCreationState {
 
   // Scheduling info
   isScheduled: boolean;
-  scheduledDate?: Date;
+  scheduledDate: Date | null;
   scheduledTime: string;
 
   // Modal states
-  isScheduleModalOpen: boolean;
   isAIAssistantOpen: boolean;
 }
 
@@ -64,10 +63,10 @@ const initialState: PostCreationState = {
   isContentSynced: true,
   isCustomContent: false,
   isScheduled: false,
+  scheduledDate: null,
   scheduledTime: "12:00",
-  isScheduleModalOpen: false,
-  hashtagGroups: [],
   isAIAssistantOpen: false,
+  hashtagGroups: [],
 };
 
 const postCreationSlice = createSlice({
@@ -284,7 +283,7 @@ const postCreationSlice = createSlice({
       state.isScheduled = action.payload;
     },
 
-    setScheduledDate: (state, action: PayloadAction<Date | undefined>) => {
+    setScheduledDate: (state, action: PayloadAction<Date | null>) => {
       state.scheduledDate = action.payload;
     },
 
@@ -293,10 +292,6 @@ const postCreationSlice = createSlice({
     },
 
     // Modals
-    setScheduleModalOpen: (state, action: PayloadAction<boolean>) => {
-      state.isScheduleModalOpen = action.payload;
-    },
-
     setIsAIAssistantOpen: (state, action: PayloadAction<boolean>) => {
       state.isAIAssistantOpen = action.payload;
     },
@@ -471,7 +466,6 @@ export const {
   setIsScheduled,
   setScheduledDate,
   setScheduledTime,
-  setScheduleModalOpen,
   setIsAIAssistantOpen,
   resetPostCreation,
   initializeChannelContent,

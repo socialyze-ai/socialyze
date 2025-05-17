@@ -10,7 +10,6 @@ export interface PostType {
   label: string[];
   media: string[];
   postType: "postnow" | "draft" | "scheduled";
-  postStatus: "queued" | "sent" | "failed" | "published";
   scheduledTime?: string;
 }
 
@@ -76,6 +75,34 @@ export const useGetPost = ({ filters }: { filters: PostsFilter }) => {
 
       if (response.error || !response.data) {
         throw new Error(response.error || "Failed to get posts");
+      }
+
+      return response.data;
+    },
+  });
+};
+
+export interface CalendarPostsFilter {
+  channel: string[];
+  postStatus: string[];
+  label: string[];
+  startDate: Date;
+  endDate: Date;
+}
+
+export const useGetCalendarPosts = ({ filters }: { filters: CalendarPostsFilter }) => {
+  return useQuery<PostResponse[]>({
+    queryKey: ["calendarPosts", filters],
+    queryFn: async () => {
+      const response = await makeRequest<PostResponse[]>(
+        BACKEND_URL + "post/getPostsForCalendar",
+        "POST",
+        getToken(),
+        filters,
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Failed to get posts for calendar");
       }
 
       return response.data;

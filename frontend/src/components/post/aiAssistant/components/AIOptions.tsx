@@ -28,6 +28,11 @@ const AIOptions: React.FC<AIOptionsProps> = ({
   useEffect(() => {
     // Handle clicks outside the options popover
     const handleClickOutside = (event: MouseEvent) => {
+      // Don't close the options if there's an ongoing operation
+      if (isPendingContent || isPendingHashTags) {
+        return;
+      }
+
       if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
         dispatch(setShowAIOptions(false));
       }
@@ -37,12 +42,22 @@ const AIOptions: React.FC<AIOptionsProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dispatch]);
+  }, [dispatch, isPendingContent, isPendingHashTags]);
 
   const handleButtonClick = (callback: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     callback();
+  };
+
+  // Only allow closing if no operations are in progress
+  const handleCloseClick = (e: React.MouseEvent) => {
+    if (isPendingContent || isPendingHashTags) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClose(e);
   };
 
   return (
@@ -62,7 +77,14 @@ const AIOptions: React.FC<AIOptionsProps> = ({
           <Wand2 className={cn("h-4 w-4 mr-1.5", "text-blue-500")} />
           <span className={cn("text-xs font-medium", "text-blue-700")}>AI Suggestions</span>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <button
+          onClick={handleCloseClick}
+          className={cn(
+            "text-gray-400 hover:text-gray-600",
+            (isPendingContent || isPendingHashTags) && "opacity-50 cursor-not-allowed",
+          )}
+          disabled={isPendingContent || isPendingHashTags}
+        >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>

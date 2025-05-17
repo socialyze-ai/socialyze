@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
+  SortDesc,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -46,11 +47,13 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
   const selectedStatuses = useSelector(
     (state: RootState) => state.dashboardPosts.filters.postStatus,
   );
+  const sortBy = useSelector((state: RootState) => state.dashboardPosts.filters.sortBy);
 
   const [isChannelOpen, setIsChannelOpen] = useState(false);
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isSortByOpen, setIsSortByOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Count posts by status
@@ -69,6 +72,13 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
     { name: "Rarotonga", offset: "(GMT-10:00)" },
     { name: "Honolulu", offset: "(GMT-10:00)" },
     { name: "Tahiti", offset: "(GMT-10:00)" },
+  ];
+
+  const sortOptions = [
+    { value: "latest", label: "Latest" },
+    { value: "oldest", label: "Oldest" },
+    { value: "mostLiked", label: "Most Liked" },
+    { value: "leastLiked", label: "Least Liked" },
   ];
 
   const toggleChannel = (channelId: string) => {
@@ -117,6 +127,16 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
         postStatus: newStatuses,
       }),
     );
+  };
+
+  const handleSortChange = (value: "latest" | "oldest" | "mostLiked" | "leastLiked") => {
+    dispatch(
+      updateFilter({
+        sortBy: value,
+        offset: 0, // Reset pagination when changing sort
+      }),
+    );
+    setIsSortByOpen(false);
   };
 
   return (
@@ -279,6 +299,42 @@ const FilterSelectors: React.FC<FilterSelectorsProps> = ({
                   <span>Failed</span>
                 </div>
               </Button>
+            </PopoverContent>
+          </Popover>
+
+          <Popover open={isSortByOpen} onOpenChange={setIsSortByOpen}>
+            <PopoverTrigger
+              asChild
+              className="rounded border-none bg-transparent hover:bg-gray-100"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 flex gap-1.5 items-center justify-between w-full sm:w-auto"
+              >
+                <SortDesc className="h-4 w-4" />
+                <span>Sort By: {sortOptions.find((opt) => opt.value === sortBy)?.label}</span>
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 flex flex-col gap-1 p-1.5">
+              {sortOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  variant="ghost"
+                  className={cn("justify-start font-normal", sortBy === option.value && "bg-muted")}
+                  onClick={() =>
+                    handleSortChange(
+                      option.value as "latest" | "oldest" | "mostLiked" | "leastLiked",
+                    )
+                  }
+                >
+                  <div className="flex items-center space-x-2 w-full">
+                    <Checkbox checked={sortBy === option.value} />
+                    <span>{option.label}</span>
+                  </div>
+                </Button>
+              ))}
             </PopoverContent>
           </Popover>
 

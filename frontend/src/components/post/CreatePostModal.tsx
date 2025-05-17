@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +38,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
-import ScheduleModal from "./ScheduleModal";
+import DateTimeSelector from "./DateTimeSelector";
 import HashtagInput from "./HashtagInput";
 import { addHashtagsToContent } from "@/utils/formatContent";
 import { useDispatch, useSelector } from "react-redux";
@@ -61,7 +62,6 @@ import {
   initializeChannelContent,
   syncContentAcrossChannels,
   setContent,
-  setScheduleModalOpen,
   setContentSyncState,
   syncMediaAcrossChannels,
 } from "@/redux/slices/postCreation.slice";
@@ -82,6 +82,7 @@ import LabelSelector from "./LabelSelector";
 import { reset } from "@/redux/slices/aiAssistant.slice";
 import { htmlToText } from "html-to-text";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -117,14 +118,18 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { mutate: addPostMutation, isPending: isAddPostPending } = useAddPost();
   const selectedLabels = useSelector(selectSelectedLabels);
-
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [isSyncAlertOpen, setIsSyncAlertOpen] = useState(false);
   const [isCloseAlertOpen, setIsCloseAlertOpen] = useState(false);
+  const [isScheduleMode, setIsScheduleMode] = useState(false);
+  const [scheduledDateTime, setScheduledDateTime] = useState<Date | undefined>(
+    selectedDate ? new Date(selectedDate) : new Date(),
+  );
 
   // Initialize content by channel when modal opens
   useEffect(() => {
@@ -186,21 +191,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     dispatch(setPostTypeForChannel({ channelId, postType: type }));
   };
 
-  const handleSchedule = (scheduledAt: Date, channels: string[]) => {
-    if (channels.length === 0) {
+  const handleSchedule = () => {
+    if (selectedChannels.length === 0) {
       toast.error("Channel selection required", {
         position: "top-center",
       });
       return;
     }
 
-    const hasContent = channels.some(
+    const hasContent = selectedChannels.some(
       (channelId) => contentByChannel[channelId]?.trim() !== "" || postCreation.hashtags.length > 0,
     );
 
     if (
       !hasContent &&
-      channels.some(
+      selectedChannels.some(
         (channelId) => !mediaByChannel[channelId] || mediaByChannel[channelId].length === 0,
       )
     ) {
@@ -210,7 +215,15 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       return;
     }
 
-    submitPost(channels, "scheduled", scheduledAt);
+    if (!scheduledDateTime || scheduledDateTime <= new Date()) {
+      toast.error("Please select a future time.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    submitPost(selectedChannels, "scheduled", scheduledDateTime);
+    setIsScheduleMode(false);
   };
 
   const handlePostNow = () => {
@@ -270,6 +283,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           position: "top-center",
         });
 
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+
         dispatch(unselectAllLabels());
 
         navigate("/dashboard");
@@ -306,7 +322,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         label: selectedLabels?.map((label) => label.id),
         media: mediaUrls,
         postType: status, // "postnow" | "scheduled" | "draft"
-        postStatus: "queued",
         handle: socialHandle,
       };
 
@@ -321,27 +336,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
         }),
       );
-
-      handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     });
 
-    console.log("finalData", finalData);
-
-    const statusText =
-      status === "postnow" ? "sent" : status === "scheduled" ? "scheduled" : "saved as draft";
-
-    toast(
-      status === "postnow"
-        ? "Post sent"
-        : status === "scheduled"
-        ? "Post scheduled"
-        : "Draft saved",
-      {
-        description: `Your post has been ${statusText}.`,
-        position: "top-center",
-      },
-    );
-
+    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
     onClose();
   };
 
@@ -410,10 +407,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsEditDialogOpen(false);
   };
 
-  const contentToUse = useMemo(
-    () => htmlToText(contentByChannel[activeChannel]),
-    [contentByChannel, activeChannel],
-  );
+  const contentToUse = useMemo(() => {
+    const removeBreakTags = contentByChannel[activeChannel]?.replace(/<br>/g, "");
+
+    return htmlToText(removeBreakTags);
+  }, [contentByChannel, activeChannel]);
 
   return (
     <>
@@ -429,6 +427,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               ? "max-w-[60dvw]"
               : "flex-1 h-fit",
           )}
+          id="create-post-modal-content"
         >
           {/* AI Assistant */}
           {postCreation.isAIAssistantOpen && (
@@ -603,6 +602,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               </div>
             )}
 
+            {/* Schedule UI */}
+            {isScheduleMode && (
+              <div className="my-4 p-4 border rounded-md">
+                <DateTimeSelector
+                  selectedDate={scheduledDateTime}
+                  onDateTimeChange={(date) => setScheduledDateTime(date)}
+                  setIsScheduleMode={setIsScheduleMode}
+                />
+              </div>
+            )}
+
             <div className="flex justify-between mt-2">
               <Button
                 onClick={handleToggleContentSync}
@@ -654,17 +664,32 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 </Button>
 
                 <Button
-                  onClick={() => dispatch(setScheduleModalOpen(true))}
-                  variant="outline"
+                  onClick={() => {
+                    if (isScheduleMode) {
+                      handleSchedule();
+                    } else {
+                      setIsScheduleMode(true);
+                    }
+                  }}
+                  variant={isScheduleMode ? "default" : "outline"}
                   size="sm"
                   disabled={selectedChannels.length === 0 || !activeChannel}
                   className="flex items-center gap-2"
                 >
-                  <CalendarCheck2 />
-                  <p>Schedule</p>
+                  {isScheduleMode ? (
+                    <>
+                      <CalendarCheck2 />
+                      <p>Schedule Post</p>
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck2 />
+                      <p>Schedule</p>
+                    </>
+                  )}
                 </Button>
 
-                {!selectedDate && (
+                {!selectedDate && !isScheduleMode && (
                   <Button
                     onClick={handlePostNow}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -730,13 +755,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           )}
         </DialogContent>
       </Dialog>
-
-      <ScheduleModal
-        isOpen={postCreation.isScheduleModalOpen}
-        onClose={() => dispatch(setScheduleModalOpen(false))}
-        selectedDate={selectedDate ? new Date(selectedDate) : new Date()}
-        onSchedule={handleSchedule}
-      />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl">
