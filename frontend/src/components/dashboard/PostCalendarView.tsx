@@ -26,6 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardPostType } from "@/redux/slices/dashboardPosts.slice";
 import { useGetCalendarPosts } from "@/api/apiHooks/usePost";
 import { RootState } from "@/redux/store";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -232,24 +233,25 @@ export const PostCalendarView = () => {
             {channel && (
               <div className="flex justify-between items-center w-full">
                 <div className="flex gap-1 sm:gap-2 items-center">
-                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full overflow-hidden flex-shrink-0">
-                    <img
-                      src={channel.profileImage}
-                      alt={channel.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                  <Avatar className="w-4 h-4 border-2 border-white shadow-sm">
+                    <AvatarImage src={channel.profileImage} />
+                    <AvatarFallback className="capitalize font-semibold text-xs bg-primary/10 text-primary">
+                      {channel.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
 
                   <p className="text-[10px] sm:text-xs font-medium">{timeStr}</p>
                 </div>
 
-                <div className="h-4 w-4 sm:h-5 sm:w-5 rounded overflow-hidden flex-shrink-0">
-                  <img
-                    src={event.post.media && event.post.media.length > 0 ? event.post.media[0] : ""}
-                    alt={channel.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                {event.post.media && event.post.media.length > 0 && (
+                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded overflow-hidden flex-shrink-0">
+                    <img
+                      src={event.post.media[0]}
+                      alt={channel.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -299,6 +301,22 @@ export const PostCalendarView = () => {
       </div>
     );
   };
+
+  useEffect(() => {
+    // Add a style element only for the rbc-overlay class
+    const styleEl = document.createElement("style");
+    styleEl.textContent = `
+      .rbc-overlay {
+        max-height: 22rem !important;
+        overflow-y: auto !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, []);
 
   return (
     <>
