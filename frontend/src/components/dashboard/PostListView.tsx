@@ -56,7 +56,7 @@ export const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
           profileImage={channel?.profileImage || ""}
           displayName={channel?.name || ""}
           username={channel?.username || channel?.name || ""}
-          date={post?.createdAt}
+          date={post?.scheduledTime}
           content={post?.text || ""}
           imageUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
           storyUrl={post?.media && post?.media?.length > 0 ? post?.media[0] : ""}
@@ -67,6 +67,7 @@ export const PostListView = ({ posts }: { posts: DashboardPostType[] }) => {
           engagementRate={0}
           createdDaysAgo={calculateDaysAgo(post.scheduledTime)}
           clicks={0}
+          postStatus={post?.postStatus}
         />
       );
     });

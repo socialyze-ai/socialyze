@@ -56,6 +56,7 @@ interface GridPostCardProps {
   createdDaysAgo?: number;
   isGrid?: boolean;
   clicks?: number;
+  postStatus: string;
 }
 
 // Helper function for social icons
@@ -91,6 +92,7 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   createdDaysAgo = 20,
   clicks = 0,
   isGrid = false,
+  postStatus = "queued",
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -107,30 +109,26 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   };
 
   const getStatusBadge = () => {
-    // Determine status based on date and custom flag
-    let status = "sent";
-    if (new Date(date) > new Date()) status = "scheduled";
-
     const statusColors = {
-      scheduled: "bg-amber-100 text-amber-800",
-      sent: "bg-green-100 text-green-800",
+      queued: "bg-amber-100 text-amber-800",
+      published: "bg-green-100 text-green-800",
       draft: "bg-blue-100 text-blue-800",
-      custom: "bg-purple-100 text-purple-800",
+      failed: "bg-red-100 text-red-800",
     };
 
     const statusIcons = {
-      scheduled: <Calendar className="h-3 w-3 mr-1" />,
+      queued: <Calendar className="h-3 w-3 mr-1" />,
+      published: <Clock className="h-3 w-3 mr-1" />,
       draft: <PenTool className="h-3 w-3 mr-1" />,
-      sent: <Clock className="h-3 w-3 mr-1" />,
-      custom: <Clock className="h-3 w-3 mr-1" />,
+      failed: <Clock className="h-3 w-3 mr-1" />,
     };
 
     return (
       <span
-        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[status]} whitespace-nowrap`}
+        className={`px-2 py-0.5 rounded-full text-xs flex items-center ${statusColors[postStatus]} whitespace-nowrap`}
       >
-        {statusIcons[status]}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusIcons[postStatus]}
+        {postStatus.charAt(0).toUpperCase() + postStatus.slice(1)}
       </span>
     );
   };
@@ -213,73 +211,79 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
   return (
     <Card
       className={cn(
-        "overflow-hidden h-full w-full hover:shadow-md transition-shadow break-inside-avoid",
+        "overflow-hidden h-full w-full flex flex-col justify-between hover:shadow-md transition-shadow break-inside-avoid",
         isGrid && "mb-4",
       )}
     >
-      <CardContent className="p-2 sm:p-3">
-        {/* Header with avatar and platform icon */}
-        <div className="flex justify-between items-center mb-2 sm:mb-3 gap-2">
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-            <div className="relative shrink-0">
-              <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
-                <AvatarImage src={profileImage} />
-                <AvatarFallback className="capitalize font-semibold text-xs sm:text-sm">
-                  {displayName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center bg-white z-10">
-                {getSocialIcon(platform, 10)}
+      <CardContent className="p-2 sm:p-3 flex flex-col justify-between h-full">
+        <div className="flex flex-col">
+          {/* Header with avatar and platform icon */}
+          <div className="flex justify-between items-center mb-2 sm:mb-3 gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <div className="relative shrink-0">
+                <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
+                  <AvatarImage src={profileImage} />
+                  <AvatarFallback className="capitalize font-semibold text-xs sm:text-sm">
+                    {displayName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 rounded-full border border-gray-200 w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center bg-white z-10">
+                  {getSocialIcon(platform, 10)}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium leading-none truncate">
+                  {displayName}
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{username}</p>
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium leading-none truncate">{displayName}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{username}</p>
+
+            {/* Status badge */}
+            <div className="shrink-0">{getStatusBadge()}</div>
+          </div>
+
+          {/* Content */}
+          <div className="mb-2 sm:mb-3">
+            <p className="text-xs sm:text-sm whitespace-pre-wrap">
+              {contentToDisplay}
+              {content.length > 150 && (
+                <span
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-gray-500 hover:underline cursor-pointer ml-1"
+                >
+                  {isExpanded ? "see less" : "see more"}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Media */}
+          {imageUrl && (
+            <div className="mb-2 sm:mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
+              <img src={imageUrl} alt="Post media" className="h-full w-full object-cover" />
             </div>
+          )}
+        </div>
+
+        <div className="flex flex-col">
+          {/* Date and time */}
+          <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
+            <Clock size={10} className="mr-1" />
+            <span>{formatPostDate(date)}</span>
           </div>
 
-          {/* Status badge */}
-          <div className="shrink-0">{getStatusBadge()}</div>
-        </div>
-
-        {/* Content */}
-        <div className="mb-2 sm:mb-3">
-          <p className="text-xs sm:text-sm whitespace-pre-wrap">
-            {contentToDisplay}
-            {content.length > 150 && (
-              <span
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-gray-500 hover:underline cursor-pointer ml-1"
-              >
-                {isExpanded ? "see less" : "see more"}
-              </span>
-            )}
-          </p>
-        </div>
-
-        {/* Media */}
-        {imageUrl && (
-          <div className="mb-2 sm:mb-3 aspect-video w-full rounded-md overflow-hidden bg-muted">
-            <img src={imageUrl} alt="Post media" className="h-full w-full object-cover" />
-          </div>
-        )}
-
-        {/* Date and time */}
-        <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
-          <Clock size={10} className="mr-1" />
-          <span>{formatPostDate(date)}</span>
-        </div>
-
-        <div className="flex justify-between items-center gap-2">
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-gray-600">
-            {engagementRatings.map((item) => (
-              <PostSocialEngagement
-                key={item.id}
-                icon={item.icon}
-                text={item.name}
-                count={item.value}
-              />
-            ))}
+          <div className="flex justify-between items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-gray-600">
+              {engagementRatings.map((item) => (
+                <PostSocialEngagement
+                  key={item.id}
+                  icon={item.icon}
+                  text={item.name}
+                  count={item.value}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -293,13 +297,19 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
           <Tags size={14} className="sm:w-4 sm:h-4" />
         </Button>
 
-        <div className="flex gap-1 sm:gap-2">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             className="border border-gray-300 text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
           >
             <SquareArrowOutUpRight size={14} className="sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <p>View Post</p>
+            {postStatus === "queued" ? (
+              <p>Publish Now</p>
+            ) : postStatus === "failed" ? (
+              <p>Try Again</p>
+            ) : (
+              <p>View Post</p>
+            )}
           </Button>
 
           <DropdownMenu>
@@ -312,11 +322,15 @@ const GridPostCard: React.FC<GridPostCardProps> = ({
                 <MoreVertical size={14} className="sm:w-4 sm:h-4" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
-                <Link size={14} className="sm:w-4 sm:h-4" />
-                <p>Copy link</p>
-              </DropdownMenuItem>
+              {postStatus === "published" && (
+                <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Link size={14} className="sm:w-4 sm:h-4" />
+                  <p>Copy link</p>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem className="flex items-center gap-2 text-xs sm:text-sm">
                 <Copy size={14} className="sm:w-4 sm:h-4" />
                 <p>Duplicate</p>
