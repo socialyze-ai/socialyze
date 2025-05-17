@@ -83,7 +83,8 @@ const PostPreviewPanel: React.FC<PostPreviewPanelProps> = ({
         {selectedChannels.map((channelId) => {
           const channel = channels.find((c) => c.id === channelId);
           const filterContent = getPreviewContent();
-          const contentToUse = htmlToText(filterContent);
+          const removeBreakTags = filterContent?.replace(/<br>/g, "");
+          const contentToUse = htmlToText(removeBreakTags);
 
           return channel && currentPreviewTab === channel.id ? (
             <PostPreview key={channel.id} content={contentToUse} channel={channel} />

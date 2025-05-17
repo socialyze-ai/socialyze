@@ -1,7 +1,17 @@
-import { useCallback, useMemo, useState } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { format, startOfDay, differenceInDays, isBefore, isToday } from "date-fns";
+import {
+  format,
+  startOfDay,
+  differenceInDays,
+  isBefore,
+  isToday,
+  startOfMonth,
+  endOfMonth,
+  addDays,
+  subDays,
+} from "date-fns";
 import moment from "moment";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +24,8 @@ import GridPostCard from "./GridPostCard";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardPostType } from "@/redux/slices/dashboardPosts.slice";
+import { useGetCalendarPosts } from "@/api/apiHooks/usePost";
+import { RootState } from "@/redux/store";
 
 // Initialize localizer
 const localizer = momentLocalizer(moment);
@@ -28,14 +40,42 @@ interface CalendarEvent {
   channelType: string;
 }
 
-export const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
+export const PostCalendarView = () => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [visibleDateRange, setVisibleDateRange] = useState({
+    start: subDays(startOfMonth(currentDate), 10),
+    end: addDays(endOfMonth(currentDate), 10),
+  });
   const isMobile = useIsMobile();
 
   const channels = useSelector(selectChannels);
+  const filters = useSelector((state: RootState) => state.dashboardPosts.filters);
+
+  // Update visible date range when the current date changes
+  useEffect(() => {
+    setVisibleDateRange({
+      start: subDays(startOfMonth(currentDate), 10),
+      end: addDays(endOfMonth(currentDate), 10),
+    });
+  }, [currentDate]);
+
+  const {
+    data: posts,
+    isLoading: isPostsLoading,
+    isError: isPostsError,
+  } = useGetCalendarPosts({
+    filters: {
+      startDate: visibleDateRange.start,
+      endDate: visibleDateRange.end,
+      channel: filters.channel,
+      postStatus: filters.postStatus,
+      label: filters.label,
+    },
+  });
 
   const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];
@@ -55,7 +95,7 @@ export const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
             title: post.text.length > 30 ? post.text.substring(0, 30) + "..." : post.text,
             start: startDate,
             end: endDate,
-            post,
+            post: post as unknown as DashboardPostType,
             channelId,
             channelType: channel.type,
           });
@@ -116,6 +156,11 @@ export const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
 
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
+  };
+
+  // Handle date navigation in the calendar
+  const handleNavigate = (date: Date) => {
+    setCurrentDate(date);
   };
 
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
@@ -263,6 +308,8 @@ export const PostCalendarView = ({ posts }: { posts: DashboardPostType[] }) => {
           style={{ height: "100%" }}
           views={["month"]}
           defaultView="month"
+          date={currentDate}
+          onNavigate={handleNavigate}
           eventPropGetter={eventStyleGetter}
           components={{
             event: EventComponent,

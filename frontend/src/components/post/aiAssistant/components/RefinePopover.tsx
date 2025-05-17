@@ -19,6 +19,13 @@ const RefinePopover = ({
     e.stopPropagation();
   };
 
+  // Only allow closing if no operations are in progress
+  const handleCancel = () => {
+    if (!isPendingContent) {
+      setShowRefinePreview(false);
+    }
+  };
+
   return (
     <div
       className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm"
@@ -33,7 +40,7 @@ const RefinePopover = ({
         <ActionButtons
           handleConfirm={handleRefineAction}
           handleRegenerate={handleRegenerateRefinedText}
-          handleCancel={() => setShowRefinePreview(false)}
+          handleCancel={handleCancel}
           isPending={isPendingContent}
         />
       </div>

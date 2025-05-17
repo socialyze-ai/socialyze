@@ -1,6 +1,6 @@
 import { BACKEND_URL } from "@/config/config";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getToken, makeRequest, ApiResponse } from "./utils";
+import { getToken, makeRequest, smartRequest, ApiResponse } from "./utils";
 
 export interface MediaUploadResponse {
   url: string;
@@ -10,7 +10,7 @@ export interface MediaUploadResponse {
 export const useUploadMedia = () => {
   return useMutation<ApiResponse<MediaUploadResponse>, Error, FormData>({
     mutationFn: async (data: FormData) => {
-      return await makeRequest<MediaUploadResponse>(
+      return await smartRequest<MediaUploadResponse>(
         BACKEND_URL + "media/uploadMedia",
         "POST",
         getToken(),
@@ -60,14 +60,14 @@ export const useGetImages = (filters?: GetImagesPayload) => {
   });
 };
 
-export interface UnsplashUploadResponse {
+export interface UploadMediaWithLinkResponse {
   url: string;
   mediaId: string;
 }
 
 export const useUploadUnsplashMedia = () => {
   const uploadUnsplashMedia = async (body: { url: string; postId: string }) => {
-    const response = await makeRequest<UnsplashUploadResponse>(
+    const response = await makeRequest<UploadMediaWithLinkResponse>(
       BACKEND_URL + "media/uploadMediaForUnsplash",
       "POST",
       getToken(),
@@ -83,5 +83,26 @@ export const useUploadUnsplashMedia = () => {
 
   return useMutation({
     mutationFn: uploadUnsplashMedia,
+  });
+};
+
+export const useUploadMediaWithLink = () => {
+  const uploadMediaWithLink = async (body: { url: string; postId: string }) => {
+    const response = await makeRequest<UploadMediaWithLinkResponse>(
+      BACKEND_URL + "media/uploadMediaWithLink",
+      "POST",
+      getToken(),
+      body,
+    );
+
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to upload media with link");
+    }
+
+    return response.data;
+  };
+
+  return useMutation({
+    mutationFn: uploadMediaWithLink,
   });
 };

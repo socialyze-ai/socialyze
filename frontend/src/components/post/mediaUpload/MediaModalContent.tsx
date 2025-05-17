@@ -1,4 +1,8 @@
-import { useGetImages, useUploadUnsplashMedia } from "@/api/apiHooks/useMedia";
+import {
+  useGetImages,
+  useUploadMediaWithLink,
+  useUploadUnsplashMedia,
+} from "@/api/apiHooks/useMedia";
 import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { DebounceInput } from "react-debounce-input";
@@ -35,7 +39,10 @@ const MediaModalContent = ({
   const [loadingMore, setLoadingMore] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const { mutate: generateGCSUrl, isPending: isGenerateGCSUrlPending } = useUploadUnsplashMedia();
+  const { mutate: generateUnsplashMediaUrl, isPending: isGenerateUnsplashMediaUrlPending } =
+    useUploadUnsplashMedia();
+  const { mutate: generateMediaWithLink, isPending: isGenerateMediaWithLinkPending } =
+    useUploadMediaWithLink();
 
   const {
     data: mediaData,
@@ -79,8 +86,11 @@ const MediaModalContent = ({
       if (scrollContainer) {
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
 
-        // If scrolled to near bottom (within 200px of bottom)
-        if (scrollHeight - scrollTop - clientHeight < 200 && !isLoading && !loadingMore) {
+        // Calculate the scroll percentage (0 to 1)
+        const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+
+        // If scrolled to 80% or more of the container and not already loading
+        if (scrollPercentage >= 0.8 && !isLoading && !loadingMore) {
           loadMoreImages();
         }
       }
@@ -102,45 +112,87 @@ const MediaModalContent = ({
 
     const postId = uuidv4();
 
-    generateGCSUrl(
-      { url: image.download_location, postId },
-      {
-        onSuccess: (data) => {
-          const newMedia: Media = {
-            id: postId,
-            url: data.url || image.url, // Use the returned URL or fallback to the preview URL
-            type: "image" as const,
-          };
+    if (provider === "unsplash") {
+      generateUnsplashMediaUrl(
+        { url: image.download_location, postId },
+        {
+          onSuccess: (data) => {
+            const newMedia: Media = {
+              id: postId,
+              url: data.url || image.url, // Use the returned URL or fallback to the preview URL
+              type: "image" as const,
+            };
 
-          // If there's a direct selection handler, use it
-          if (onImageSelect) {
-            onImageSelect(newMedia);
-          } else {
-            // Otherwise update the selection state
-            setSelectedMediaContent([newMedia]);
-          }
+            // If there's a direct selection handler, use it
+            if (onImageSelect) {
+              onImageSelect(newMedia);
+            } else {
+              // Otherwise update the selection state
+              setSelectedMediaContent([newMedia]);
+            }
 
-          if (closeModal) {
-            closeModal();
-          }
+            if (closeModal) {
+              closeModal();
+            }
 
-          toast.success("Image selected successfully", {
-            position: "top-center",
-          });
+            toast.success("Image selected successfully", {
+              position: "top-center",
+            });
+          },
+          onError: (error) => {
+            console.error("Error uploading image:", error);
+            setIsSelecting(false);
+
+            toast.error("Failed to select image", {
+              position: "top-center",
+            });
+          },
+          onSettled: () => {
+            setIsSelecting(false);
+          },
         },
-        onError: (error) => {
-          console.error("Error uploading image:", error);
-          setIsSelecting(false);
+      );
+    } else {
+      generateMediaWithLink(
+        { url: image.download_location || image.url, postId },
+        {
+          onSuccess: (data) => {
+            const newMedia: Media = {
+              id: postId,
+              url: data.url || image.url, // Use the returned URL or fallback to the preview URL
+              type: "image" as const,
+            };
 
-          toast.error("Failed to select image", {
-            position: "top-center",
-          });
+            // If there's a direct selection handler, use it
+            if (onImageSelect) {
+              onImageSelect(newMedia);
+            } else {
+              // Otherwise update the selection state
+              setSelectedMediaContent([newMedia]);
+            }
+
+            if (closeModal) {
+              closeModal();
+            }
+
+            toast.success("Image selected successfully", {
+              position: "top-center",
+            });
+          },
+          onError: (error) => {
+            console.error("Error uploading image:", error);
+            setIsSelecting(false);
+
+            toast.error("Failed to select image", {
+              position: "top-center",
+            });
+          },
+          onSettled: () => {
+            setIsSelecting(false);
+          },
         },
-        onSettled: () => {
-          setIsSelecting(false);
-        },
-      },
-    );
+      );
+    }
   };
 
   return (
@@ -157,11 +209,16 @@ const MediaModalContent = ({
         ref={scrollContainerRef}
         className="flex flex-col gap-2 min-h-[20dvh] max-h-[60vh] overflow-y-auto"
       >
-        {(isLoading && page === 1) || isSelecting || isGenerateGCSUrlPending ? (
+        {(isLoading && page === 1) ||
+        isSelecting ||
+        isGenerateUnsplashMediaUrlPending ||
+        isGenerateMediaWithLinkPending ? (
           <div className="flex flex-col items-center justify-center my-10">
             <Loader2 className="animate-spin text-blue-500" size={32} />
             <p className="mt-2 text-lg font-semibold text-gray-700">
-              {isGenerateGCSUrlPending ? "Processing selected Image..." : "Loading..."}
+              {isGenerateUnsplashMediaUrlPending || isGenerateMediaWithLinkPending
+                ? "Processing selected Image..."
+                : "Loading..."}
             </p>
           </div>
         ) : isError ? (
