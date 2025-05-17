@@ -14,6 +14,7 @@ interface ContentEditableWrapperProps {
   hasScrollbar: boolean;
   disableSelection?: boolean;
   className?: string;
+  isRefining?: boolean;
   onInput: (e: React.FormEvent<HTMLElement>) => void;
   onMouseEnter: () => void;
   onMouseUp: (e: React.MouseEvent | React.KeyboardEvent) => void;
@@ -37,6 +38,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
   hasScrollbar,
   disableSelection = false,
   className,
+  isRefining = false,
   onInput,
   onMouseEnter,
   onMouseUp,
@@ -50,7 +52,7 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
   const hasContent = content.trim().length > 0;
 
   return (
-    <div className="relative">
+    <div className={cn("relative", isRefining && "is-refining")}>
       <ContentEditable
         innerRef={editorRef}
         html={
@@ -64,8 +66,8 @@ const ContentEditableWrapper: React.FC<ContentEditableWrapperProps> = ({
         }
         disabled={isTypingEffect || showTypeControls}
         className={cn(
-          "resize-none border-0 outline-none focus:outline-none p-3 rounded overflow-y-auto whitespace-pre-wrap",
-          isPostModal ? "text-sm h-[300px]" : "text-base h-[200px]",
+          "resize-none border-0 outline-none focus:outline-none p-3 rounded whitespace-pre-wrap max-h-fit",
+          isPostModal ? "text-sm min-h-[300px]" : "text-base min-h-[200px]",
           hasScrollbar ? "pr-5" : "pr-6",
           disableSelection ? "disable-selection" : "",
           className,

@@ -23,6 +23,7 @@ import SparkleButton from "./components/SparkleButton";
 import RefinePopover from "./components/RefinePopover";
 import GeneratedContentControls from "./components/GeneratedContentControls";
 import GeneratedContentControlsPortal from "./components/GeneratedContentControlsPortal";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 
 // Import hooks
 import { useTypeEffect } from "./hooks/useTypeEffect";
@@ -540,7 +541,10 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
   const hasContent = content.trim().length > 0;
 
   return (
-    <div className={`relative ${isRefining ? "is-refining" : ""}`} ref={editorContainerRef}>
+    <div
+      className={`relative max-h-[50dvh] overflow-y-auto ${isRefining ? "is-refining" : ""}`}
+      ref={editorContainerRef}
+    >
       <ContentEditableWrapper
         editorRef={editorRef}
         content={content}
@@ -551,6 +555,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
         placeholder={placeholder}
         isPostModal={isPostModal}
         hasScrollbar={hasScrollbar}
+        isRefining={isRefining}
         disableSelection={
           isTypingEffect || showTypeControls || isPendingContent || isPendingHashTags
         }
@@ -595,33 +600,43 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
 
       {/* Show AI response preview when requested */}
       {showRefinePreview && generatedRefineContent && selectedRange && (
-        <div
-          className="absolute z-50 bg-white rounded-md shadow-lg max-w-sm border border-gray-200"
-          style={{
-            top: `${selectionCoordsRef.current?.top || getSelectionCoordinates()?.top || 0}px`,
-            left: `${selectionCoordsRef.current?.left || getSelectionCoordinates()?.left || 0}px`,
-            transform: "translateY(-100%)",
+        <Popover
+          open={showRefinePreview}
+          onOpenChange={(open) => {
+            // Prevent closing if an operation is in progress
+            if (!open && isRefining) return;
+            setShowRefinePreview(open);
+
+            // If closing the preview, ensure selection is restored
+            if (!open) {
+              setIsRefining(false);
+              setActiveAIOperation(null);
+              if (selectedRange) {
+                setTimeout(() => {
+                  focusAndSelectText(selectedRange);
+                }, 10);
+              }
+            }
           }}
         >
+          <PopoverTrigger asChild>
+            <div
+              className="absolute"
+              style={{
+                top: `${selectionCoordsRef.current?.top || getSelectionCoordinates()?.top || 0}px`,
+                left: `${
+                  selectionCoordsRef.current?.left || getSelectionCoordinates()?.left || 0
+                }px`,
+                width: "1px",
+                height: "1px",
+                position: "absolute",
+                zIndex: -1,
+              }}
+            />
+          </PopoverTrigger>
           <RefinePopover
             generatedRefineContent={generatedRefineContent}
-            setShowRefinePreview={(show) => {
-              // Don't allow closing if an operation is in progress
-              if (!show && isRefining) return;
-
-              setShowRefinePreview(show);
-
-              // If closing the preview, ensure selection is restored
-              if (!show) {
-                setIsRefining(false);
-                setActiveAIOperation(null);
-                if (selectedRange) {
-                  setTimeout(() => {
-                    focusAndSelectText(selectedRange);
-                  }, 10);
-                }
-              }
-            }}
+            setShowRefinePreview={setShowRefinePreview}
             handleRefineAction={handleRefineAction}
             handleRegenerateRefinedText={() => {
               // Store current selection coordinates before regenerating
@@ -640,7 +655,7 @@ const AIAssistantTextarea: React.FC<AIAssistantTextareaProps> = ({
             }}
             isPendingContent={isPendingContent}
           />
-        </div>
+        </Popover>
       )}
 
       {/* Sparkles icon at the top right */}

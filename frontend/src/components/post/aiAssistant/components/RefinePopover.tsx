@@ -1,5 +1,6 @@
 import React from "react";
 import ActionButtons from "./ActionButtons";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 
 const RefinePopover = ({
   generatedRefineContent,
@@ -27,9 +28,12 @@ const RefinePopover = ({
   };
 
   return (
-    <div
-      className="flex flex-col gap-2 bg-white z-40 p-1.5 px-2 max-w-sm"
+    <PopoverContent
+      className="flex flex-col gap-2 p-1.5 px-2 max-w-sm"
+      side="top"
       onClick={handlePopoverClick}
+      align="start"
+      avoidCollisions={true}
     >
       {isPendingContent ? (
         <p className="text-xs text-gray-600 mt-1">Refining...</p>
@@ -44,7 +48,7 @@ const RefinePopover = ({
           isPending={isPendingContent}
         />
       </div>
-    </div>
+    </PopoverContent>
   );
 };
 
