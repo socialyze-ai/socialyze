@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useLogin, useSignup, User as ApiUser } from "@/api/apiHooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useDispatch } from "react-redux";
+import { logout as reduxLogout } from "@/redux/slices/auth.slice";
 
 type User = ApiUser;
 
@@ -29,6 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null); // State to store error messages
   const loginMutation = useLogin();
   const signupMutation = useSignup();
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -135,6 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem("socialyze_user");
     localStorage.removeItem("socialyze_token");
+
+    queryClient.clear();
+    dispatch(reduxLogout());
   };
 
   return (
