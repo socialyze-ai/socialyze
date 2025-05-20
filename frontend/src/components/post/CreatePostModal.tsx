@@ -83,6 +83,7 @@ import { reset } from "@/redux/slices/aiAssistant.slice";
 import { htmlToText } from "html-to-text";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import TemplatePanel from "./template/TemplatePanel";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -413,15 +414,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     return htmlToText(removeBreakTags);
   }, [contentByChannel, activeChannel]);
 
+  const isLeftPanelOpen = postCreation.isAIAssistantOpen || postCreation.isTemplateSectionOpen;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
         <DialogContent
           className={cn(
             "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
-            postCreation.isAIAssistantOpen && selectedChannels.length === 0
+            isLeftPanelOpen && selectedChannels.length === 0
               ? "max-w-[60dvw]"
-              : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
+              : isLeftPanelOpen && selectedChannels.length !== 0
               ? "max-w-[90dvw]"
               : selectedChannels.length !== 0 && activeChannel
               ? "max-w-[60dvw]"
@@ -430,14 +433,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           id="create-post-modal-content"
         >
           {/* AI Assistant */}
-          {postCreation.isAIAssistantOpen && (
+          {isLeftPanelOpen && (
             <div
               className={cn(
                 "h-full overflow-y-auto",
                 selectedChannels.length === 0 && !activeChannel ? "w-[40%]" : "w-[30%]",
               )}
             >
-              <AIAssistantPanel />
+              {postCreation.isAIAssistantOpen && <AIAssistantPanel />}
+
+              {postCreation.isTemplateSectionOpen && <TemplatePanel />}
             </div>
           )}
 
@@ -445,9 +450,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           <div
             className={cn(
               "overflow-y-auto bg-white p-5 rounded h-full",
-              postCreation.isAIAssistantOpen && selectedChannels.length === 0
+              isLeftPanelOpen && selectedChannels.length === 0
                 ? "w-[60%]"
-                : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
+                : isLeftPanelOpen && selectedChannels.length !== 0
                 ? "w-[40%]"
                 : selectedChannels.length !== 0 && activeChannel
                 ? "w-[60%]"
@@ -708,7 +713,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             <div
               className={cn(
                 "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
-                postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
+                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
               <div className="flex justify-between mb-2 w-full">
