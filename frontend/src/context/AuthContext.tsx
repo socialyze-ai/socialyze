@@ -41,25 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem("socialyze_token");
 
       if (savedUser && token) {
-        setUser(JSON.parse(savedUser));
-      } else if (token) {
-        // This approach handles cases where only the token is stored
-        setUser({
-          _id: "token-user",
-          name: "User",
-          email: "",
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+        } catch (err) {
+          console.error("Failed to parse saved user from localStorage:", err);
+          localStorage.removeItem("socialyze_user");
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
+
       setLoading(false);
     };
 
     checkAuth();
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "socialyze_user") {
+      if (e.key === "socialyze_user" || e.key === "socialyze_token") {
         checkAuth();
       }
     };
