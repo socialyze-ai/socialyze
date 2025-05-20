@@ -59,6 +59,8 @@ const InitialDataLoader = () => {
         selected: false,
       }));
       dispatch(setInitialLabels(formattedLabels || []));
+    } else {
+      dispatch(setInitialLabels([]));
     }
   }, [apiLabels, dispatch, isAuthenticated]);
 
@@ -80,6 +82,9 @@ const InitialDataLoader = () => {
 
       dispatch(addChannels((channels || []) as any));
       dispatch(addPostsChannels((channels || []) as any));
+    } else {
+      dispatch(addChannels([]));
+      dispatch(addPostsChannels([]));
     }
   }, [channelsData, dispatch, isAuthenticated]);
 
@@ -113,6 +118,9 @@ const InitialDataLoader = () => {
       }
     } else if (filters.offset === 0) {
       // Only clear posts if it's an initial load with no results
+      dispatch(setPosts([]));
+    } else {
+      dispatch(appendPosts([]));
       dispatch(setPosts([]));
     }
   }, [postsData, dispatch, isAuthenticated, filters.offset]);
