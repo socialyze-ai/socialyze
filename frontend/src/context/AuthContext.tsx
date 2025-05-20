@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useLogin, useSignup, User as ApiUser } from "@/api/apiHooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useDispatch } from "react-redux";
+import { logout as reduxLogout } from "@/redux/slices/auth.slice";
 
 type User = ApiUser;
 
@@ -29,33 +32,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null); // State to store error messages
   const loginMutation = useLogin();
   const signupMutation = useSignup();
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const checkAuth = () => {
       const savedUser = localStorage.getItem("socialyze_user");
-      const token = localStorage.getItem("socialyze_token") || localStorage.getItem("LOG_TOKEN");
+      const token = localStorage.getItem("socialyze_token");
 
       if (savedUser && token) {
-        setUser(JSON.parse(savedUser));
-      } else if (token) {
-        // If we only have LOG_TOKEN but no user, create a minimal user
-        // This approach handles cases where only the token is stored
-        setUser({
-          _id: "token-user",
-          name: "User",
-          email: "",
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+        } catch (err) {
+          console.error("Failed to parse saved user from localStorage:", err);
+          localStorage.removeItem("socialyze_user");
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
+
       setLoading(false);
     };
 
     checkAuth();
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "socialyze_user" || e.key === "LOG_TOKEN") {
+      if (e.key === "socialyze_user" || e.key === "socialyze_token") {
         checkAuth();
       }
     };
@@ -89,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
-      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -125,7 +128,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       localStorage.setItem("socialyze_user", JSON.stringify(user));
       localStorage.setItem("socialyze_token", token);
-      localStorage.setItem("LOG_TOKEN", token); // Store LOG_TOKEN for compatibility
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -138,7 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem("socialyze_user");
     localStorage.removeItem("socialyze_token");
-    localStorage.removeItem("LOG_TOKEN");
+
+    queryClient.clear();
+    dispatch(reduxLogout());
   };
 
   return (

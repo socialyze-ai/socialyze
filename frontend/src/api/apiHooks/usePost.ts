@@ -79,6 +79,7 @@ export const useGetPost = ({ filters }: { filters: PostsFilter }) => {
 
       return response.data;
     },
+    enabled: getToken() !== "",
   });
 };
 

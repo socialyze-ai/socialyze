@@ -36,6 +36,7 @@ export const useGetTagLabels = () => {
 
       return response.data;
     },
+    enabled: getToken() !== "",
   });
 };
 

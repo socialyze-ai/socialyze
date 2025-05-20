@@ -87,6 +87,7 @@ export const useGetChannel = (isMockData: boolean = false) => {
       }
       return await makeRequest<SocialChannel[]>(BACKEND_URL + "channel", "GET", getToken());
     },
+    enabled: getToken() !== "",
   });
 
   return query;
