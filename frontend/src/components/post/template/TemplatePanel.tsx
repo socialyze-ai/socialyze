@@ -89,6 +89,8 @@ const TemplatePanel = () => {
                 })}
               </div>
 
+              <TemplateEditModal />
+
               <div className="flex flex-col gap-1 h-full overflow-y-auto">
                 <TemplateCards />
                 <TemplateCards />
