@@ -214,61 +214,69 @@ const Canvas = () => {
     return (
       <>
         {/* Render all images */}
-        {images.map((img) => (
-          <div
-            key={img.id}
-            className={`absolute cursor-move ${
-              selectedItemId === img.id ? "ring-2 ring-blue-500" : ""
-            }`}
-            style={{
-              left: `${img.position.x}px`,
-              top: `${img.position.y}px`,
-              width: `${img.size.width}px`,
-              height: `${img.size.height}px`,
-              zIndex: selectedItemId === img.id ? 10 : 1,
-            }}
-            onClick={(e) => handleSelectItem(img.id, e)}
-            onMouseDown={(e) => handleDragStart(e, img.position)}
-          >
-            <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
+        {images.map((img) => {
+          const isSelected = selectedItemId === img.id;
 
-            {/* Resize handle - only visible when selected */}
-            {selectedItemId === img.id && (
-              <div
-                className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
-                onMouseDown={(e) => handleResizeStart(e, img.size)}
-              >
-                <div className="w-2 h-2 bg-white"></div>
-              </div>
-            )}
-          </div>
-        ))}
+          return (
+            <div
+              key={img.id}
+              className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+              style={{
+                left: `${img.position.x}px`,
+                top: `${img.position.y}px`,
+                width: `${img.size.width}px`,
+                height: `${img.size.height}px`,
+                zIndex: isSelected ? 10 : 1,
+              }}
+              onClick={(e) => handleSelectItem(img.id, e)}
+              onMouseDown={(e) => handleDragStart(e, img.position)}
+            >
+              <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
+
+              {/* Resize handle - only visible when selected */}
+              {isSelected && (
+                <div
+                  className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+                  onMouseDown={(e) => handleResizeStart(e, img.size)}
+                >
+                  <div className="w-2 h-2 bg-white"></div>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Render all texts */}
-        {texts.map((txt) => (
-          <div
-            key={txt.id}
-            className={`absolute cursor-move ${
-              selectedItemId === txt.id ? "ring-2 ring-blue-500 p-1" : "p-1"
-            }`}
-            style={{
-              left: `${txt.position.x}px`,
-              top: `${txt.position.y}px`,
-              zIndex: selectedItemId === txt.id ? 10 : 1,
-            }}
-            onClick={(e) => handleSelectItem(txt.id, e)}
-            onMouseDown={(e) => handleDragStart(e, txt.position)}
-          >
+        {texts.map((txt) => {
+          const isSelected = selectedItemId === txt.id;
+
+          return (
             <div
+              key={txt.id}
+              className={`absolute cursor-move whitespace-nowrap ${
+                isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"
+              }`}
               style={{
-                fontSize: `${txt.style.fontSize}px`,
-                color: txt.style.color,
+                left: `${txt.position.x}px`,
+                top: `${txt.position.y}px`,
+                zIndex: isSelected ? 10 : 1,
               }}
+              onClick={(e) => handleSelectItem(txt.id, e)}
+              onMouseDown={(e) => handleDragStart(e, txt.position)}
             >
-              {txt.content}
+              <div
+                style={{
+                  fontSize: `${txt.style.fontSize}px`,
+                  color: txt.style.color,
+                  whiteSpace: "nowrap",
+                  textAlign: "left",
+                }}
+              >
+                {txt.content}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </>
     );
   };
@@ -294,7 +302,9 @@ const Canvas = () => {
       </div>
       <div
         ref={canvasRef}
-        className="relative overflow-visible border border-gray-300"
+        className={`relative border border-gray-300 ${
+          selectedItemId ? "overflow-visible" : "overflow-hidden"
+        }`}
         style={{
           ...getAspectRatioStyle(),
           position: "relative",
@@ -303,7 +313,11 @@ const Canvas = () => {
         onClick={handleCanvasClick}
       >
         {/* Container for all items */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div
+          className={`absolute top-0 left-0 w-full h-full ${
+            selectedItemId ? "overflow-visible" : "overflow-hidden"
+          }`}
+        >
           {/* Reference lines */}
           {renderReferenceLines()}
 

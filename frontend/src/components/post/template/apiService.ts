@@ -48,6 +48,12 @@ const getItemClipping = (
   }
 };
 
+// Helper to estimate text width based on content and font size
+const estimateTextWidth = (text: string, fontSize: number): number => {
+  // Approximate width: average character is ~0.6x font size wide
+  return text.length * fontSize * 0.6;
+};
+
 // This is a mock API service for demo purposes
 export const apiService = {
   // Process template and generate output
@@ -103,15 +109,35 @@ export const apiService = {
             };
           });
 
-        // Find texts that are in this section
-        const sectionTexts = templateData.texts.filter((txt) => {
-          const txtX = txt.position.x;
-          const sectionStartX = i * sectionWidth;
-          const sectionEndX = (i + 1) * sectionWidth;
+        // Find texts that are at least partially visible in this section
+        const sectionTexts = templateData.texts
+          .filter((txt) => {
+            const txtX = txt.position.x;
+            // Estimate text width based on content and font size
+            const estimatedWidth = estimateTextWidth(txt.content, txt.style.fontSize);
+            const txtEndX = txtX + estimatedWidth;
 
-          // Check if text is in this section
-          return txtX >= sectionStartX && txtX < sectionEndX;
-        });
+            const sectionStartX = i * sectionWidth;
+            const sectionEndX = (i + 1) * sectionWidth;
+
+            // Check if text overlaps with this section
+            return txtX < sectionEndX && txtEndX > sectionStartX;
+          })
+          .map((txt) => {
+            // Calculate if and how the text should be clipped in this section
+            const estimatedWidth = estimateTextWidth(txt.content, txt.style.fontSize);
+            const clipping = getItemClipping(
+              txt.position,
+              { width: estimatedWidth, height: txt.style.fontSize },
+              i,
+              sectionWidth,
+            );
+
+            return {
+              ...txt,
+              clipping,
+            };
+          });
 
         sections.push({
           index: i,

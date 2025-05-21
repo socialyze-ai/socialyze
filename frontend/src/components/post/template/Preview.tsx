@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, CSSProperties } from "react";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CSSProperties } from "react";
 
 // Extend the TextStyle interface to include optional properties
 interface ExtendedTextStyle extends Record<string, any> {
@@ -146,14 +145,11 @@ const Preview = () => {
           );
         })}
 
-        {/* Render texts that are visible in the current box */}
+        {/* Render all texts, including those that might overlap box boundaries */}
         {texts.map((txt) => {
-          // Check if text is visible in current box
-          if (txt.position.x < boxStartX || txt.position.x > boxEndX) {
-            return null;
-          }
-
-          const positionStyle = getAdjustedPosition(txt.position);
+          // Include text that might be partially visible or spans across boxes
+          // Calculate what part of the text is visible in this box
+          const txtPositionStyle = getAdjustedPosition(txt.position);
 
           // Calculate the scaled font size
           const scaledFontSize = txt.style.fontSize * scaleFactor;
@@ -161,20 +157,30 @@ const Preview = () => {
           // Treat txt.style as an extended style object
           const style = txt.style as ExtendedTextStyle;
 
+          // Check if text is at least partially visible in this box
+          const textWidth = txt.content.length * scaledFontSize * 0.6; // Approximate width based on content
+          const textLeft = txt.position.x;
+          const textRight = textLeft + textWidth;
+
+          if (textRight < boxStartX || textLeft > boxEndX) {
+            return null;
+          }
+
           return (
             <div
               key={`preview-${txt.id}`}
-              className="absolute"
+              className="absolute whitespace-nowrap"
               style={{
-                ...positionStyle,
+                ...txtPositionStyle,
               }}
             >
               <div
                 style={{
                   fontSize: `${scaledFontSize}px`,
                   color: style.color,
-                  wordWrap: "break-word",
-                  textAlign: style.textAlign || "center",
+                  wordWrap: "normal",
+                  whiteSpace: "nowrap",
+                  textAlign: style.textAlign || "left",
                   fontWeight: style.fontWeight || "normal",
                   fontStyle: style.fontStyle || "normal",
                   lineHeight: style.lineHeight || "normal",
@@ -220,17 +226,12 @@ const Preview = () => {
 
         {/* Mobile screen preview with border */}
         <div
-          className="border-2 border-gray-300 rounded-2xl overflow-hidden relative"
+          className="border-2 border-gray-300 overflow-hidden relative"
           style={{
             ...getBoxAspectRatioStyle(),
             maxWidth: "100%",
           }}
         >
-          {/* Device top notch */}
-          <div className="absolute top-0 left-0 right-0 h-4 bg-gray-800 z-10 flex justify-center items-center">
-            <div className="w-16 h-2 bg-gray-700 rounded-full"></div>
-          </div>
-
           {/* Box preview content */}
           {renderBoxPreview()}
 

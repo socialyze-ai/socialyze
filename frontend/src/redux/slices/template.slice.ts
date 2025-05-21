@@ -12,7 +12,14 @@ export interface TextItem {
   id: string;
   content: string;
   position: { x: number; y: number };
-  style: { fontSize: number; color: string };
+  style: {
+    fontSize: number;
+    color: string;
+    textAlign?: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    lineHeight?: string;
+  };
   canvasIndex: number; // Used primarily for preview, not restriction
 }
 
