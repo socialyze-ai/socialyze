@@ -1,115 +1,287 @@
+import { useState } from "react";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CSSProperties } from "react";
+
+// Extend the TextStyle interface to include optional properties
+interface ExtendedTextStyle extends Record<string, any> {
+  fontSize: number;
+  color: string;
+  textAlign?: CSSProperties["textAlign"];
+  fontWeight?: CSSProperties["fontWeight"];
+  fontStyle?: CSSProperties["fontStyle"];
+  lineHeight?: CSSProperties["lineHeight"];
+}
 
 const Preview = () => {
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
     (state: RootState) => state.template,
   );
 
-  // Calculate aspect ratio for preview
-  const getAspectRatioStyle = () => {
-    const previewHeight = 150; // Fixed height for preview
-    let width;
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Base box size in pixels (MUST match Canvas component)
+  const BOX_SIZE_MM = 50; // Base box size in mm - matching Canvas
+  const PX_PER_MM = 3.78; // Approximate conversion factor
+  const BOX_SIZE_PX = BOX_SIZE_MM * PX_PER_MM; // Base box size in pixels
+
+  // Handle navigation between slides (each slide is a single box)
+  const goToNextSlide = () => {
+    setCurrentSlide((prev) => (prev === canvasCount - 1 ? 0 : prev + 1));
+  };
+
+  const goToPrevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? canvasCount - 1 : prev - 1));
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  // Calculate aspect ratio for a single box in the preview
+  const getBoxAspectRatioStyle = () => {
+    // Using a fixed preview width for better display
+    const previewWidth = 200; // Base width for preview
+
+    let boxWidth, boxHeight;
 
     switch (aspectRatio) {
-      case "16:9":
-        width = `${(previewHeight * 16) / 9}px`;
-        return { width, height: `${previewHeight}px` };
       case "1:1":
-        width = `${previewHeight}px`;
-        return { width, height: `${previewHeight}px` };
+        // For 1:1, height equals width for a single box
+        boxWidth = previewWidth;
+        boxHeight = previewWidth;
+        return { width: `${boxWidth}px`, height: `${boxHeight}px` };
+
+      case "16:9":
+        // For 16:9, adjust height accordingly
+        boxWidth = previewWidth;
+        boxHeight = (boxWidth * 9) / 16;
+        return { width: `${boxWidth}px`, height: `${boxHeight}px` };
+
       case "4:5":
-        width = `${(previewHeight * 4) / 5}px`;
-        return { width, height: `${previewHeight}px` };
+        // For 4:5, adjust height accordingly
+        boxWidth = previewWidth;
+        boxHeight = (boxWidth * 5) / 4;
+        return { width: `${boxWidth}px`, height: `${boxHeight}px` };
+
       default:
-        width = `${(previewHeight * 16) / 9}px`;
-        return { width, height: `${previewHeight}px` };
+        // Default to 1:1 ratio
+        boxWidth = previewWidth;
+        boxHeight = previewWidth;
+        return { width: `${boxWidth}px`, height: `${boxHeight}px` };
     }
   };
 
-  // Generate preview sections
-  const renderPreviewSections = () => {
-    const sections = [];
-    // Calculate the scale factor based on canvas height (384px) to preview height (150px)
-    const scaleFactor = 150 / 384;
+  // Get the scale factor for rendering items
+  const getScaleFactor = () => {
+    const previewStyle = getBoxAspectRatioStyle();
+    const previewWidth = parseInt(previewStyle.width);
 
-    for (let i = 0; i < canvasCount; i++) {
-      sections.push(
-        <div
-          key={`preview-section-${i}`}
-          className="border border-gray-300 relative"
-          style={{
-            flex: `1 0 ${100 / canvasCount}%`,
-            minWidth: `${100 / canvasCount}%`,
-            backgroundColor,
-            overflow: "hidden",
-          }}
-        >
-          {/* Section number indicator */}
-          <div className="absolute top-1 left-1 bg-gray-100 rounded-full w-4 h-4 flex items-center justify-center text-xs text-gray-700 z-10">
-            {i + 1}
-          </div>
-
-          {/* Render preview images in this section */}
-          {images
-            .filter((img) => img.canvasIndex === i)
-            .map((img) => {
-              return (
-                <div
-                  key={`preview-${img.id}`}
-                  className="absolute"
-                  style={{
-                    left: `${img.position.x * scaleFactor}px`,
-                    top: `${img.position.y * scaleFactor}px`,
-                    width: `${img.size.width * scaleFactor}px`,
-                    height: `${img.size.height * scaleFactor}px`,
-                  }}
-                >
-                  <img src={img.src} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-              );
-            })}
-
-          {/* Render preview texts in this section */}
-          {texts
-            .filter((txt) => txt.canvasIndex === i)
-            .map((txt) => {
-              return (
-                <div
-                  key={`preview-${txt.id}`}
-                  className="absolute"
-                  style={{
-                    left: `${txt.position.x * scaleFactor}px`,
-                    top: `${txt.position.y * scaleFactor}px`,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: `${txt.style.fontSize * scaleFactor}px`,
-                      color: txt.style.color,
-                    }}
-                  >
-                    {txt.content}
-                  </div>
-                </div>
-              );
-            })}
-        </div>,
-      );
-    }
-
-    return sections;
+    // Calculate scale based on the box size in pixels
+    return previewWidth / BOX_SIZE_PX;
   };
+
+  // Generate a preview for the current box
+  const renderBoxPreview = () => {
+    const scaleFactor = getScaleFactor();
+
+    // Calculate canvas width based on aspect ratio and box size
+    const boxWidth = BOX_SIZE_PX;
+    const boxStartX = currentSlide * boxWidth;
+    const boxEndX = boxStartX + boxWidth;
+
+    // Calculate adjusted position within the current box view
+    const getAdjustedPosition = (position: { x: number; y: number }) => {
+      // Adjust position relative to the current box and apply scaling
+      const adjustedX = (position.x - boxStartX) * scaleFactor;
+      const adjustedY = position.y * scaleFactor;
+
+      return {
+        left: `${adjustedX}px`,
+        top: `${adjustedY}px`,
+      };
+    };
+
+    return (
+      <div
+        className="relative mobile-preview"
+        style={{
+          backgroundColor,
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      >
+        {/* Render all images that are at least partially visible in the current box */}
+        {images.map((img) => {
+          // Check if image is at least partially visible in current box
+          const imgLeft = img.position.x;
+          const imgRight = img.position.x + img.size.width;
+
+          // If the image is completely outside the current box, don't render it
+          if (imgRight < boxStartX || imgLeft > boxEndX) {
+            return null;
+          }
+
+          const positionStyle = getAdjustedPosition(img.position);
+
+          // Calculate the scaled dimensions
+          const scaledWidth = img.size.width * scaleFactor;
+          const scaledHeight = img.size.height * scaleFactor;
+
+          return (
+            <div
+              key={`preview-${img.id}`}
+              className="absolute"
+              style={{
+                ...positionStyle,
+                width: `${scaledWidth}px`,
+                height: `${scaledHeight}px`,
+              }}
+            >
+              <img src={img.src} alt="Preview" className="w-full h-full object-cover" />
+            </div>
+          );
+        })}
+
+        {/* Render texts that are visible in the current box */}
+        {texts.map((txt) => {
+          // Check if text is visible in current box
+          if (txt.position.x < boxStartX || txt.position.x > boxEndX) {
+            return null;
+          }
+
+          const positionStyle = getAdjustedPosition(txt.position);
+
+          // Calculate the scaled font size
+          const scaledFontSize = txt.style.fontSize * scaleFactor;
+
+          // Treat txt.style as an extended style object
+          const style = txt.style as ExtendedTextStyle;
+
+          return (
+            <div
+              key={`preview-${txt.id}`}
+              className="absolute"
+              style={{
+                ...positionStyle,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: `${scaledFontSize}px`,
+                  color: style.color,
+                  wordWrap: "break-word",
+                  textAlign: style.textAlign || "center",
+                  fontWeight: style.fontWeight || "normal",
+                  fontStyle: style.fontStyle || "normal",
+                  lineHeight: style.lineHeight || "normal",
+                }}
+              >
+                {txt.content}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Get dimensions in mm for display
+  const getBoxDimensionsInMm = () => {
+    switch (aspectRatio) {
+      case "1:1":
+        return { width: BOX_SIZE_MM, height: BOX_SIZE_MM };
+      case "16:9":
+        return { width: BOX_SIZE_MM, height: (BOX_SIZE_MM * 9) / 16 };
+      case "4:5":
+        return { width: BOX_SIZE_MM, height: (BOX_SIZE_MM * 5) / 4 };
+      default:
+        return { width: BOX_SIZE_MM, height: BOX_SIZE_MM };
+    }
+  };
+
+  const boxDimensions = getBoxDimensionsInMm();
 
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-4">
-      <h3 className="text-sm font-medium mb-2">Preview</h3>
-      <div className="bg-gray-50 rounded-lg p-2 flex justify-center">
-        <div className="flex overflow-x-auto" style={getAspectRatioStyle()}>
-          {renderPreviewSections()}
+      <h3 className="text-sm font-medium mb-2">
+        Preview - Box {currentSlide + 1} of {canvasCount}
+      </h3>
+
+      <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center">
+        {/* Box dimensions display */}
+        <div className="text-xs text-gray-600 mb-2">
+          Box Size: {boxDimensions.width}mm × {Math.round(boxDimensions.height * 10) / 10}mm (
+          {aspectRatio})
         </div>
+
+        {/* Mobile screen preview with border */}
+        <div
+          className="border-2 border-gray-300 rounded-2xl overflow-hidden relative"
+          style={{
+            ...getBoxAspectRatioStyle(),
+            maxWidth: "100%",
+          }}
+        >
+          {/* Device top notch */}
+          <div className="absolute top-0 left-0 right-0 h-4 bg-gray-800 z-10 flex justify-center items-center">
+            <div className="w-16 h-2 bg-gray-700 rounded-full"></div>
+          </div>
+
+          {/* Box preview content */}
+          {renderBoxPreview()}
+
+          {/* Navigation arrows (only shown if more than one box) */}
+          {canvasCount > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/70 rounded-full p-1 hover:bg-white/90 z-20"
+                onClick={goToPrevSlide}
+                aria-label="Previous box"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/70 rounded-full p-1 hover:bg-white/90 z-20"
+                onClick={goToNextSlide}
+                aria-label="Next box"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+
+        {/* Slide indicators */}
+        {canvasCount > 1 && (
+          <div className="flex justify-center mt-2 gap-1">
+            {Array.from({ length: canvasCount }).map((_, index) => (
+              <button
+                key={`indicator-${index}`}
+                className={`h-2 rounded-full transition-all ${
+                  currentSlide === index ? "w-4 bg-blue-500" : "w-2 bg-gray-300"
+                }`}
+                onClick={() => goToSlide(index)}
+                aria-label={`Go to box ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-500 mt-1 text-center">Preview of your template</p>
+
+      <p className="text-xs text-gray-500 mt-1 text-center">
+        {canvasCount > 1
+          ? `Box ${currentSlide + 1}/${canvasCount} - Swipe to see all boxes`
+          : "Preview of your box"}
+      </p>
     </div>
   );
 };

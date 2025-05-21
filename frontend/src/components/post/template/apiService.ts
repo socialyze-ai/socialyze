@@ -14,6 +14,40 @@ interface ApiResponse {
   error?: string;
 }
 
+// Helper to determine if an item should be clipped in a section
+const getItemClipping = (
+  itemPosition: { x: number; y: number },
+  itemSize: { width: number; height: number },
+  sectionIndex: number,
+  sectionWidth: number,
+) => {
+  const itemStartX = itemPosition.x;
+  const itemEndX = itemPosition.x + itemSize.width;
+
+  const sectionStartX = sectionIndex * sectionWidth;
+  const sectionEndX = (sectionIndex + 1) * sectionWidth;
+
+  // If item is fully contained in section, no clipping needed
+  if (itemStartX >= sectionStartX && itemEndX <= sectionEndX) {
+    return null;
+  }
+
+  // Calculate clipping
+  if (itemStartX < sectionStartX) {
+    // Item starts before this section
+    return {
+      start: true,
+      clipAmount: sectionStartX - itemStartX,
+    };
+  } else {
+    // Item extends beyond this section
+    return {
+      end: true,
+      clipAmount: itemEndX - sectionEndX,
+    };
+  }
+};
+
 // This is a mock API service for demo purposes
 export const apiService = {
   // Process template and generate output
@@ -24,12 +58,60 @@ export const apiService = {
     try {
       console.log("Processing template with data:", templateData);
 
-      // Simulate API processing
+      // Calculate canvas dimensions and section width
+      let canvasWidth;
+      const canvasHeight = 384; // Fixed canvas height
+
+      switch (templateData.aspectRatio) {
+        case "16:9":
+          canvasWidth = (canvasHeight * 16) / 9;
+          break;
+        case "1:1":
+          canvasWidth = canvasHeight;
+          break;
+        case "4:5":
+          canvasWidth = (canvasHeight * 4) / 5;
+          break;
+        default:
+          canvasWidth = (canvasHeight * 16) / 9;
+      }
+
+      const sectionWidth = canvasWidth / templateData.canvasCount;
+
+      // Simulate API processing for each section
       const sections = [];
 
       for (let i = 0; i < templateData.canvasCount; i++) {
-        const sectionImages = templateData.images.filter((img) => img.canvasIndex === i);
-        const sectionTexts = templateData.texts.filter((txt) => txt.canvasIndex === i);
+        // Find images that are at least partially in this section
+        const sectionImages = templateData.images
+          .filter((img) => {
+            const imgStartX = img.position.x;
+            const imgEndX = img.position.x + img.size.width;
+            const sectionStartX = i * sectionWidth;
+            const sectionEndX = (i + 1) * sectionWidth;
+
+            // Check if image overlaps with this section
+            return imgStartX < sectionEndX && imgEndX > sectionStartX;
+          })
+          .map((img) => {
+            // Calculate if and how the image should be clipped in this section
+            const clipping = getItemClipping(img.position, img.size, i, sectionWidth);
+
+            return {
+              ...img,
+              clipping,
+            };
+          });
+
+        // Find texts that are in this section
+        const sectionTexts = templateData.texts.filter((txt) => {
+          const txtX = txt.position.x;
+          const sectionStartX = i * sectionWidth;
+          const sectionEndX = (i + 1) * sectionWidth;
+
+          // Check if text is in this section
+          return txtX >= sectionStartX && txtX < sectionEndX;
+        });
 
         sections.push({
           index: i,
@@ -43,6 +125,7 @@ export const apiService = {
         template: {
           aspectRatio: templateData.aspectRatio,
           backgroundColor: templateData.backgroundColor,
+          canvasCount: templateData.canvasCount,
           sections,
         },
         outputUrl: "https://example.com/generated-template-12345.jpg",

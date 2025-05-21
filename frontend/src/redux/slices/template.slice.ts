@@ -5,7 +5,7 @@ export interface ImageItem {
   src: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
-  canvasIndex: number;
+  canvasIndex: number; // Used primarily for preview, not restriction
 }
 
 export interface TextItem {
@@ -13,10 +13,10 @@ export interface TextItem {
   content: string;
   position: { x: number; y: number };
   style: { fontSize: number; color: string };
-  canvasIndex: number;
+  canvasIndex: number; // Used primarily for preview, not restriction
 }
 
-export interface TemplateState {
+interface TemplateState {
   canvasCount: number;
   aspectRatio: string;
   backgroundColor: string;
@@ -34,7 +34,7 @@ const initialState: TemplateState = {
   selectedItemId: null,
 };
 
-export const templateSlice = createSlice({
+const templateSlice = createSlice({
   name: "template",
   initialState,
   reducers: {
@@ -50,11 +50,14 @@ export const templateSlice = createSlice({
     setImages: (state, action: PayloadAction<ImageItem[]>) => {
       state.images = action.payload;
     },
+    addImage: (state, action: PayloadAction<ImageItem>) => {
+      state.images.push(action.payload);
+    },
     setText: (state, action: PayloadAction<TextItem[]>) => {
       state.texts = action.payload;
     },
-    setSelectedItem: (state, action: PayloadAction<string | null>) => {
-      state.selectedItemId = action.payload;
+    addText: (state, action: PayloadAction<TextItem>) => {
+      state.texts.push(action.payload);
     },
     updateImagePosition: (
       state,
@@ -98,13 +101,55 @@ export const templateSlice = createSlice({
         text.content = action.payload.content;
       }
     },
+    setSelectedItem: (state, action: PayloadAction<string | null>) => {
+      state.selectedItemId = action.payload;
+    },
     removeItem: (state, action: PayloadAction<string>) => {
       state.images = state.images.filter((img) => img.id !== action.payload);
       state.texts = state.texts.filter((txt) => txt.id !== action.payload);
-      if (state.selectedItemId === action.payload) {
-        state.selectedItemId = null;
-      }
+      state.selectedItemId = null;
     },
+    // Calculate section assignment for preview
+    recalculateSectionAssignments: (state) => {
+      // Calculate canvas dimensions to determine section width
+      let canvasWidth = 0;
+      const canvasHeight = 384; // Fixed canvas height
+
+      switch (state.aspectRatio) {
+        case "16:9":
+          canvasWidth = (canvasHeight * 16) / 9;
+          break;
+        case "1:1":
+          canvasWidth = canvasHeight;
+          break;
+        case "4:5":
+          canvasWidth = (canvasHeight * 4) / 5;
+          break;
+        default:
+          canvasWidth = (canvasHeight * 16) / 9;
+      }
+
+      const sectionWidth = canvasWidth / state.canvasCount;
+
+      // Update images with the correct canvasIndex
+      state.images.forEach((img) => {
+        // Determine which section this image primarily belongs to
+        let sectionIndex = Math.floor(img.position.x / sectionWidth);
+        // Ensure it's within valid range
+        sectionIndex = Math.max(0, Math.min(state.canvasCount - 1, sectionIndex));
+        img.canvasIndex = sectionIndex;
+      });
+
+      // Update texts with the correct canvasIndex
+      state.texts.forEach((txt) => {
+        // Determine which section this text belongs to
+        let sectionIndex = Math.floor(txt.position.x / sectionWidth);
+        // Ensure it's within valid range
+        sectionIndex = Math.max(0, Math.min(state.canvasCount - 1, sectionIndex));
+        txt.canvasIndex = sectionIndex;
+      });
+    },
+    resetTemplate: () => initialState,
   },
 });
 
@@ -113,14 +158,18 @@ export const {
   setAspectRatio,
   setBackgroundColor,
   setImages,
+  addImage,
   setText,
-  setSelectedItem,
+  addText,
   updateImagePosition,
   updateImageSize,
   updateTextPosition,
   updateTextStyle,
   updateTextContent,
+  setSelectedItem,
   removeItem,
+  recalculateSectionAssignments,
+  resetTemplate,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;

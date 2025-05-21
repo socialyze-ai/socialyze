@@ -23,23 +23,47 @@ const Canvas = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ width: 0, height: 0 });
 
+  // Base box size in pixels (converted from mm)
+  // Using an approximate conversion of 1mm ≈ 3.78px for screen display
+  const BOX_SIZE_MM = 50; // Base box size in mm
+  const PX_PER_MM = 3.78; // Approximate conversion factor
+  const BOX_SIZE_PX = BOX_SIZE_MM * PX_PER_MM; // Base box size in pixels
+
   // Calculate aspect ratio dimensions
   const getAspectRatioStyle = () => {
-    const fixedHeight = 384; // Fixed height (h-96)
-    let width = "100%";
+    // Calculate the base width based on box count
+    const baseWidth = BOX_SIZE_PX * canvasCount;
 
     switch (aspectRatio) {
-      case "16:9":
-        width = `${(fixedHeight * 16) / 9}px`;
-        return { width, height: `${fixedHeight}px` };
       case "1:1":
-        return { width: `${fixedHeight}px`, height: `${fixedHeight}px` };
+        // For 1:1, height equals width for a single box
+        // Width increases with box count, height remains constant at BOX_SIZE_PX
+        return {
+          width: `${baseWidth}px`,
+          height: `${BOX_SIZE_PX}px`,
+        };
+      case "16:9":
+        // For 16:9, height is calculated based on aspect ratio
+        // Height adjusts based on the ratio, with width still determined by box count
+        const height16_9 = (BOX_SIZE_PX * 9) / 16;
+        return {
+          width: `${baseWidth}px`,
+          height: `${height16_9}px`,
+        };
       case "4:5":
-        width = `${(fixedHeight * 4) / 5}px`;
-        return { width, height: `${fixedHeight}px` };
+        // For 4:5, height is calculated based on aspect ratio
+        // Height adjusts based on the ratio, with width still determined by box count
+        const height4_5 = (BOX_SIZE_PX * 5) / 4;
+        return {
+          width: `${baseWidth}px`,
+          height: `${height4_5}px`,
+        };
       default:
-        width = `${(fixedHeight * 16) / 9}px`;
-        return { width, height: `${fixedHeight}px` };
+        // Default to 1:1 ratio
+        return {
+          width: `${baseWidth}px`,
+          height: `${BOX_SIZE_PX}px`,
+        };
     }
   };
 
@@ -90,9 +114,10 @@ const Canvas = () => {
         const selectedImage = images.find((img) => img.id === selectedItemId);
         const selectedText = texts.find((txt) => txt.id === selectedItemId);
 
+        // Allow positioning outside canvas bounds
         const newPosition = {
-          x: Math.max(0, Math.min(canvasRect.width - 20, e.clientX - dragStart.x)),
-          y: Math.max(0, Math.min(canvasRect.height - 20, e.clientY - dragStart.y)),
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y,
         };
 
         if (selectedImage) {
@@ -115,17 +140,6 @@ const Canvas = () => {
             const aspectRatioValue = selectedImage.size.height / selectedImage.size.width;
             let newWidth = Math.max(20, resizeStart.width + deltaX);
             let newHeight = Math.max(20, newWidth * aspectRatioValue);
-
-            // Keep it within bounds
-            if (selectedImage.position.x + newWidth > canvasRect.width) {
-              newWidth = canvasRect.width - selectedImage.position.x;
-              newHeight = newWidth * aspectRatioValue;
-            }
-
-            if (selectedImage.position.y + newHeight > canvasRect.height) {
-              newHeight = canvasRect.height - selectedImage.position.y;
-              newWidth = newHeight / aspectRatioValue;
-            }
 
             dispatch(
               updateImageSize({ id: selectedItemId, size: { width: newWidth, height: newHeight } }),
@@ -167,106 +181,135 @@ const Canvas = () => {
     }
   };
 
-  // Render canvas sections
-  const renderCanvasSections = () => {
-    const sections = [];
+  // Draw reference lines for canvas sections
+  const renderReferenceLines = () => {
+    if (canvasCount <= 1) return null;
 
-    for (let i = 0; i < canvasCount; i++) {
-      sections.push(
+    const lines = [];
+    const canvasWidth = parseFloat(getAspectRatioStyle().width);
+
+    // Calculate section width
+    const sectionWidth = canvasWidth / canvasCount;
+
+    // Draw vertical lines separating sections
+    for (let i = 1; i < canvasCount; i++) {
+      lines.push(
         <div
-          key={`section-${i}`}
-          className="border border-gray-300 relative"
+          key={`line-${i}`}
+          className="absolute border-l border-dashed border-gray-400"
           style={{
-            flex: `1 0 ${100 / canvasCount}%`,
-            minWidth: `${100 / canvasCount}%`,
-            backgroundColor,
+            left: `${sectionWidth * i}px`,
+            height: "100%",
+            top: 0,
           }}
-        >
-          {/* Canvas section number */}
-          <div className="absolute top-1 left-1 bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center text-xs text-gray-700 z-50">
-            {i + 1}
-          </div>
-
-          {/* Render images in this section */}
-          {images
-            .filter((img) => img.canvasIndex === i)
-            .map((img) => (
-              <div
-                key={img.id}
-                className={`absolute cursor-move ${
-                  selectedItemId === img.id ? "ring-2 ring-blue-500" : ""
-                }`}
-                style={{
-                  left: `${img.position.x}px`,
-                  top: `${img.position.y}px`,
-                  width: `${img.size.width}px`,
-                  height: `${img.size.height}px`,
-                  zIndex: selectedItemId === img.id ? 10 : 1,
-                }}
-                onClick={(e) => handleSelectItem(img.id, e)}
-                onMouseDown={(e) => handleDragStart(e, img.position)}
-              >
-                <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
-
-                {/* Resize handle - only visible when selected */}
-                {selectedItemId === img.id && (
-                  <div
-                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
-                    onMouseDown={(e) => handleResizeStart(e, img.size)}
-                  >
-                    <div className="w-2 h-2 bg-white"></div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-          {/* Render texts in this section */}
-          {texts
-            .filter((txt) => txt.canvasIndex === i)
-            .map((txt) => (
-              <div
-                key={txt.id}
-                className={`absolute cursor-move ${
-                  selectedItemId === txt.id ? "ring-2 ring-blue-500 p-1" : "p-1"
-                }`}
-                style={{
-                  left: `${txt.position.x}px`,
-                  top: `${txt.position.y}px`,
-                  zIndex: selectedItemId === txt.id ? 10 : 1,
-                }}
-                onClick={(e) => handleSelectItem(txt.id, e)}
-                onMouseDown={(e) => handleDragStart(e, txt.position)}
-              >
-                <div
-                  style={{
-                    fontSize: `${txt.style.fontSize}px`,
-                    color: txt.style.color,
-                  }}
-                >
-                  {txt.content}
-                </div>
-              </div>
-            ))}
-        </div>,
+        />,
       );
     }
 
-    return sections;
+    return lines;
   };
+
+  // Render all items on the canvas
+  const renderCanvasItems = () => {
+    return (
+      <>
+        {/* Render all images */}
+        {images.map((img) => (
+          <div
+            key={img.id}
+            className={`absolute cursor-move ${
+              selectedItemId === img.id ? "ring-2 ring-blue-500" : ""
+            }`}
+            style={{
+              left: `${img.position.x}px`,
+              top: `${img.position.y}px`,
+              width: `${img.size.width}px`,
+              height: `${img.size.height}px`,
+              zIndex: selectedItemId === img.id ? 10 : 1,
+            }}
+            onClick={(e) => handleSelectItem(img.id, e)}
+            onMouseDown={(e) => handleDragStart(e, img.position)}
+          >
+            <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
+
+            {/* Resize handle - only visible when selected */}
+            {selectedItemId === img.id && (
+              <div
+                className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+                onMouseDown={(e) => handleResizeStart(e, img.size)}
+              >
+                <div className="w-2 h-2 bg-white"></div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Render all texts */}
+        {texts.map((txt) => (
+          <div
+            key={txt.id}
+            className={`absolute cursor-move ${
+              selectedItemId === txt.id ? "ring-2 ring-blue-500 p-1" : "p-1"
+            }`}
+            style={{
+              left: `${txt.position.x}px`,
+              top: `${txt.position.y}px`,
+              zIndex: selectedItemId === txt.id ? 10 : 1,
+            }}
+            onClick={(e) => handleSelectItem(txt.id, e)}
+            onMouseDown={(e) => handleDragStart(e, txt.position)}
+          >
+            <div
+              style={{
+                fontSize: `${txt.style.fontSize}px`,
+                color: txt.style.color,
+              }}
+            >
+              {txt.content}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  // Get canvas dimensions in mm for display
+  const getCanvasDimensionsInMm = () => {
+    const { width, height } = getAspectRatioStyle();
+    const widthPx = parseFloat(width);
+    const heightPx = parseFloat(height);
+
+    const widthMm = Math.round(widthPx / PX_PER_MM);
+    const heightMm = Math.round(heightPx / PX_PER_MM);
+
+    return { widthMm, heightMm };
+  };
+
+  const { widthMm, heightMm } = getCanvasDimensionsInMm();
 
   return (
     <div className="relative">
+      <div className="mb-2 text-sm text-gray-600">
+        Canvas Size: {widthMm}mm × {heightMm}mm ({aspectRatio})
+      </div>
       <div
         ref={canvasRef}
-        className="relative overflow-x-auto flex"
+        className="relative overflow-visible border border-gray-300"
         style={{
           ...getAspectRatioStyle(),
           position: "relative",
-          overflowY: "hidden",
+          backgroundColor,
         }}
         onClick={handleCanvasClick}
       >
-        <div className="absolute top-0 left-0 w-full h-full flex">{renderCanvasSections()}</div>
+        {/* Container for all items */}
+        <div className="absolute top-0 left-0 w-full h-full">
+          {/* Reference lines */}
+          {renderReferenceLines()}
+
+          {/* Canvas items */}
+          {renderCanvasItems()}
+        </div>
       </div>
 
       {/* Controls for selected item */}

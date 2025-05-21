@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   setAspectRatio,
   setCanvasCount,
   setBackgroundColor,
+  recalculateSectionAssignments,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas from "./Canvas";
@@ -39,20 +40,72 @@ const TemplateEditModal = () => {
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Recalculate sections assignment whenever canvas count or images/texts position changes
+  useEffect(() => {
+    dispatch(recalculateSectionAssignments());
+  }, [canvasCount, aspectRatio, images, texts, dispatch]);
+
+  // Helper to position an image centered on the canvas
+  const getDefaultImagePosition = (imageWidth: number, imageHeight: number) => {
+    // Calculate canvas dimensions based on aspect ratio
+    let canvasWidth = 0;
+    const canvasHeight = 384; // Fixed canvas height
+
+    switch (aspectRatio) {
+      case "16:9":
+        canvasWidth = (canvasHeight * 16) / 9;
+        break;
+      case "1:1":
+        canvasWidth = canvasHeight;
+        break;
+      case "4:5":
+        canvasWidth = (canvasHeight * 4) / 5;
+        break;
+      default:
+        canvasWidth = (canvasHeight * 16) / 9;
+    }
+
+    // Center the image on canvas (without considering sections)
+    return {
+      x: Math.max(0, (canvasWidth - imageWidth) / 2),
+      y: Math.max(0, (canvasHeight - imageHeight) / 2),
+    };
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          const newImage = {
-            id: `img-${Date.now()}`,
-            src: event.target.result as string,
-            position: { x: 20, y: 20 },
-            size: { width: 150, height: 150 },
-            canvasIndex: images.length % canvasCount,
+          // Create a temporary image to get dimensions
+          const img = new Image();
+          img.onload = () => {
+            // Calculate appropriate size to fit in canvas (max 70% of canvas height)
+            const maxHeight = 384 * 0.7; // 70% of canvas height
+            let newWidth = img.width;
+            let newHeight = img.height;
+
+            if (newHeight > maxHeight) {
+              const ratio = maxHeight / newHeight;
+              newWidth = newWidth * ratio;
+              newHeight = maxHeight;
+            }
+
+            // Get centered position
+            const position = getDefaultImagePosition(newWidth, newHeight);
+
+            const newImage = {
+              id: `img-${Date.now()}`,
+              src: event.target!.result as string,
+              position,
+              size: { width: newWidth, height: newHeight },
+              canvasIndex: 0, // This will be updated by recalculateSectionAssignments
+            };
+
+            dispatch(setImages([...images, newImage]));
           };
-          dispatch(setImages([...images, newImage]));
+          img.src = event.target!.result as string;
         }
       };
       reader.readAsDataURL(file);
@@ -63,13 +116,13 @@ const TemplateEditModal = () => {
     setShowTextEditor(true);
   };
 
-  const handleSaveText = (text: string) => {
+  const handleSaveText = (text: string, style?: { fontSize: number; color: string }) => {
     const newText = {
       id: `text-${Date.now()}`,
       content: text,
       position: { x: 50, y: 50 },
-      style: { fontSize: 16, color: "#000000" },
-      canvasIndex: texts.length % canvasCount,
+      style: style || { fontSize: 16, color: "#000000" },
+      canvasIndex: 0, // Will be updated by recalculateSectionAssignments
     };
     dispatch(setText([...texts, newText]));
     setShowTextEditor(false);
@@ -78,6 +131,9 @@ const TemplateEditModal = () => {
   const handleUseTemplate = async () => {
     setIsLoading(true);
     try {
+      // Ensure sections are calculated correctly before processing
+      dispatch(recalculateSectionAssignments());
+
       // Call API service to process template
       const response = await apiService.processTemplate({
         canvasCount,
@@ -116,16 +172,9 @@ const TemplateEditModal = () => {
 
         <div className="space-y-4">
           {/* Preview at the top */}
-          <Preview />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <div className="bg-gray-100 rounded-lg p-4">
-                {/* Fixed height canvas */}
-                <div className="h-96">
-                  <Canvas />
-                </div>
-              </div>
+          <div className="flex gap-2 w-full">
+            <div className="w-full">
+              <Preview />
             </div>
 
             <div className="space-y-4">
@@ -219,7 +268,11 @@ const TemplateEditModal = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => alert("Template saved!")}
+                >
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </Button>
@@ -228,6 +281,10 @@ const TemplateEditModal = () => {
                 </Button>
               </div>
             </div>
+          </div>
+
+          <div className="bg-gray-100 rounded-lg p-4 h-96">
+            <Canvas />
           </div>
         </div>
 
