@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Trash2, X, Pencil } from "lucide-react";
+import { Trash2, X, Pencil, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   updateImagePosition,
@@ -19,6 +19,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Media } from "../../MediaUploader";
 import ImageEditor from "../../editor/ImageEditor";
 
+// Add TextAlign type
+type TextAlign = "left" | "center" | "right" | "justify";
+
 const Canvas = () => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts, selectedItemId } = useSelector(
@@ -35,6 +38,43 @@ const Canvas = () => {
   const [isEditImageDialogOpen, setIsEditImageDialogOpen] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<{ id: string; src: string } | null>(null);
 
+  // Load Google Fonts for all text items
+  useEffect(() => {
+    // Create a set to avoid duplicate font loading
+    const fontsToLoad = new Set<string>();
+
+    // Collect all unique font family and weight combinations
+    texts.forEach((text) => {
+      if (text.style.fontFamily && text.style.fontWeight) {
+        fontsToLoad.add(`${text.style.fontFamily}:wght@${text.style.fontWeight}`);
+      } else if (text.style.fontFamily) {
+        fontsToLoad.add(`${text.style.fontFamily}:wght@400`);
+      }
+    });
+
+    // Load each font
+    const fontLinks: HTMLLinkElement[] = [];
+    fontsToLoad.forEach((fontString) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${fontString.replace(
+        / /g,
+        "+",
+      )}&display=swap`;
+      document.head.appendChild(link);
+      fontLinks.push(link);
+    });
+
+    // Clean up function to remove all font links
+    return () => {
+      fontLinks.forEach((link) => {
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+      });
+    };
+  }, [texts]);
+
   // Base box size in pixels (converted from mm)
   // Using an approximate conversion of 1mm ≈ 3.78px for screen display
   const BOX_SIZE_MM = 50; // Base box size in mm
@@ -47,14 +87,15 @@ const Canvas = () => {
     const baseWidth = BOX_SIZE_PX * canvasCount;
 
     switch (aspectRatio) {
-      case "1:1":
+      case "1:1": {
         // For 1:1, height equals width for a single box
         // Width increases with box count, height remains constant at BOX_SIZE_PX
         return {
           width: `${baseWidth}px`,
           height: `${BOX_SIZE_PX}px`,
         };
-      case "16:9":
+      }
+      case "16:9": {
         // For 16:9, height is calculated based on aspect ratio
         // Height adjusts based on the ratio, with width still determined by box count
         const height16_9 = (BOX_SIZE_PX * 9) / 16;
@@ -62,7 +103,8 @@ const Canvas = () => {
           width: `${baseWidth}px`,
           height: `${height16_9}px`,
         };
-      case "4:5":
+      }
+      case "4:5": {
         // For 4:5, height is calculated based on aspect ratio
         // Height adjusts based on the ratio, with width still determined by box count
         const height4_5 = (BOX_SIZE_PX * 5) / 4;
@@ -70,6 +112,7 @@ const Canvas = () => {
           width: `${baseWidth}px`,
           height: `${height4_5}px`,
         };
+      }
       default:
         // Default to 1:1 ratio
         return {
@@ -141,6 +184,7 @@ const Canvas = () => {
 
       if (isResizing) {
         const selectedImage = images.find((img) => img.id === selectedItemId);
+        const selectedText = texts.find((txt) => txt.id === selectedItemId);
 
         if (selectedImage) {
           const deltaX = e.clientX - dragStart.x;
@@ -165,6 +209,52 @@ const Canvas = () => {
             dispatch(
               updateImageSize({ id: selectedItemId, size: { width: newWidth, height: newHeight } }),
             );
+          }
+        } else if (selectedText) {
+          // Handle text resizing
+          const deltaX = e.clientX - dragStart.x;
+          const deltaY = e.clientY - dragStart.y;
+
+          // Calculate new width and height
+          const newWidth = Math.max(
+            50,
+            typeof resizeStart.width === "number" ? resizeStart.width + deltaX : 100 + deltaX,
+          );
+          const newHeight = Math.max(
+            20,
+            typeof resizeStart.height === "number" ? resizeStart.height + deltaY : 50 + deltaY,
+          );
+
+          // Update text size
+          dispatch(
+            updateTextSize({
+              id: selectedItemId,
+              size: {
+                width: newWidth as number,
+                height: newHeight as number,
+              },
+            }),
+          );
+
+          // Optionally adjust font size based on width change
+          const fontSizeAdjustment = deltaX * 0.05; // Subtle adjustment based on width change
+          if (Math.abs(fontSizeAdjustment) > 0.5) {
+            // Only adjust if change is significant
+            const currentFontSize = selectedText.style.fontSize;
+            const newFontSize = Math.max(8, Math.min(72, currentFontSize + fontSizeAdjustment));
+
+            // Update font size if it changed
+            if (newFontSize !== currentFontSize) {
+              dispatch(
+                updateTextStyle({
+                  id: selectedItemId,
+                  style: {
+                    ...selectedText.style,
+                    fontSize: newFontSize,
+                  },
+                }),
+              );
+            }
           }
         }
       }
@@ -205,7 +295,7 @@ const Canvas = () => {
   };
 
   // Helper function to estimate text dimensions
-  const estimateTextDimensions = (content: string, fontSize: number) => {
+  const estimateTextDimensions = (content: string, fontSize: number, fontFamily?: string) => {
     // Split text by line breaks
     const lines = content.split("\n");
 
@@ -216,7 +306,19 @@ const Canvas = () => {
     }
 
     // Calculate estimated width based on longest line
-    const estimatedWidth = maxLineLength * fontSize * 0.6;
+    // Adjust width multiplier based on font family (some fonts are wider than others)
+    let widthMultiplier = 0.6; // Default multiplier
+
+    // Adjust multiplier for wider/narrower fonts
+    if (fontFamily) {
+      if (["Oswald", "Montserrat", "Roboto Condensed"].includes(fontFamily)) {
+        widthMultiplier = 0.5; // Narrower fonts
+      } else if (["Playfair Display", "Merriweather"].includes(fontFamily)) {
+        widthMultiplier = 0.7; // Wider fonts
+      }
+    }
+
+    const estimatedWidth = maxLineLength * fontSize * widthMultiplier;
 
     // Get the canvas width from the aspect ratio style
     const { width } = getAspectRatioStyle();
@@ -234,15 +336,25 @@ const Canvas = () => {
   };
 
   // Handle saving edited text
-  const handleSaveEditedText = (content: string, style?: { fontSize: number; color: string }) => {
+  const handleSaveEditedText = (
+    content: string,
+    style?: {
+      fontSize: number;
+      color: string;
+      fontFamily?: string;
+      fontWeight?: string;
+      rotation?: number;
+    },
+  ) => {
     if (editingTextId) {
       const textToUpdate = texts.find((txt) => txt.id === editingTextId);
       if (textToUpdate) {
         // Calculate new font size
         const fontSize = style?.fontSize || textToUpdate.style.fontSize;
+        const fontFamily = style?.fontFamily || textToUpdate.style.fontFamily;
 
         // Calculate new dimensions
-        const { width, height } = estimateTextDimensions(content, fontSize);
+        const { width, height } = estimateTextDimensions(content, fontSize, fontFamily);
 
         // Update text content
         dispatch(
@@ -256,7 +368,10 @@ const Canvas = () => {
         dispatch(
           updateTextStyle({
             id: editingTextId,
-            style: style || textToUpdate.style,
+            style: {
+              ...textToUpdate.style,
+              ...(style || {}),
+            },
           }),
         );
 
@@ -264,7 +379,10 @@ const Canvas = () => {
         dispatch(
           updateTextSize({
             id: editingTextId,
-            size: { width, height },
+            size: {
+              width: width as number,
+              height: height as number,
+            },
           }),
         );
       }
@@ -394,7 +512,10 @@ const Canvas = () => {
         {/* Render all texts */}
         {texts.map((txt) => {
           const isSelected = selectedItemId === txt.id;
-          const textSize = txt.size || estimateTextDimensions(txt.content, txt.style.fontSize);
+          const textSize =
+            txt.size ||
+            estimateTextDimensions(txt.content, txt.style.fontSize, txt.style.fontFamily);
+          const rotation = txt.style.rotation || 0;
 
           return (
             <div
@@ -407,6 +528,8 @@ const Canvas = () => {
                 height:
                   typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
                 zIndex: isSelected ? 10 : 1,
+                transform: `rotate(${rotation}deg)`,
+                transformOrigin: "center center",
               }}
               onClick={(e) => handleSelectItem(txt.id, e)}
               onMouseDown={(e) => handleDragStart(e, txt.position)}
@@ -415,9 +538,13 @@ const Canvas = () => {
                 style={{
                   fontSize: `${txt.style.fontSize}px`,
                   color: txt.style.color,
+                  fontFamily: txt.style.fontFamily || "inherit",
+                  fontWeight: txt.style.fontWeight || "normal",
+                  fontStyle: txt.style.fontStyle || "normal",
+                  lineHeight: txt.style.lineHeight || "normal",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
-                  textAlign: "left",
+                  textAlign: (txt.style.textAlign as TextAlign) || "left",
                   width: "100%",
                   height: "100%",
                   overflowWrap: "break-word",
@@ -451,6 +578,21 @@ const Canvas = () => {
                   <X className="h-3 w-3" />
                 </Button>
               </div>
+
+              {/* Resize handle - only visible when selected */}
+              {isSelected && (
+                <div
+                  className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+                  onMouseDown={(e) => {
+                    // Ensure we have numeric values for width and height
+                    const width = typeof txt.size?.width === "number" ? txt.size.width : 100;
+                    const height = typeof txt.size?.height === "number" ? txt.size.height : 50;
+                    handleResizeStart(e, { width, height });
+                  }}
+                >
+                  <div className="w-2 h-2 bg-white"></div>
+                </div>
+              )}
             </div>
           );
         })}

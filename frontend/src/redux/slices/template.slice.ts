@@ -16,8 +16,10 @@ export interface TextItem {
   style: {
     fontSize: number;
     color: string;
-    textAlign?: string;
+    fontFamily?: string;
     fontWeight?: string;
+    rotation?: number;
+    textAlign?: string;
     fontStyle?: string;
     lineHeight?: string;
   };
@@ -108,11 +110,23 @@ const templateSlice = createSlice({
     },
     updateTextStyle: (
       state,
-      action: PayloadAction<{ id: string; style: { fontSize: number; color: string } }>,
+      action: PayloadAction<{
+        id: string;
+        style: {
+          fontSize: number;
+          color: string;
+          fontFamily?: string;
+          fontWeight?: string;
+          rotation?: number;
+          textAlign?: string;
+          fontStyle?: string;
+          lineHeight?: string;
+        };
+      }>,
     ) => {
       const text = state.texts.find((txt) => txt.id === action.payload.id);
       if (text) {
-        text.style = action.payload.style;
+        text.style = { ...text.style, ...action.payload.style };
       }
     },
     updateTextContent: (state, action: PayloadAction<{ id: string; content: string }>) => {
