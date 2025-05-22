@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Type, Save } from "lucide-react";
+import { Type, Save } from "lucide-react";
 import {
   setImages,
   setText,
@@ -31,6 +31,8 @@ import Canvas from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview from "./Preview";
 import { apiService } from "./apiService";
+import MediaUploader, { Media } from "@/components/post/MediaUploader";
+import ImageGallery from "./ImageGallery";
 
 const TemplateEditModal = () => {
   const dispatch = useDispatch();
@@ -72,43 +74,39 @@ const TemplateEditModal = () => {
     };
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          // Create a temporary image to get dimensions
-          const img = new Image();
-          img.onload = () => {
-            // Calculate appropriate size to fit in canvas (max 70% of canvas height)
-            const maxHeight = 384 * 0.7; // 70% of canvas height
-            let newWidth = img.width;
-            let newHeight = img.height;
+  const handleMediaChange = (selectedMedia: Media[]) => {
+    if (selectedMedia && selectedMedia.length > 0) {
+      // Get the last selected media (most recently added)
+      const newMedia = selectedMedia[selectedMedia.length - 1];
 
-            if (newHeight > maxHeight) {
-              const ratio = maxHeight / newHeight;
-              newWidth = newWidth * ratio;
-              newHeight = maxHeight;
-            }
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.onload = () => {
+        // Calculate appropriate size to fit in canvas (max 70% of canvas height)
+        const maxHeight = 384 * 0.7; // 70% of canvas height
+        let newWidth = img.width;
+        let newHeight = img.height;
 
-            // Get centered position
-            const position = getDefaultImagePosition(newWidth, newHeight);
-
-            const newImage = {
-              id: `img-${Date.now()}`,
-              src: event.target!.result as string,
-              position,
-              size: { width: newWidth, height: newHeight },
-              canvasIndex: 0, // This will be updated by recalculateSectionAssignments
-            };
-
-            dispatch(setImages([...images, newImage]));
-          };
-          img.src = event.target!.result as string;
+        if (newHeight > maxHeight) {
+          const ratio = maxHeight / newHeight;
+          newWidth = newWidth * ratio;
+          newHeight = maxHeight;
         }
+
+        // Get centered position
+        const position = getDefaultImagePosition(newWidth, newHeight);
+
+        const templateImage = {
+          id: newMedia.id,
+          src: newMedia.url,
+          position,
+          size: { width: newWidth, height: newHeight },
+          canvasIndex: 0, // This will be updated by recalculateSectionAssignments
+        };
+
+        dispatch(setImages([...images, templateImage]));
       };
-      reader.readAsDataURL(file);
+      img.src = newMedia.url;
     }
   };
 
@@ -292,21 +290,7 @@ const TemplateEditModal = () => {
               <div className="bg-white p-4 rounded-lg shadow">
                 <h3 className="font-medium mb-2">Content</h3>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => document.getElementById("image-upload")?.click()}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Add Image
-                  </Button>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
+                  <MediaUploader onlyTriggerButton={true} onMediaChange={handleMediaChange} />
 
                   <Button variant="outline" className="flex-1" onClick={handleAddText}>
                     <Type className="w-4 h-4 mr-2" />
@@ -314,6 +298,8 @@ const TemplateEditModal = () => {
                   </Button>
                 </div>
               </div>
+
+              <ImageGallery />
 
               <div className="flex gap-2">
                 <Button
