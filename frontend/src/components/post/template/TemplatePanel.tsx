@@ -1,5 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import TemplateEditModal from "./TemplateEditModal";
+import TemplateEditModal from "./carouselEditor/TemplateEditModal";
 import { Book, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
