@@ -1,4 +1,4 @@
-import { useState, CSSProperties } from "react";
+import { useState, CSSProperties, forwardRef, useRef, useImperativeHandle, RefObject } from "react";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -14,12 +14,32 @@ interface ExtendedTextStyle extends Record<string, any> {
   lineHeight?: CSSProperties["lineHeight"];
 }
 
-const Preview = () => {
+// Add PreviewRef interface for external access to preview functions
+export interface PreviewRef {
+  getPreviewElement: () => HTMLDivElement | null;
+  getCanvasContentElement: () => HTMLDivElement | null;
+  getCurrentSlide: () => number;
+  getTotalSlides: () => number;
+  goToSlide: (index: number) => void;
+}
+
+const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
     (state: RootState) => state.template,
   );
 
   const [currentSlide, setCurrentSlide] = useState(0);
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+  const canvasContentRef = useRef<HTMLDivElement>(null);
+
+  // Expose methods to parent components
+  useImperativeHandle(ref, () => ({
+    getPreviewElement: () => previewBoxRef.current,
+    getCanvasContentElement: () => canvasContentRef.current,
+    getCurrentSlide: () => currentSlide,
+    getTotalSlides: () => canvasCount,
+    goToSlide: (index: number) => setCurrentSlide(index),
+  }));
 
   // Base box size in pixels (MUST match Canvas component)
   const BOX_SIZE_MM = 50; // Base box size in mm - matching Canvas
@@ -105,6 +125,7 @@ const Preview = () => {
 
     return (
       <div
+        ref={canvasContentRef}
         className="relative mobile-preview"
         style={{
           backgroundColor,
@@ -246,6 +267,7 @@ const Preview = () => {
 
         {/* Mobile screen preview with border */}
         <div
+          ref={previewBoxRef}
           className="border-2 border-gray-300 overflow-hidden relative"
           style={{
             ...getBoxAspectRatioStyle(),
@@ -305,6 +327,8 @@ const Preview = () => {
       </p>
     </div>
   );
-};
+});
+
+Preview.displayName = "Preview";
 
 export default Preview;

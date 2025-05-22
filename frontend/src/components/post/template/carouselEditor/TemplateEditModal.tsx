@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
   DialogContent,
@@ -29,10 +30,15 @@ import {
 import { RootState } from "@/redux/store";
 import Canvas from "./Canvas";
 import TextEditor from "./TextEditor";
-import Preview from "./Preview";
+import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
-import MediaUploader, { Media } from "@/components/post/MediaUploader";
+import { Media } from "@/components/post/MediaUploader";
+import MediaUploader from "@/components/post/MediaUploader";
 import ImageGallery from "./ImageGallery";
+import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
+import { setMediaUrls } from "@/redux/slices/postCreation.slice";
 
 const TemplateEditModal = () => {
   const dispatch = useDispatch();
@@ -41,6 +47,9 @@ const TemplateEditModal = () => {
   );
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const previewRef = useRef<PreviewRef>(null);
+
+  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
 
   // Recalculate sections assignment whenever canvas count or images/texts position changes
   useEffect(() => {
@@ -174,7 +183,7 @@ const TemplateEditModal = () => {
     setShowTextEditor(false);
   };
 
-  const handleUseTemplate = async () => {
+  const handleSaveTemplateConfig = async () => {
     setIsLoading(true);
     try {
       // Ensure sections are calculated correctly before processing
@@ -205,6 +214,94 @@ const TemplateEditModal = () => {
     }
   };
 
+  const handleUseTemplate = async () => {
+    setIsLoading(true);
+    try {
+      // Check if we have a valid preview reference
+      if (!previewRef.current) {
+        toast.error("Preview not available", { position: "top-center" });
+        return;
+      }
+
+      const totalSlides = previewRef.current.getTotalSlides();
+      const uploadedImages: Media[] = [];
+
+      // Process each slide/box
+      for (let i = 0; i < totalSlides; i++) {
+        // Navigate to the slide
+        previewRef.current.goToSlide(i);
+
+        // Wait for the slide to render
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Get the canvas content element (contains only the actual content without borders/buttons)
+        const canvasContentElement = previewRef.current.getCanvasContentElement();
+        if (!canvasContentElement) {
+          toast.error(`Failed to capture content for slide ${i + 1}`, { position: "top-center" });
+          continue;
+        }
+
+        // Convert the preview to a canvas
+        const canvas = await html2canvas(canvasContentElement, {
+          backgroundColor,
+          scale: 2, // Higher quality
+          logging: false,
+          removeContainer: false,
+          allowTaint: true,
+          useCORS: true,
+        });
+
+        // Convert canvas to blob
+        canvas.toBlob(
+          async (blob) => {
+            if (!blob) {
+              toast.error(`Failed to create image for slide ${i + 1}`, { position: "top-center" });
+              return;
+            }
+
+            // Create form data for upload
+            const formData = new FormData();
+            formData.append("file", blob, `template-section-${i + 1}.png`);
+            formData.append("postId", uuidv4());
+
+            // Upload the image
+            uploadMedia(formData, {
+              onSuccess: (response) => {
+                if (response?.data?.url) {
+                  // Add to uploaded images array
+                  uploadedImages.push({
+                    id: uuidv4(),
+                    url: response.data.url,
+                    type: "image",
+                  });
+
+                  // When all images are uploaded, add them to the post composer
+                  if (uploadedImages.length === totalSlides) {
+                    // Add all images to the post composer
+                    dispatch(setMediaUrls(uploadedImages));
+                    toast.success("Template added to post composer", { position: "top-center" });
+                    setIsLoading(false);
+                  }
+                }
+              },
+              onError: (error) => {
+                console.error("Error uploading template section:", error);
+                toast.error(`Failed to upload slide ${i + 1}`, { position: "top-center" });
+                setIsLoading(false);
+              },
+            });
+          },
+          "image/png",
+          0.9,
+        );
+      }
+    } catch (error) {
+      console.error("Error processing template:", error);
+      toast.error("Failed to process template", { position: "top-center" });
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -220,7 +317,7 @@ const TemplateEditModal = () => {
           {/* Preview at the top */}
           <div className="flex gap-2 w-full">
             <div className="w-full">
-              <Preview />
+              <Preview ref={previewRef} />
             </div>
 
             <div className="space-y-4">
@@ -302,11 +399,7 @@ const TemplateEditModal = () => {
               <ImageGallery />
 
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => alert("Template saved!")}
-                >
+                <Button variant="outline" className="flex-1" onClick={handleSaveTemplateConfig}>
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </Button>
