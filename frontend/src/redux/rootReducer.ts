@@ -10,6 +10,7 @@ import aiTextareaReducer from "./slices/aiTextarea.slice";
 import dashboardPostsReducer from "./slices/dashboardPosts.slice";
 import authReducer from "./slices/auth.slice";
 import templateSlice from "./slices/template.slice";
+import templateGenerationReducer from "./slices/templateGeneration.slice";
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -23,6 +24,7 @@ const appReducer = combineReducers({
   aiTextarea: aiTextareaReducer,
   dashboardPosts: dashboardPostsReducer,
   template: templateSlice,
+  templateGeneration: templateGenerationReducer,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: any) => {

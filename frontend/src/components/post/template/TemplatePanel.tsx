@@ -6,6 +6,9 @@ import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import PostTemplatePreview from "../PostTemplatePreview";
+import { useDispatch } from "react-redux";
+import { setIsModalOpen, setSelectedTemplate } from "@/redux/slices/templateGeneration.slice";
+import TemplateGenerationModal from "./TemplateGenerationModal";
 
 const mockSuggestions = [
   {
@@ -92,6 +95,8 @@ on all our products. Don't miss out! #AnniversarySale #Discounts`,
 ];
 
 const TemplatePanel = () => {
+  const dispatch = useDispatch();
+
   const handleClose = () => {
     setIsTemplateSectionOpen(false);
   };
@@ -131,6 +136,7 @@ const TemplatePanel = () => {
               </div>
 
               <TemplateEditModal />
+              <TemplateGenerationModal />
 
               <TemplateCards />
             </TabsContent>
@@ -189,15 +195,26 @@ const TemplatePanel = () => {
 export default TemplatePanel;
 
 const TemplateCards = () => {
+  const dispatch = useDispatch();
+
+  const handleUseTemplate = (template: any) => {
+    dispatch(setSelectedTemplate(template));
+    dispatch(setIsModalOpen(true));
+  };
+
   return (
     <div className="flex flex-col gap-2 h-[47dvh] overflow-y-auto">
-      {previewData.map((data) => {
+      {previewData.map((data, index) => {
         return (
-          <div className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
+          <div key={index} className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
             <div className="flex justify-between">
               <p>{data?.name}</p>
 
-              <Badge variant="outline" className="cursor-pointer" onClick={() => {}}>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-blue-600 hover:text-white"
+                onClick={() => handleUseTemplate(data)}
+              >
                 Use Template
               </Badge>
             </div>
