@@ -28,6 +28,9 @@ const TextEditor = ({
   const [fontSize, setFontSize] = useState(initialStyle.fontSize);
   const [textColor, setTextColor] = useState(initialStyle.color);
 
+  // Determine if we're editing or adding new text
+  const isEditing = initialText.length > 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(text, { fontSize, color: textColor });
@@ -37,7 +40,7 @@ const TextEditor = ({
     <Dialog open={true} onOpenChange={() => onCancel()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Text</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Text" : "Add Text"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,21 +88,11 @@ const TextEditor = ({
             </div>
           </div>
 
-          <div className="p-3 border rounded-md bg-gray-50">
-            <p className="text-sm text-gray-500 mb-2">Preview:</p>
-            <div
-              className="p-2 bg-white border rounded"
-              style={{ fontSize: `${fontSize}px`, color: textColor }}
-            >
-              {text || "Sample Text"}
-            </div>
-          </div>
-
           <DialogFooter className="sm:justify-end">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit">Add Text</Button>
+            <Button type="submit">{isEditing ? "Save Changes" : "Add Text"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

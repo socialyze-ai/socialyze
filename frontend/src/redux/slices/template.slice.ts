@@ -12,6 +12,7 @@ export interface TextItem {
   id: string;
   content: string;
   position: { x: number; y: number };
+  size?: { width: number | string; height: number | string };
   style: {
     fontSize: number;
     color: string;
@@ -93,6 +94,18 @@ const templateSlice = createSlice({
         text.position = action.payload.position;
       }
     },
+    updateTextSize: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        size: { width: number | string; height: number | string };
+      }>,
+    ) => {
+      const text = state.texts.find((txt) => txt.id === action.payload.id);
+      if (text) {
+        text.size = action.payload.size;
+      }
+    },
     updateTextStyle: (
       state,
       action: PayloadAction<{ id: string; style: { fontSize: number; color: string } }>,
@@ -171,6 +184,7 @@ export const {
   updateImagePosition,
   updateImageSize,
   updateTextPosition,
+  updateTextSize,
   updateTextStyle,
   updateTextContent,
   setSelectedItem,

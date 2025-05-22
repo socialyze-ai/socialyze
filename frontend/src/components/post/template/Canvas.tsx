@@ -1,15 +1,19 @@
 import { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Trash2 } from "lucide-react";
+import { Trash2, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   updateImagePosition,
   updateImageSize,
   updateTextPosition,
+  updateTextStyle,
+  updateTextContent,
+  updateTextSize,
   setSelectedItem,
   removeItem,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
+import TextEditor from "./TextEditor";
 
 const Canvas = () => {
   const dispatch = useDispatch();
@@ -22,6 +26,8 @@ const Canvas = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ width: 0, height: 0 });
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
 
   // Base box size in pixels (converted from mm)
   // Using an approximate conversion of 1mm ≈ 3.78px for screen display
@@ -129,6 +135,7 @@ const Canvas = () => {
 
       if (isResizing) {
         const selectedImage = images.find((img) => img.id === selectedItemId);
+
         if (selectedImage) {
           const deltaX = e.clientX - dragStart.x;
           const deltaY = e.clientY - dragStart.y;
@@ -178,6 +185,85 @@ const Canvas = () => {
     e.stopPropagation();
     if (selectedItemId) {
       dispatch(removeItem(selectedItemId));
+    }
+  };
+
+  // Handle editing text
+  const handleEditText = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const textToEdit = texts.find((txt) => txt.id === id);
+    if (textToEdit) {
+      setEditingTextId(id);
+      setShowTextEditor(true);
+    }
+  };
+
+  // Helper function to estimate text dimensions
+  const estimateTextDimensions = (content: string, fontSize: number) => {
+    // Split text by line breaks
+    const lines = content.split("\n");
+
+    // Find the longest line
+    let maxLineLength = 0;
+    for (const line of lines) {
+      maxLineLength = Math.max(maxLineLength, line.length);
+    }
+
+    // Calculate estimated width based on longest line
+    const estimatedWidth = maxLineLength * fontSize * 0.6;
+
+    // Get the canvas width from the aspect ratio style
+    const { width } = getAspectRatioStyle();
+    const canvasWidth = parseFloat(width);
+
+    // Limit width to canvas width minus some padding
+    const maxWidth = canvasWidth - 20; // 10px padding on each side
+    const finalWidth = Math.min(estimatedWidth, maxWidth);
+
+    // Calculate estimated height based on number of lines
+    const lineHeight = fontSize * 1.2;
+    const estimatedHeight = lineHeight * Math.max(1, lines.length);
+
+    return { width: finalWidth, height: estimatedHeight };
+  };
+
+  // Handle saving edited text
+  const handleSaveEditedText = (content: string, style?: { fontSize: number; color: string }) => {
+    if (editingTextId) {
+      const textToUpdate = texts.find((txt) => txt.id === editingTextId);
+      if (textToUpdate) {
+        // Calculate new font size
+        const fontSize = style?.fontSize || textToUpdate.style.fontSize;
+
+        // Calculate new dimensions
+        const { width, height } = estimateTextDimensions(content, fontSize);
+
+        // Update text content
+        dispatch(
+          updateTextContent({
+            id: editingTextId,
+            content: content,
+          }),
+        );
+
+        // Update text style
+        dispatch(
+          updateTextStyle({
+            id: editingTextId,
+            style: style || textToUpdate.style,
+          }),
+        );
+
+        // Update text size based on new content
+        dispatch(
+          updateTextSize({
+            id: editingTextId,
+            size: { width, height },
+          }),
+        );
+      }
+      setShowTextEditor(false);
+      setEditingTextId(null);
     }
   };
 
@@ -233,6 +319,19 @@ const Canvas = () => {
             >
               <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
 
+              {/* X button for quick removal */}
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch(removeItem(img.id));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+
               {/* Resize handle - only visible when selected */}
               {isSelected && (
                 <div
@@ -249,16 +348,18 @@ const Canvas = () => {
         {/* Render all texts */}
         {texts.map((txt) => {
           const isSelected = selectedItemId === txt.id;
+          const textSize = txt.size || estimateTextDimensions(txt.content, txt.style.fontSize);
 
           return (
             <div
               key={txt.id}
-              className={`absolute cursor-move whitespace-nowrap ${
-                isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"
-              }`}
+              className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"}`}
               style={{
                 left: `${txt.position.x}px`,
                 top: `${txt.position.y}px`,
+                width: typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
+                height:
+                  typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
                 zIndex: isSelected ? 10 : 1,
               }}
               onClick={(e) => handleSelectItem(txt.id, e)}
@@ -268,11 +369,41 @@ const Canvas = () => {
                 style={{
                   fontSize: `${txt.style.fontSize}px`,
                   color: txt.style.color,
-                  whiteSpace: "nowrap",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
                   textAlign: "left",
+                  width: "100%",
+                  height: "100%",
+                  overflowWrap: "break-word",
                 }}
               >
                 {txt.content}
+              </div>
+
+              {/* Control buttons */}
+              <div className="absolute -top-2 -right-2 flex">
+                {/* Edit button */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-5 w-5 rounded-full mr-1"
+                  onClick={(e) => handleEditText(txt.id, e)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+
+                {/* X button for quick removal */}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-5 w-5 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch(removeItem(txt.id));
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
             </div>
           );
@@ -338,6 +469,19 @@ const Canvas = () => {
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
+      )}
+
+      {/* Text editor modal */}
+      {showTextEditor && editingTextId && (
+        <TextEditor
+          onSave={handleSaveEditedText}
+          onCancel={() => {
+            setShowTextEditor(false);
+            setEditingTextId(null);
+          }}
+          initialText={texts.find((txt) => txt.id === editingTextId)?.content || ""}
+          initialStyle={texts.find((txt) => txt.id === editingTextId)?.style}
+        />
       )}
     </div>
   );

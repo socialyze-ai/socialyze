@@ -116,12 +116,60 @@ const TemplateEditModal = () => {
     setShowTextEditor(true);
   };
 
+  // Helper function to estimate text dimensions
+  const estimateTextDimensions = (content: string, fontSize: number) => {
+    // Split text by line breaks
+    const lines = content.split("\n");
+
+    // Find the longest line
+    let maxLineLength = 0;
+    for (const line of lines) {
+      maxLineLength = Math.max(maxLineLength, line.length);
+    }
+
+    // Calculate estimated width based on longest line
+    const estimatedWidth = maxLineLength * fontSize * 0.6;
+
+    // Calculate canvas width based on aspect ratio
+    let canvasWidth = 0;
+    const canvasHeight = 384; // Fixed canvas height
+
+    switch (aspectRatio) {
+      case "16:9":
+        canvasWidth = (canvasHeight * 16) / 9;
+        break;
+      case "1:1":
+        canvasWidth = canvasHeight;
+        break;
+      case "4:5":
+        canvasWidth = (canvasHeight * 4) / 5;
+        break;
+      default:
+        canvasWidth = (canvasHeight * 16) / 9;
+    }
+
+    // Limit width to canvas width minus some padding
+    const maxWidth = canvasWidth - 20; // 10px padding on each side
+    const finalWidth = Math.min(estimatedWidth, maxWidth);
+
+    // Calculate estimated height based on number of lines
+    const lineHeight = fontSize * 1.2;
+    const estimatedHeight = lineHeight * Math.max(1, lines.length);
+
+    return { width: finalWidth, height: estimatedHeight };
+  };
+
   const handleSaveText = (text: string, style?: { fontSize: number; color: string }) => {
+    const fontSize = style?.fontSize || 16;
+    // Calculate dimensions based on content
+    const { width, height } = estimateTextDimensions(text, fontSize);
+
     const newText = {
       id: `text-${Date.now()}`,
       content: text,
       position: { x: 50, y: 50 },
       style: style || { fontSize: 16, color: "#000000" },
+      size: { width, height },
       canvasIndex: 0, // Will be updated by recalculateSectionAssignments
     };
     dispatch(setText([...texts, newText]));

@@ -157,10 +157,25 @@ const Preview = () => {
           // Treat txt.style as an extended style object
           const style = txt.style as ExtendedTextStyle;
 
+          // Get text size if defined, otherwise calculate based on content
+          const textSize = txt.size || {
+            width: txt.content.length * scaledFontSize * 0.6, // Approximate width based on content
+            height: scaledFontSize * 1.2, // Approximate height based on font size
+          };
+
+          // Scale the text size
+          const scaledWidth =
+            typeof textSize.width === "number" ? textSize.width * scaleFactor : textSize.width;
+          const scaledHeight =
+            typeof textSize.height === "number" ? textSize.height * scaleFactor : textSize.height;
+
           // Check if text is at least partially visible in this box
-          const textWidth = txt.content.length * scaledFontSize * 0.6; // Approximate width based on content
           const textLeft = txt.position.x;
-          const textRight = textLeft + textWidth;
+          const textRight =
+            textLeft +
+            (typeof textSize.width === "number"
+              ? textSize.width
+              : txt.content.length * txt.style.fontSize * 0.6);
 
           if (textRight < boxStartX || textLeft > boxEndX) {
             return null;
@@ -169,21 +184,26 @@ const Preview = () => {
           return (
             <div
               key={`preview-${txt.id}`}
-              className="absolute whitespace-nowrap"
+              className="absolute"
               style={{
                 ...txtPositionStyle,
+                width: typeof scaledWidth === "number" ? `${scaledWidth}px` : scaledWidth,
+                height: typeof scaledHeight === "number" ? `${scaledHeight}px` : scaledHeight,
               }}
             >
               <div
                 style={{
                   fontSize: `${scaledFontSize}px`,
                   color: style.color,
-                  wordWrap: "normal",
-                  whiteSpace: "nowrap",
+                  wordWrap: "break-word",
+                  whiteSpace: "pre-wrap",
                   textAlign: style.textAlign || "left",
                   fontWeight: style.fontWeight || "normal",
                   fontStyle: style.fontStyle || "normal",
                   lineHeight: style.lineHeight || "normal",
+                  width: "100%",
+                  height: "100%",
+                  overflowWrap: "break-word",
                 }}
               >
                 {txt.content}
