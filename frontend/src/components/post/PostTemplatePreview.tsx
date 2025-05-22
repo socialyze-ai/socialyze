@@ -44,7 +44,7 @@ const MediaGrid = ({ mediaUrls, channelType, isTemplate }) => {
   const mediaCount = visibleMedia.length;
 
   // Adjust grid height when template view is active
-  const templateClass = isTemplate ? "aspect-auto max-h-52" : "";
+  const templateClass = isTemplate ? "aspect-auto max-h-32" : "";
 
   // Render grid based on number of images
   if (mediaCount === 1) {
