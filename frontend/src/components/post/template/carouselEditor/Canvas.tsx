@@ -11,9 +11,13 @@ import {
   updateTextSize,
   setSelectedItem,
   removeItem,
+  setImages,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Media } from "../../MediaUploader";
+import ImageEditor from "../../editor/ImageEditor";
 
 const Canvas = () => {
   const dispatch = useDispatch();
@@ -28,6 +32,8 @@ const Canvas = () => {
   const [resizeStart, setResizeStart] = useState({ width: 0, height: 0 });
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [isEditImageDialogOpen, setIsEditImageDialogOpen] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState<{ id: string; src: string } | null>(null);
 
   // Base box size in pixels (converted from mm)
   // Using an approximate conversion of 1mm ≈ 3.78px for screen display
@@ -267,6 +273,33 @@ const Canvas = () => {
     }
   };
 
+  // Handle editing an image
+  const handleEditImage = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const imageToEdit = images.find((img) => img.id === id);
+    if (imageToEdit) {
+      setImageToEdit({
+        id: imageToEdit.id,
+        src: imageToEdit.src,
+      });
+      setIsEditImageDialogOpen(true);
+    }
+  };
+
+  // Handle save edited image
+  const handleSaveEditedImage = (editedImageUrl: string, selectedMedia: Media) => {
+    if (!imageToEdit) return;
+
+    // Update the image with edited version
+    const updatedImages = images.map((img) =>
+      img.id === imageToEdit.id ? { ...img, src: editedImageUrl } : img,
+    );
+
+    dispatch(setImages(updatedImages));
+    setIsEditImageDialogOpen(false);
+    setImageToEdit(null);
+  };
+
   // Draw reference lines for canvas sections
   const renderReferenceLines = () => {
     if (canvasCount <= 1) return null;
@@ -319,18 +352,31 @@ const Canvas = () => {
             >
               <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
 
-              {/* X button for quick removal */}
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dispatch(removeItem(img.id));
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+              {/* Control buttons */}
+              <div className="absolute -top-2 -right-2 flex">
+                {/* Edit button */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-5 w-5 rounded-full mr-1"
+                  onClick={(e) => handleEditImage(img.id, e)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+
+                {/* X button for quick removal */}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-5 w-5 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch(removeItem(img.id));
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
 
               {/* Resize handle - only visible when selected */}
               {isSelected && (
@@ -483,6 +529,23 @@ const Canvas = () => {
           initialStyle={texts.find((txt) => txt.id === editingTextId)?.style}
         />
       )}
+
+      {/* Image Editor Dialog */}
+      <Dialog open={isEditImageDialogOpen} onOpenChange={setIsEditImageDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          {imageToEdit && (
+            <ImageEditor
+              selectedImage={{
+                id: imageToEdit.id,
+                url: imageToEdit.src,
+                type: "image",
+              }}
+              onSave={handleSaveEditedImage}
+              onCancel={() => setIsEditImageDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
