@@ -77,68 +77,70 @@ const ImageGallery: React.FC = () => {
   };
 
   if (images.length === 0) {
-    return null;
+    return (
+      <div className="flex flex-col justify-center items-center my-4">
+        <h3 className="font-medium">Added Images</h3>
+        <p className="text-sm text-gray-500">No images added yet</p>
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="bg-white p-4 rounded-lg shadow mt-4">
-        <h3 className="font-medium mb-2">Added Images</h3>
-        <div className="flex flex-wrap gap-2">
-          {images.map((image: TemplateImage) => (
-            <div
-              key={image.id}
-              className="relative group border border-gray-200 rounded-md overflow-hidden"
-            >
-              <img src={image.src} alt={`Image ${image.id}`} className="h-16 w-16 object-cover" />
-              <div className="absolute top-1 right-1 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex gap-1">
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleEditImage(image)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Edit Image</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveImage(image.id)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Remove Image</TooltipContent>
-                  </Tooltip>
-                </div>
-
+      <div className="flex flex-wrap gap-2 p-2">
+        {images.map((image: TemplateImage) => (
+          <div
+            key={image.id}
+            className="relative group border border-gray-200 rounded-md overflow-hidden"
+          >
+            <img src={image.src} alt={`Image ${image.id}`} className="h-16 w-16 object-cover" />
+            <div className="absolute top-1 right-1 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
                 <Tooltip>
                   <TooltipTrigger>
                     <Button
                       variant="secondary"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => handleReplaceImage(image.id)}
+                      onClick={() => handleEditImage(image)}
                     >
-                      <ImagePlus className="h-3 w-3" />
+                      <Pencil className="h-3 w-3" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Replace Image</TooltipContent>
+                  <TooltipContent>Edit Image</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleRemoveImage(image.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove Image</TooltipContent>
                 </Tooltip>
               </div>
+
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => handleReplaceImage(image.id)}
+                  >
+                    <ImagePlus className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Replace Image</TooltipContent>
+              </Tooltip>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

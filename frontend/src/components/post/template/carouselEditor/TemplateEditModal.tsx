@@ -9,36 +9,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Type, Save } from "lucide-react";
-import {
-  setImages,
-  setText,
-  setAspectRatio,
-  setCanvasCount,
-  setBackgroundColor,
-  recalculateSectionAssignments,
-} from "@/redux/slices/template.slice";
+import { setImages, setText, recalculateSectionAssignments } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
-import MediaUploader from "@/components/post/MediaUploader";
-import ImageGallery from "./ImageGallery";
 import { useUploadMedia } from "@/api/apiHooks/useMedia";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { setMediaUrls } from "@/redux/slices/postCreation.slice";
+import CanvasOptions from "./CanvasOptions";
+import ContentAndMediaManager from "./ContentAndMediaManager";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -309,7 +292,7 @@ const TemplateEditModal = ({
     }
   };
 
-  const handleTemplateSaveAndUse = async ({ isSave = false }: { isSave: boolean }) => {
+  const handleTemplateSaveAndUse = async (isSave: boolean = false) => {
     setIsLoading(true);
     try {
       // Ensure sections are calculated correctly before processing
@@ -386,118 +369,34 @@ const TemplateEditModal = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-w-6xl h-5/6 overflow-y-auto">
+      <DialogContent className="max-w-7xl h-5/6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-2">
           {/* Preview at the top */}
-          <div className="flex gap-2 w-full">
-            <div className="w-full">
+          <div className="grid grid-cols-7 gap-2 w-full h-fit">
+            <div className="col-span-5 h-full">
               <Preview ref={previewRef} />
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="font-medium mb-2">Canvas Options</h3>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm mb-1">Number of Sections</label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={canvasCount}
-                        onChange={(e) => dispatch(setCanvasCount(parseInt(e.target.value) || 1))}
-                        className="w-20"
-                      />
-                      <Slider
-                        value={[canvasCount]}
-                        min={1}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => dispatch(setCanvasCount(value[0]))}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm mb-1">Aspect Ratio</label>
-                    <Select
-                      value={aspectRatio}
-                      onValueChange={(value) => dispatch(setAspectRatio(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select aspect ratio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="16:9">16:9</SelectItem>
-                        <SelectItem value="1:1">1:1</SelectItem>
-                        <SelectItem value="4:5">4:5</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm mb-1">Background Color</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={backgroundColor}
-                        onChange={(e) => dispatch(setBackgroundColor(e.target.value))}
-                        className="w-12 h-10 p-1"
-                      />
-                      <Input
-                        type="text"
-                        value={backgroundColor}
-                        onChange={(e) => dispatch(setBackgroundColor(e.target.value))}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="font-medium mb-2">Content</h3>
-                <div className="flex gap-2">
-                  <MediaUploader onlyTriggerButton={true} onMediaChange={handleMediaChange} />
-
-                  <Button variant="outline" className="flex-1" onClick={handleAddText}>
-                    <Type className="w-4 h-4 mr-2" />
-                    Add Text
-                  </Button>
-                </div>
-              </div>
-
-              <ImageGallery />
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleTemplateSaveAndUse({ isSave: true })}
-                  disabled={isLoading}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isLoading ? "Saving..." : "Save"}
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={() => handleTemplateSaveAndUse({ isSave: false })}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Processing..." : "Use"}
-                </Button>
-              </div>
+            <div className="col-span-2 h-full">
+              <CanvasOptions
+                handleTemplateSaveAndUse={handleTemplateSaveAndUse}
+                isLoading={isLoading}
+              />
             </div>
           </div>
 
-          <div className="bg-gray-100 rounded-lg p-4 h-96">
+          <div className="w-full">
+            <ContentAndMediaManager
+              handleMediaChange={handleMediaChange}
+              handleAddText={handleAddText}
+            />
+          </div>
+
+          <div className="w-full">
             <Canvas />
           </div>
         </div>

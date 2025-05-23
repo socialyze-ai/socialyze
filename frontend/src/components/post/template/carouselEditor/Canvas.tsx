@@ -682,33 +682,36 @@ const Canvas = () => {
   const { widthMm, heightMm } = getCanvasDimensionsInMm();
 
   return (
-    <div className="relative">
-      <div className="mb-2 text-sm text-gray-600">
+    <div className="relative h-fit w-full bg-gray-50 shadow rounded-lg p-3 flex flex-col gap-2 overflow-x-auto">
+      <p className="w-full text-center text-sm text-gray-600">
         Canvas Size: {widthMm}mm × {heightMm}mm ({aspectRatio})
-      </div>
-      <div
-        ref={canvasRef}
-        className={`relative border border-gray-300 ${
-          selectedItemId ? "overflow-visible" : "overflow-hidden"
-        }`}
-        style={{
-          ...getAspectRatioStyle(),
-          position: "relative",
-          backgroundColor,
-        }}
-        onClick={handleCanvasClick}
-      >
-        {/* Container for all items */}
+      </p>
+
+      <div className="max-w-6xl mx-auto overflow-x-auto">
         <div
-          className={`absolute top-0 left-0 w-full h-full ${
+          ref={canvasRef}
+          className={`relative border border-gray-300 ${
             selectedItemId ? "overflow-visible" : "overflow-hidden"
           }`}
+          style={{
+            ...getAspectRatioStyle(),
+            position: "relative",
+            backgroundColor,
+          }}
+          onClick={handleCanvasClick}
         >
-          {/* Reference lines */}
-          {renderReferenceLines()}
+          {/* Container for all items */}
+          <div
+            className={`absolute top-0 left-0 w-full h-full ${
+              selectedItemId ? "overflow-visible" : "overflow-hidden"
+            }`}
+          >
+            {/* Reference lines */}
+            {renderReferenceLines()}
 
-          {/* Canvas items */}
-          {renderCanvasItems()}
+            {/* Canvas items */}
+            {renderCanvasItems()}
+          </div>
         </div>
       </div>
 
