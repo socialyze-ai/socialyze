@@ -8,6 +8,7 @@ import {
   setCanvasCount,
   setBackgroundColor,
   setGridSize,
+  setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import TemplateEditModal from "./TemplateEditModal";
 import { useState } from "react";
@@ -784,7 +785,11 @@ const dummyData = [
   },
 ];
 
-const GridTemplate = () => {
+interface GridTemplateProps {
+  socialPlatform?: string;
+}
+
+const GridTemplate = ({ socialPlatform }: GridTemplateProps = {}) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
@@ -798,6 +803,11 @@ const GridTemplate = () => {
     dispatch(setBackgroundColor(template.backgroundColor));
     dispatch(setCanvasCount(template.canvasCount));
     dispatch(setGridSize(template.gridSize));
+
+    // Set social platform
+    if (socialPlatform) {
+      dispatch(setSocialPlatform(socialPlatform));
+    }
 
     // Extract and set images with deduplication
     const allImages = [];
@@ -863,7 +873,11 @@ const GridTemplate = () => {
       ))}
 
       {isModalOpen && selectedTemplateIndex !== null && (
-        <TemplateEditModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+        <TemplateEditModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          socialPlatform={socialPlatform}
+        />
       )}
     </div>
   );

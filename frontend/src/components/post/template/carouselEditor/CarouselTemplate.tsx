@@ -7,6 +7,7 @@ import {
   setAspectRatio,
   setCanvasCount,
   setBackgroundColor,
+  setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import TemplateEditModal from "./TemplateEditModal";
 import { useState } from "react";
@@ -391,7 +392,11 @@ const dummyData = [
   },
 ];
 
-const CarouselTemplate = () => {
+interface CarouselTemplateProps {
+  socialPlatform?: string;
+}
+
+const CarouselTemplate = ({ socialPlatform }: CarouselTemplateProps = {}) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
@@ -404,6 +409,11 @@ const CarouselTemplate = () => {
     dispatch(setAspectRatio(template.aspectRatio));
     dispatch(setBackgroundColor(template.backgroundColor));
     dispatch(setCanvasCount(template.canvasCount));
+
+    // Set social platform
+    if (socialPlatform) {
+      dispatch(setSocialPlatform(socialPlatform));
+    }
 
     // Extract and set images with deduplication
     const allImages = [];
@@ -466,7 +476,11 @@ const CarouselTemplate = () => {
       ))}
 
       {isModalOpen && selectedTemplateIndex !== null && (
-        <TemplateEditModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+        <TemplateEditModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          socialPlatform={socialPlatform}
+        />
       )}
     </div>
   );

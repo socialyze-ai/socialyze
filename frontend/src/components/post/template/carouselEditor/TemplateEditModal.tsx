@@ -9,7 +9,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { setImages, setText, recalculateSectionAssignments } from "@/redux/slices/template.slice";
+import {
+  setImages,
+  setText,
+  recalculateSectionAssignments,
+  setSocialPlatform,
+} from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas from "./Canvas";
 import TextEditor from "./TextEditor";
@@ -29,6 +34,7 @@ interface TemplateEditModalProps {
   onOpenChange?: (open: boolean) => void;
   initialTemplateData?: any;
   isGrid?: boolean;
+  socialPlatform?: string | null;
 }
 
 const TemplateEditModal = ({
@@ -36,6 +42,7 @@ const TemplateEditModal = ({
   onOpenChange,
   initialTemplateData,
   isGrid = false,
+  socialPlatform,
 }: TemplateEditModalProps = {}) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
@@ -59,6 +66,13 @@ const TemplateEditModal = ({
   // Process initialTemplateData if provided
   useEffect(() => {
     if (initialTemplateData) {
+      // Extract social platform if available
+      if (initialTemplateData.template && initialTemplateData.template.socialPlatform) {
+        dispatch(setSocialPlatform(initialTemplateData.template.socialPlatform));
+      } else if (socialPlatform) {
+        dispatch(setSocialPlatform(socialPlatform));
+      }
+
       // Extract images with deduplication
       const allImages = [];
       const seenImageIds = new Set();
@@ -77,8 +91,10 @@ const TemplateEditModal = ({
         }
         dispatch(setImages(allImages));
       }
+    } else if (socialPlatform) {
+      dispatch(setSocialPlatform(socialPlatform));
     }
-  }, [initialTemplateData, dispatch]);
+  }, [initialTemplateData, socialPlatform, dispatch]);
 
   // Recalculate sections assignment whenever canvas count or images/texts position changes
   useEffect(() => {
@@ -348,6 +364,7 @@ const TemplateEditModal = ({
             images,
             texts,
             outputUrls,
+            socialPlatform: useSelector((state: RootState) => state.template.socialPlatform),
           })
           .then((response) => {
             if (response.success) {

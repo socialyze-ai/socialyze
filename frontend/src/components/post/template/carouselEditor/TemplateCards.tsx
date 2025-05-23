@@ -5,6 +5,7 @@ import { setSelectedTemplate } from "@/redux/slices/templateGeneration.slice";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch } from "react-redux";
 import PostTemplatePreview from "../../PostTemplatePreview";
+import { setSocialPlatform } from "@/redux/slices/template.slice";
 
 const previewData = [
   {
@@ -67,12 +68,13 @@ const previewData = [
   },
 ];
 
-const TemplateCards = () => {
+const TemplateCards = ({ socialPlatform }: { socialPlatform: string }) => {
   const dispatch = useDispatch();
 
   const handleUseTemplate = (template: any) => {
     dispatch(setSelectedTemplate(template));
     dispatch(setIsModalOpen(true));
+    dispatch(setSocialPlatform(socialPlatform));
   };
 
   return (

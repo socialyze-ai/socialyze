@@ -46,11 +46,11 @@ const TemplatePanel = () => {
 
   const renderTemplateComponent = (tab, suggestion) => {
     if ((tab === "facebook" || tab === "instagram") && suggestion === "Grid") {
-      return <GridTemplate />;
+      return <GridTemplate socialPlatform={tab} />;
     } else if ((tab === "facebook" || tab === "instagram") && suggestion === "Carousal") {
-      return <CarouselTemplate />;
+      return <CarouselTemplate socialPlatform={tab} />;
     } else {
-      return <TemplateCards />;
+      return <TemplateCards socialPlatform={tab} />;
     }
   };
 
@@ -142,7 +142,7 @@ const TemplatePanel = () => {
                   })}
                 </div>
 
-                <TemplateCards />
+                <TemplateCards socialPlatform="linkedin" />
               </TabsContent>
             )}
 
@@ -163,7 +163,7 @@ const TemplatePanel = () => {
                   })}
                 </div>
 
-                <TemplateCards />
+                <TemplateCards socialPlatform="x" />
               </TabsContent>
             )}
           </div>
@@ -173,7 +173,10 @@ const TemplatePanel = () => {
       {(activeTab === "facebook" || activeTab === "instagram") &&
         (activeSuggestion[activeTab] === "Grid" || activeSuggestion[activeTab] === "Carousal") && (
           <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
-            <TemplateEditModal isGrid={activeSuggestion[activeTab] === "Grid"} />
+            <TemplateEditModal
+              isGrid={activeSuggestion[activeTab] === "Grid"}
+              socialPlatform={activeTab}
+            />
           </CardFooter>
         )}
     </Card>

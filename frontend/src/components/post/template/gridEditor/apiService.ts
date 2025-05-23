@@ -8,6 +8,7 @@ interface TemplateData {
   images: ImageItem[];
   texts: TextItem[];
   outputUrls?: string[];
+  socialPlatform?: string | null;
 }
 
 interface ApiResponse {
@@ -196,6 +197,7 @@ export const apiService = {
           canvasCount: templateData.canvasCount,
           gridSize: templateData.gridSize,
           sections,
+          socialPlatform: templateData.socialPlatform,
         },
         outputUrls: templateData.outputUrls,
       };

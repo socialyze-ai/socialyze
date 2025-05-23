@@ -14,6 +14,7 @@ import {
   setText,
   recalculateSectionAssignments,
   setGridSize,
+  setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas from "./Canvas";
@@ -33,12 +34,14 @@ interface TemplateEditModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialTemplateData?: any;
+  socialPlatform?: string | null;
 }
 
 const TemplateEditModal = ({
   open,
   onOpenChange,
   initialTemplateData,
+  socialPlatform,
 }: TemplateEditModalProps = {}) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts, gridSize } = useSelector(
@@ -71,6 +74,13 @@ const TemplateEditModal = ({
         setRows(initialTemplateData.template.gridSize.rows);
       }
 
+      // Extract social platform if available
+      if (initialTemplateData.template && initialTemplateData.template.socialPlatform) {
+        dispatch(setSocialPlatform(initialTemplateData.template.socialPlatform));
+      } else if (socialPlatform) {
+        dispatch(setSocialPlatform(socialPlatform));
+      }
+
       // Extract images with deduplication
       const allImages = [];
       const seenImageIds = new Set();
@@ -89,8 +99,10 @@ const TemplateEditModal = ({
         }
         dispatch(setImages(allImages));
       }
+    } else if (socialPlatform) {
+      dispatch(setSocialPlatform(socialPlatform));
     }
-  }, [initialTemplateData, dispatch]);
+  }, [initialTemplateData, socialPlatform, dispatch]);
 
   // Update grid size whenever columns or rows change
   useEffect(() => {
@@ -379,6 +391,7 @@ const TemplateEditModal = ({
             images,
             texts,
             outputUrls,
+            socialPlatform: useSelector((state: RootState) => state.template.socialPlatform),
           })
           .then((response) => {
             if (response.success) {

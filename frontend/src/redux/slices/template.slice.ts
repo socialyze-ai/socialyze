@@ -38,6 +38,7 @@ export interface TemplateState {
     columns: number;
     rows: number;
   };
+  socialPlatform: string | null;
 }
 
 const initialState: TemplateState = {
@@ -51,6 +52,7 @@ const initialState: TemplateState = {
     columns: 3,
     rows: 1,
   },
+  socialPlatform: null,
 };
 
 const templateSlice = createSlice({
@@ -198,6 +200,9 @@ const templateSlice = createSlice({
       // Update canvasCount based on the grid size
       state.canvasCount = action.payload.columns * action.payload.rows;
     },
+    setSocialPlatform: (state, action: PayloadAction<string | null>) => {
+      state.socialPlatform = action.payload;
+    },
   },
 });
 
@@ -220,6 +225,7 @@ export const {
   recalculateSectionAssignments,
   resetTemplate,
   setGridSize,
+  setSocialPlatform,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;
