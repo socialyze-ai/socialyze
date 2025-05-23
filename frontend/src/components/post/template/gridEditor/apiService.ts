@@ -26,9 +26,6 @@ const estimateTextWidth = (text: string, fontSize: number): number => {
 export const apiService = {
   // Process template and generate output
   processTemplate: async (templateData: TemplateData): Promise<ApiResponse> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
     try {
       console.log("Processing template with data:", templateData);
 
@@ -218,9 +215,6 @@ export const apiService = {
 
   // Save template for future use
   saveTemplate: async (templateData: TemplateData): Promise<ApiResponse> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     try {
       console.log("Saving template with data:", templateData);
 
