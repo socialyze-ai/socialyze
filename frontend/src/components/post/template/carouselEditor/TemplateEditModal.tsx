@@ -40,7 +40,17 @@ import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { setMediaUrls } from "@/redux/slices/postCreation.slice";
 
-const TemplateEditModal = () => {
+interface TemplateEditModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialTemplateData?: any;
+}
+
+const TemplateEditModal = ({
+  open,
+  onOpenChange,
+  initialTemplateData,
+}: TemplateEditModalProps = {}) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
     (state: RootState) => state.template,
@@ -50,6 +60,30 @@ const TemplateEditModal = () => {
   const previewRef = useRef<PreviewRef>(null);
 
   const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+
+  // Process initialTemplateData if provided
+  useEffect(() => {
+    if (initialTemplateData) {
+      // Extract images with deduplication
+      const allImages = [];
+      const seenImageIds = new Set();
+
+      if (initialTemplateData.template && initialTemplateData.template.sections) {
+        for (const section of initialTemplateData.template.sections) {
+          for (const image of section.images || []) {
+            // Only add image if we haven't seen its ID before
+            if (!seenImageIds.has(image.id)) {
+              // Remove clipping info which is calculated dynamically
+              const { clipping, ...imageWithoutClipping } = image;
+              allImages.push(imageWithoutClipping);
+              seenImageIds.add(image.id);
+            }
+          }
+        }
+        dispatch(setImages(allImages));
+      }
+    }
+  }, [initialTemplateData, dispatch]);
 
   // Recalculate sections assignment whenever canvas count or images/texts position changes
   useEffect(() => {
@@ -87,6 +121,13 @@ const TemplateEditModal = () => {
     if (selectedMedia && selectedMedia.length > 0) {
       // Get the last selected media (most recently added)
       const newMedia = selectedMedia[selectedMedia.length - 1];
+
+      // Check if this image ID already exists in the images array
+      const existingImageIndex = images.findIndex((img) => img.id === newMedia.id);
+      if (existingImageIndex !== -1) {
+        // Image already exists, skip adding it
+        return;
+      }
 
       // Create a temporary image to get dimensions
       const img = new Image();
@@ -183,39 +224,8 @@ const TemplateEditModal = () => {
     setShowTextEditor(false);
   };
 
-  const handleSaveTemplateConfig = async () => {
-    setIsLoading(true);
-    try {
-      // Ensure sections are calculated correctly before processing
-      dispatch(recalculateSectionAssignments());
-
-      // Call API service to process template
-      const response = await apiService.processTemplate({
-        canvasCount,
-        aspectRatio,
-        backgroundColor,
-        images,
-        texts,
-      });
-
-      if (response.success) {
-        console.log("Template processed successfully:", response.data);
-        alert("Template processed successfully!");
-      } else {
-        throw new Error(response.error || "Unknown error occurred");
-      }
-    } catch (error) {
-      console.error("Error processing template:", error);
-      alert(
-        error instanceof Error ? error.message : "Error processing template. Please try again.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUseTemplate = async () => {
-    setIsLoading(true);
+  // Generic function to process slides
+  const processSlides = async (onComplete: (uploadedImages: Media[]) => void) => {
     try {
       // Check if we have a valid preview reference
       if (!previewRef.current) {
@@ -234,7 +244,7 @@ const TemplateEditModal = () => {
         // Wait for the slide to render
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Get the canvas content element (contains only the actual content without borders/buttons)
+        // Get the canvas content element
         const canvasContentElement = previewRef.current.getCanvasContentElement();
         if (!canvasContentElement) {
           toast.error(`Failed to capture content for slide ${i + 1}`, { position: "top-center" });
@@ -275,12 +285,9 @@ const TemplateEditModal = () => {
                     type: "image",
                   });
 
-                  // When all images are uploaded, add them to the post composer
+                  // When all images are uploaded, call the completion handler
                   if (uploadedImages.length === totalSlides) {
-                    // Add all images to the post composer
-                    dispatch(setMediaUrls(uploadedImages));
-                    toast.success("Template added to post composer", { position: "top-center" });
-                    setIsLoading(false);
+                    onComplete(uploadedImages);
                   }
                 }
               },
@@ -296,6 +303,75 @@ const TemplateEditModal = () => {
         );
       }
     } catch (error) {
+      console.error("Error processing slides:", error);
+      toast.error("Failed to process slides", { position: "top-center" });
+      setIsLoading(false);
+    }
+  };
+
+  const handleTemplateSaveAndUse = async ({ isSave = false }: { isSave: boolean }) => {
+    setIsLoading(true);
+    try {
+      // Ensure sections are calculated correctly before processing
+      dispatch(recalculateSectionAssignments());
+
+      // Process slides and save the template
+      processSlides(async (uploadedImages) => {
+        // Extract URLs for the API
+        const outputUrls = uploadedImages.map((img) => img.url);
+
+        // Call API service to process template with the uploaded image URLs
+        apiService
+          .processTemplate({
+            canvasCount,
+            aspectRatio,
+            backgroundColor,
+            images,
+            texts,
+            outputUrls,
+          })
+          .then((response) => {
+            if (response.success) {
+              console.log(
+                isSave ? "Template saved successfully:" : "Template processed successfully:",
+                response.data,
+              );
+              if (onOpenChange) {
+                onOpenChange(false);
+              }
+            } else {
+              throw new Error(response.error || "Unknown error occurred");
+            }
+          })
+          .catch((error) => {
+            console.error("Error processing template:", error);
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Error processing template. Please try again.",
+              { position: "top-center" },
+            );
+          })
+          .finally(() => {
+            if (!isSave) {
+              dispatch(setMediaUrls(uploadedImages));
+            }
+            if (onOpenChange) {
+              onOpenChange(false);
+
+              toast.success(
+                isSave
+                  ? "Template saved and processed successfully!"
+                  : "Template added to post composer",
+                {
+                  position: "top-center",
+                },
+              );
+            }
+            setIsLoading(false);
+          });
+      });
+    } catch (error) {
       console.error("Error processing template:", error);
       toast.error("Failed to process template", { position: "top-center" });
       setIsLoading(false);
@@ -303,10 +379,12 @@ const TemplateEditModal = () => {
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button>Edit</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!open && (
+        <DialogTrigger asChild>
+          <Button>Edit</Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-w-6xl h-5/6 overflow-y-auto">
         <DialogHeader>
@@ -399,11 +477,20 @@ const TemplateEditModal = () => {
               <ImageGallery />
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={handleSaveTemplateConfig}>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleTemplateSaveAndUse({ isSave: true })}
+                  disabled={isLoading}
+                >
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  {isLoading ? "Saving..." : "Save"}
                 </Button>
-                <Button className="flex-1" onClick={handleUseTemplate} disabled={isLoading}>
+                <Button
+                  className="flex-1"
+                  onClick={() => handleTemplateSaveAndUse({ isSave: false })}
+                  disabled={isLoading}
+                >
                   {isLoading ? "Processing..." : "Use"}
                 </Button>
               </div>

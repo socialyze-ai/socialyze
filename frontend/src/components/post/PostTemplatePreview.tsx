@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SocialChannel } from "@/redux/slices/posts.slice";
+import { SocialChannel as OriginalSocialChannel } from "@/redux/slices/posts.slice";
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
@@ -15,7 +15,24 @@ interface PostTemplatePreviewProps {
   isTemplate?: boolean; // New prop for smaller template view
 }
 
-const MediaGrid = ({ mediaUrls, channelType, isTemplate }) => {
+// Extend the original SocialChannel type but make id and connected optional
+export type SocialChannel = Omit<OriginalSocialChannel, "id" | "connected" | "type"> & {
+  id?: string;
+  connected?: boolean;
+  type: "facebook" | "twitter" | "instagram" | "linkedin" | "x" | "default";
+};
+
+interface MediaGridProps {
+  mediaUrls?: string[] | { url: string; type: string }[];
+  channelType: string;
+  isTemplate?: boolean;
+}
+
+const MediaGrid: React.FC<MediaGridProps> = ({
+  mediaUrls = [],
+  channelType = "default",
+  isTemplate = false,
+}) => {
   if (!mediaUrls || mediaUrls.length === 0) return null;
 
   // Maximum number of images to display in the grid
@@ -178,7 +195,7 @@ const MediaGrid = ({ mediaUrls, channelType, isTemplate }) => {
 
 const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   content,
-  channel,
+  channel = { name: "", type: "default", profileImage: "" } as SocialChannel,
   mediaUrls = [],
   className,
   isTemplate = false, // Default to normal size
@@ -238,39 +255,40 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
       >
         <div className={`flex ${classes.padding} items-start`}>
           <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-            <AvatarImage src={channel.profileImage} />
+            <AvatarImage src={channel?.profileImage} />
             <AvatarFallback className="capitalize font-semibold text-xl">
-              {channel.name.charAt(0)}
+              {channel?.name ? channel.name.charAt(0) : "?"}
             </AvatarFallback>
           </Avatar>
           <div className="w-full">
             <div className="flex items-center">
-              <span className={classes.headingSize}>{channel.name}</span>
+              <span className={classes.headingSize}>{channel?.name || "Channel"}</span>
               <span className={`text-gray-500 ml-1 ${classes.textSize}`}>
-                @{channel.username || channel.name.toLowerCase().replace(/\s/g, "")}
-              </span>
-              <span className="mx-1 text-gray-500">·</span>
-              <span className={`text-gray-500 ${classes.textSize}`}>
-                {formatDate(scheduledDate || new Date())}
+                @
+                {channel?.username ||
+                  (channel?.name ? channel.name.toLowerCase().replace(/\s/g, "") : "username")}
               </span>
             </div>
-            <div className={`${classes.topMargin} whitespace-pre-wrap ${classes.textSize}`}>
+            <div className={`whitespace-pre-wrap ${classes.textSize} mb-2`}>
               {formatContentWithHashtags(content)}
             </div>
             <MediaGrid mediaUrls={mediaToUse} channelType="x" isTemplate={isTemplate} />
-            <div className="flex justify-between mt-3 text-gray-500 px-2">
-              <button className="flex items-center gap-1 hover:text-blue-500">
-                <MessageCircle size={classes.buttonIconSize} />
-              </button>
-              <button className="flex items-center gap-1 hover:text-green-500">
-                <Repeat size={classes.buttonIconSize} />
-              </button>
-              <button className="flex items-center gap-1 hover:text-red-500">
-                <Heart size={classes.buttonIconSize} />
-              </button>
-              <button className="flex items-center gap-1 hover:text-blue-500">
-                <Share size={classes.buttonIconSize} />
-              </button>
+            <div className={`flex justify-between mt-3 text-gray-500 ${classes.metaText}`}>
+              <div className="flex items-center space-x-1">
+                <MessageCircle size={classes.iconSize} />
+                <span>12</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Repeat size={classes.iconSize} />
+                <span>5</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Heart size={classes.iconSize} />
+                <span>24</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Share size={classes.iconSize} />
+              </div>
             </div>
           </div>
         </div>
@@ -281,7 +299,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   const renderFacebookPreview = () => {
     if (!content && (!mediaToUse || mediaToUse.length === 0)) {
       return (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 max-w-md">
+        <div className="bg-white border border-gray-200 rounded-md p-4 max-w-md">
           <p className="text-gray-500 text-center">Add content or media to see Facebook preview</p>
         </div>
       );
@@ -294,15 +312,14 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
         <div className={classes.padding}>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Avatar className={`rounded-full mr-2 ${classes.avatarSize}`}>
-                <AvatarImage src={channel.profileImage} />
+              <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
+                <AvatarImage src={channel?.profileImage} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
-                  {channel.name.charAt(0)}
+                  {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
               </Avatar>
-
               <div>
-                <div className={classes.headingSize}>{channel.name}</div>
+                <div className={classes.headingSize}>{channel?.name || "Channel"}</div>
                 <div className={`text-gray-500 ${classes.metaText}`}>
                   {formatDate(scheduledDate || new Date())} · <span>🌎</span>
                 </div>
@@ -316,7 +333,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
             {formatContentWithHashtags(content)}
           </div>
           <MediaGrid mediaUrls={mediaToUse} channelType="facebook" isTemplate={isTemplate} />
-          <div className="border-t border-b border-gray-200 mt-3 py-1 flex justify-between text-gray-600">
+          <div className="mt-3 flex justify-between text-gray-600 border-t pt-2">
             <button className="flex items-center gap-1 py-1 px-2 hover:bg-gray-100 rounded">
               <Heart size={classes.buttonIconSize} />
               <span className={classes.textSize}>Like</span>
@@ -353,13 +370,14 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center">
             <Avatar className={`rounded-full mr-2 ${classes.avatarSize}`}>
-              <AvatarImage src={channel.profileImage} />
+              <AvatarImage src={channel?.profileImage} />
               <AvatarFallback className="capitalize font-semibold text-xl">
-                {channel.name.charAt(0)}
+                {channel?.name ? channel.name.charAt(0) : "?"}
               </AvatarFallback>
             </Avatar>
             <span className={classes.headingSize}>
-              {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
+              {channel?.username ||
+                (channel?.name ? channel.name.toLowerCase().replace(/\s/g, "-") : "username")}
             </span>
           </div>
           <button>
@@ -401,7 +419,8 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
 
           <div className={classes.textSize}>
             <span className="font-medium mr-2">
-              {channel.username || channel.name.toLowerCase().replace(/\s/g, "-")}
+              {channel?.username ||
+                (channel?.name ? channel.name.toLowerCase().replace(/\s/g, "-") : "username")}
             </span>
             {formatContentWithHashtags(content)}
           </div>
@@ -430,13 +449,13 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-                <AvatarImage src={channel.profileImage} />
+                <AvatarImage src={channel?.profileImage} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
-                  {channel.name.charAt(0)}
+                  {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className={classes.headingSize}>{channel.name}</div>
+                <div className={classes.headingSize}>{channel?.name || "Channel"}</div>
                 <div className={`text-gray-500 ${classes.metaText}`}>
                   {formatDate(scheduledDate || new Date())} · <span>🌎</span>
                 </div>
@@ -477,13 +496,13 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
     <div className={`bg-white border border-gray-200 rounded-lg p-4 max-w-md ${classes.container}`}>
       <div className="flex items-center space-x-3 mb-2">
         <Avatar className={`rounded-full ${classes.avatarSize}`}>
-          <AvatarImage src={channel.profileImage} />
+          <AvatarImage src={channel?.profileImage} />
           <AvatarFallback className="capitalize font-semibold text-xl">
-            {channel.name.charAt(0)}
+            {channel?.name ? channel.name.charAt(0) : "?"}
           </AvatarFallback>
         </Avatar>
         <div>
-          <p className={classes.headingSize}>{channel.name}</p>
+          <p className={classes.headingSize}>{channel?.name || "Channel"}</p>
           <p className={`text-gray-500 ${classes.metaText}`}>
             {formatDate(scheduledDate || new Date())}
           </p>

@@ -6,6 +6,7 @@ interface TemplateData {
   backgroundColor: string;
   images: ImageItem[];
   texts: TextItem[];
+  outputUrls?: string[];
 }
 
 interface ApiResponse {
@@ -84,12 +85,23 @@ export const apiService = {
 
       const sectionWidth = canvasWidth / templateData.canvasCount;
 
+      // Deduplicate images based on ID
+      const uniqueImages = [];
+      const imageIds = new Set();
+
+      for (const image of templateData.images) {
+        if (!imageIds.has(image.id)) {
+          imageIds.add(image.id);
+          uniqueImages.push(image);
+        }
+      }
+
       // Simulate API processing for each section
       const sections = [];
 
       for (let i = 0; i < templateData.canvasCount; i++) {
         // Find images that are at least partially in this section
-        const sectionImages = templateData.images
+        const sectionImages = uniqueImages
           .filter((img) => {
             const imgStartX = img.position.x;
             const imgEndX = img.position.x + img.size.width;
@@ -154,7 +166,7 @@ export const apiService = {
           canvasCount: templateData.canvasCount,
           sections,
         },
-        outputUrl: "https://example.com/generated-template-12345.jpg",
+        outputUrls: templateData.outputUrls,
       };
 
       return {
