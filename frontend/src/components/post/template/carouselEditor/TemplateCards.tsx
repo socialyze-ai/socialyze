@@ -76,16 +76,19 @@ const TemplateCards = () => {
   };
 
   return (
-    <div className="flex flex-col gap-2 h-[47dvh] overflow-y-auto">
+    <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
       {previewData.map((data, index) => {
         return (
-          <div key={index} className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
+          <div
+            key={index}
+            className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl bg-gray-50"
+          >
             <div className="flex justify-between">
               <p>{data?.name}</p>
 
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-blue-600 hover:text-white"
+                className="cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
                 onClick={() => handleUseTemplate(data)}
               >
                 Use Template

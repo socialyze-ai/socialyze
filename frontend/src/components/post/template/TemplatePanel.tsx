@@ -5,42 +5,53 @@ import { Button } from "@/components/ui/button";
 import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import PostTemplatePreview from "../PostTemplatePreview";
 import { useDispatch } from "react-redux";
-import { setIsModalOpen, setSelectedTemplate } from "@/redux/slices/templateGeneration.slice";
 import TemplateGenerationModal from "./TemplateGenerationModal";
 import TemplateCards from "./carouselEditor/TemplateCards";
 import CarouselTemplate from "./carouselEditor/CarouselTemplate";
 import GridTemplate from "./gridEditor/GridTemplate";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
-const mockSuggestions = [
-  {
-    id: 1,
-    name: "Product Launch",
-  },
-  {
-    id: 2,
-    name: "Holiday Promotion",
-  },
-  {
-    id: 3,
-    name: "Weekly Update",
-  },
-  {
-    id: 4,
-    name: "Event Announcement",
-  },
-  {
-    id: 5,
-    name: "Customer Success Story",
-  },
-];
+const linkedinSuggestions = ["Wisdom", "Advice", "Growth", "Content Marketing"];
+const instagramAndFacebookSuggestions = ["Grid", "Carousal", "Traveling", "Motivating"];
+const xSuggestions = ["Storytelling", "News"];
 
 const TemplatePanel = () => {
   const dispatch = useDispatch();
+  const [activeSuggestion, setActiveSuggestion] = useState({
+    facebook: instagramAndFacebookSuggestions[0],
+    instagram: instagramAndFacebookSuggestions[0],
+    linkedin: linkedinSuggestions[0],
+    x: xSuggestions[0],
+  });
+  const [activeTab, setActiveTab] = useState("facebook");
 
   const handleClose = () => {
-    setIsTemplateSectionOpen(false);
+    dispatch(setIsTemplateSectionOpen(false));
+    setActiveSuggestion({
+      facebook: instagramAndFacebookSuggestions[0],
+      instagram: instagramAndFacebookSuggestions[0],
+      linkedin: linkedinSuggestions[0],
+      x: xSuggestions[0],
+    });
+  };
+
+  const handleSuggestionClick = (suggestion, tab) => {
+    setActiveSuggestion({
+      ...activeSuggestion,
+      [tab]: suggestion,
+    });
+  };
+
+  const renderTemplateComponent = (tab, suggestion) => {
+    if ((tab === "facebook" || tab === "instagram") && suggestion === "Grid") {
+      return <GridTemplate />;
+    } else if ((tab === "facebook" || tab === "instagram") && suggestion === "Carousal") {
+      return <CarouselTemplate />;
+    } else {
+      return <TemplateCards />;
+    }
   };
 
   return (
@@ -56,8 +67,14 @@ const TemplatePanel = () => {
         </Button>
       </CardHeader>
 
+      <TemplateGenerationModal />
+
       <CardContent className="h-full w-full p-0">
-        <Tabs defaultValue="facebook" className="flex flex-col justify-center">
+        <Tabs
+          defaultValue="facebook"
+          className="flex flex-col justify-center"
+          onValueChange={(value) => setActiveTab(value)}
+        >
           <TabsList className="flex gap-1 overflow-x-auto">
             <TabsTrigger value="facebook">Facebook</TabsTrigger>
             <TabsTrigger value="instagram">Instagram</TabsTrigger>
@@ -66,75 +83,99 @@ const TemplatePanel = () => {
           </TabsList>
 
           <div className="h-full pb-2 px-2">
-            <TabsContent value="facebook" className="h-full flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1">
-                {mockSuggestions?.map((sug) => {
-                  return (
-                    <Badge key={sug?.id} className="cursor-pointer" variant="outline">
-                      {sug?.name}
-                    </Badge>
-                  );
-                })}
-              </div>
+            {activeTab === "facebook" && (
+              <TabsContent value="facebook" className="h-full flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {instagramAndFacebookSuggestions?.map((sug, index) => {
+                    return (
+                      <Badge
+                        key={cn(sug + "-" + index)}
+                        className="cursor-pointer"
+                        variant={activeSuggestion.facebook === sug ? "default" : "outline"}
+                        onClick={() => handleSuggestionClick(sug, "facebook")}
+                      >
+                        {sug}
+                      </Badge>
+                    );
+                  })}
+                </div>
 
-              <TemplateEditModal />
+                {renderTemplateComponent("facebook", activeSuggestion.facebook)}
+              </TabsContent>
+            )}
 
-              <TemplateGenerationModal />
+            {activeTab === "instagram" && (
+              <TabsContent value="instagram" className="h-full flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {instagramAndFacebookSuggestions?.map((sug, index) => {
+                    return (
+                      <Badge
+                        key={cn(sug + "-" + index)}
+                        className="cursor-pointer"
+                        variant={activeSuggestion.instagram === sug ? "default" : "outline"}
+                        onClick={() => handleSuggestionClick(sug, "instagram")}
+                      >
+                        {sug}
+                      </Badge>
+                    );
+                  })}
+                </div>
 
-              <TemplateCards />
-            </TabsContent>
+                {renderTemplateComponent("instagram", activeSuggestion.instagram)}
+              </TabsContent>
+            )}
 
-            <TabsContent value="instagram">
-              <p>I</p>
-              <div className="flex flex-wrap gap-2">
-                {mockSuggestions?.map((sug) => {
-                  return (
-                    <Badge key={sug?.id} className="cursor-pointer" variant="outline">
-                      {sug?.name}
-                    </Badge>
-                  );
-                })}
-              </div>
+            {activeTab === "linkedin" && (
+              <TabsContent value="linkedin" className="h-full flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {linkedinSuggestions?.map((sug, index) => {
+                    return (
+                      <Badge
+                        key={cn(sug + "-" + index)}
+                        className="cursor-pointer"
+                        variant={activeSuggestion.linkedin === sug ? "default" : "outline"}
+                        onClick={() => handleSuggestionClick(sug, "linkedin")}
+                      >
+                        {sug}
+                      </Badge>
+                    );
+                  })}
+                </div>
 
-              <CarouselTemplate />
-            </TabsContent>
+                <TemplateCards />
+              </TabsContent>
+            )}
 
-            <TabsContent value="linkedin">
-              <p>L</p>
-              <div className="flex flex-wrap gap-2">
-                {mockSuggestions?.map((sug) => {
-                  return (
-                    <Badge key={sug?.id} className="cursor-pointer" variant="outline">
-                      {sug?.name}
-                    </Badge>
-                  );
-                })}
-              </div>
+            {activeTab === "x" && (
+              <TabsContent value="x" className="h-full flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {xSuggestions?.map((sug, index) => {
+                    return (
+                      <Badge
+                        key={cn(sug + "-" + index)}
+                        className="cursor-pointer"
+                        variant={activeSuggestion.x === sug ? "default" : "outline"}
+                        onClick={() => handleSuggestionClick(sug, "x")}
+                      >
+                        {sug}
+                      </Badge>
+                    );
+                  })}
+                </div>
 
-              <GridTemplate />
-            </TabsContent>
-
-            <TabsContent value="x">
-              <p>X</p>
-              <div className="flex flex-wrap gap-2">
-                {mockSuggestions?.map((sug) => {
-                  return (
-                    <Badge key={sug?.id} className="cursor-pointer" variant="outline">
-                      {sug?.name}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </TabsContent>
+                <TemplateCards />
+              </TabsContent>
+            )}
           </div>
         </Tabs>
       </CardContent>
 
-      <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
-        <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
-          Create Custom
-        </Button>
-      </CardFooter>
+      {(activeTab === "facebook" || activeTab === "instagram") &&
+        (activeSuggestion[activeTab] === "Grid" || activeSuggestion[activeTab] === "Carousal") && (
+          <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
+            <TemplateEditModal isGrid={activeSuggestion[activeTab] === "Grid"} />
+          </CardFooter>
+        )}
     </Card>
   );
 };

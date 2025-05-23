@@ -27,12 +27,14 @@ interface TemplateEditModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialTemplateData?: any;
+  isGrid?: boolean;
 }
 
 const TemplateEditModal = ({
   open,
   onOpenChange,
   initialTemplateData,
+  isGrid = false,
 }: TemplateEditModalProps = {}) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
@@ -365,7 +367,7 @@ const TemplateEditModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {!open && (
         <DialogTrigger asChild>
-          <Button>Edit</Button>
+          <Button>Create Custom {isGrid ? "Grid" : "Carousel"}</Button>
         </DialogTrigger>
       )}
 

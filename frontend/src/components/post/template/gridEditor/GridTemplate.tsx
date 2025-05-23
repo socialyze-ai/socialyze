@@ -835,15 +835,18 @@ const GridTemplate = () => {
   };
 
   return (
-    <div className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
+    <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2">
       {dummyData.map((data, index) => (
-        <div key={index} className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
+        <div
+          key={index}
+          className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl bg-gray-50"
+        >
           <div className="flex justify-between">
             <p>{data?.name}</p>
 
             <Badge
               variant="outline"
-              className="cursor-pointer hover:bg-blue-600 hover:text-white"
+              className="cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
               onClick={() => handleUseTemplate(data, index)}
             >
               Use Template
