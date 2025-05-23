@@ -226,9 +226,7 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
       <div
         key={`cell-${cellIndex}`}
         ref={(element) => (cellRefs.current[cellIndex] = element)}
-        className={`relative border ${
-          selectedCell === cellIndex ? "border-blue-500" : "border-gray-300"
-        }`}
+        className="relative"
         style={{
           backgroundColor,
           overflow: "hidden",

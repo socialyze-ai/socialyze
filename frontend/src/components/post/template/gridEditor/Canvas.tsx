@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Trash2, X, Pencil } from "lucide-react";
+import { Trash2, X, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   updateImagePosition,
@@ -15,9 +15,10 @@ import {
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Media } from "../../MediaUploader";
 import ImageEditor from "../../editor/ImageEditor";
+import MediaUploader from "../../MediaUploader";
 
 // Add TextAlign type
 type TextAlign = "left" | "center" | "right" | "justify";
@@ -36,6 +37,14 @@ const Canvas = () => {
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [isEditImageDialogOpen, setIsEditImageDialogOpen] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<{ id: string; src: string } | null>(null);
+  // New state for image replacement
+  const [isReplaceImageDialogOpen, setIsReplaceImageDialogOpen] = useState(false);
+  const [imageToReplace, setImageToReplace] = useState<{
+    id: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  } | null>(null);
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
 
   // Calculate grid dimensions
   const columns = gridSize?.columns || 3; // Default to 3 columns
@@ -423,6 +432,43 @@ const Canvas = () => {
     setImageToEdit(null);
   };
 
+  // Handle replacing an image
+  const handleReplaceImage = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const image = images.find((img) => img.id === id);
+    if (image) {
+      setImageToReplace({
+        id: image.id,
+        position: image.position,
+        size: image.size,
+      });
+      setIsReplaceImageDialogOpen(true);
+    }
+  };
+
+  // Handle media selection for image replacement
+  const handleMediaSelect = (selectedMedia: Media[]) => {
+    if (!imageToReplace || selectedMedia.length === 0) return;
+
+    // Get the last selected media (most recently added)
+    const newMedia = selectedMedia[selectedMedia.length - 1];
+
+    // Update the image with the new media while keeping position and size
+    const updatedImages = images.map((img) =>
+      img.id === imageToReplace.id
+        ? {
+            ...img,
+            id: newMedia.id, // Update ID to the new media ID
+            src: newMedia.url, // Update source to the new media URL
+          }
+        : img,
+    );
+
+    dispatch(setImages(updatedImages));
+    setIsReplaceImageDialogOpen(false);
+    setImageToReplace(null);
+  };
+
   // Draw grid lines
   const renderGridLines = () => {
     const lines = [];
@@ -474,6 +520,7 @@ const Canvas = () => {
         {/* Render all images */}
         {images.map((img) => {
           const isSelected = selectedItemId === img.id;
+          const isHovered = hoveredImageId === img.id;
 
           return (
             <div
@@ -488,34 +535,53 @@ const Canvas = () => {
               }}
               onClick={(e) => handleSelectItem(img.id, e)}
               onMouseDown={(e) => handleDragStart(e, img.position)}
+              onMouseEnter={() => setHoveredImageId(img.id)}
+              onMouseLeave={() => setHoveredImageId(null)}
             >
               <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
 
               {/* Control buttons */}
-              <div className="absolute -top-2 -right-2 flex">
-                {/* Edit button */}
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-5 w-5 rounded-full mr-1"
-                  onClick={(e) => handleEditImage(img.id, e)}
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
+              {isSelected && (
+                <div className="absolute -top-3 -right-2 flex">
+                  {/* Edit button */}
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6 rounded-full mr-1 z-10"
+                    onClick={(e) => handleEditImage(img.id, e)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
 
-                {/* X button for quick removal */}
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="h-5 w-5 rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    dispatch(removeItem(img.id));
-                  }}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+                  {/* X button for quick removal */}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-6 w-6 rounded-full z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(removeItem(img.id));
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Replace image button - only visible when hovered */}
+              {isHovered && (
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="opacity-90 hover:opacity-100"
+                    onClick={(e) => handleReplaceImage(img.id, e)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Replace Image
+                  </Button>
+                </div>
+              )}
 
               {/* Resize handle - only visible when selected */}
               {isSelected && (
@@ -575,30 +641,32 @@ const Canvas = () => {
               </div>
 
               {/* Control buttons */}
-              <div className="absolute -top-2 -right-2 flex">
-                {/* Edit button */}
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-5 w-5 rounded-full mr-1"
-                  onClick={(e) => handleEditText(txt.id, e)}
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
+              {isSelected && (
+                <div className="absolute -top-2 -right-2 flex">
+                  {/* Edit button */}
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-5 w-5 rounded-full mr-1"
+                    onClick={(e) => handleEditText(txt.id, e)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
 
-                {/* X button for quick removal */}
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="h-5 w-5 rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    dispatch(removeItem(txt.id));
-                  }}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+                  {/* X button for quick removal */}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-5 w-5 rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(removeItem(txt.id));
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
 
               {/* Resize handle - only visible when selected */}
               {isSelected && (
@@ -720,6 +788,23 @@ const Canvas = () => {
               onCancel={() => setIsEditImageDialogOpen(false)}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Replacement Dialog */}
+      <Dialog open={isReplaceImageDialogOpen} onOpenChange={setIsReplaceImageDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Replace Image</DialogTitle>
+          <div className="py-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Select a new image to replace the current one. Position and size will be maintained.
+            </p>
+            <MediaUploader
+              onlyTriggerButton={false}
+              onMediaChange={handleMediaSelect}
+              modalMode={true}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
