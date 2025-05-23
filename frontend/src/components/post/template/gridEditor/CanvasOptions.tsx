@@ -1,16 +1,14 @@
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { setAspectRatio, setBackgroundColor, setCanvasCount } from "@/redux/slices/template.slice";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
-import React from "react";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { setAspectRatio, setBackgroundColor } from "@/redux/slices/template.slice";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
-  SelectItem,
   SelectContent,
-  SelectValue,
+  SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
@@ -18,37 +16,65 @@ import { Save } from "lucide-react";
 const CanvasOptions = ({
   handleTemplateSaveAndUse,
   isLoading,
+  columns,
+  setColumns,
+  rows,
+  setRows,
 }: {
   handleTemplateSaveAndUse: (isSave: boolean) => void;
   isLoading: boolean;
+  columns: number;
+  setColumns: (columns: number) => void;
+  rows: number;
+  setRows: (rows: number) => void;
 }) => {
   const dispatch = useDispatch();
-  const { canvasCount, aspectRatio, backgroundColor } = useSelector(
-    (state: RootState) => state.template,
-  );
+  const { aspectRatio, backgroundColor } = useSelector((state: RootState) => state.template);
 
   return (
     <div className="flex flex-col gap-3 justify-between h-full bg-white p-4 rounded-lg shadow">
-      <h3 className="font-medium">Canvas Options</h3>
+      <h3 className="font-medium">Grid Options</h3>
 
       <div className="space-y-3">
         <div>
-          <label className="block text-sm mb-1">Number of Sections</label>
+          <label className="block text-sm mb-1">Columns</label>
           <div className="flex items-center gap-2">
             <Input
               type="number"
               min={1}
-              max={10}
-              value={canvasCount}
-              onChange={(e) => dispatch(setCanvasCount(parseInt(e.target.value) || 1))}
+              max={6}
+              value={columns}
+              onChange={(e) => setColumns(parseInt(e.target.value) || 3)}
               className="w-20"
             />
             <Slider
-              value={[canvasCount]}
+              value={[columns]}
               min={1}
-              max={10}
+              max={6}
               step={1}
-              onValueChange={(value) => dispatch(setCanvasCount(value[0]))}
+              onValueChange={(value) => setColumns(value[0])}
+              className="flex-1"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">Rows</label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={1}
+              max={6}
+              value={rows}
+              onChange={(e) => setRows(parseInt(e.target.value) || 1)}
+              className="w-20"
+            />
+            <Slider
+              value={[rows]}
+              min={1}
+              max={6}
+              step={1}
+              onValueChange={(value) => setRows(value[0])}
               className="flex-1"
             />
           </div>
@@ -86,6 +112,7 @@ const CanvasOptions = ({
           </div>
         </div>
       </div>
+
       <div className="flex gap-2">
         <Button
           variant="outline"

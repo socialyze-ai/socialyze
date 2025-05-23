@@ -1,8 +1,8 @@
-import MediaUploader, { Media } from "../../MediaUploader";
-import ImageGallery from "./ImageGallery";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import MediaUploader, { Media } from "../../MediaUploader";
 import { Type } from "lucide-react";
+import ImageGallery from "./ImageGallery";
+import { Separator } from "@/components/ui/separator";
 
 const ContentAndMediaManager = ({
   handleMediaChange,

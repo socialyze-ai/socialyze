@@ -381,7 +381,7 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
   const dimensions = getGridDimensionsInMm();
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow mb-4">
+    <div className="bg-white p-4 rounded-lg shadow h-full">
       <h3 className="text-sm font-medium mb-2">
         Preview - Cell {selectedCell + 1} of {canvasCount} selected
       </h3>
