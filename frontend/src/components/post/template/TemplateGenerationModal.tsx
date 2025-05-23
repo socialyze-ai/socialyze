@@ -18,6 +18,7 @@ import { setContent, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 const TemplateGenerationModal = () => {
   const dispatch = useDispatch();
@@ -26,6 +27,7 @@ const TemplateGenerationModal = () => {
 
   const [generatedPostData, setGeneratedPostData] = useState<any>(null);
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
 
   useEffect(() => {
     if (generatedContent && selectedTemplate) {
@@ -37,7 +39,21 @@ const TemplateGenerationModal = () => {
   }, [generatedContent, selectedTemplate]);
 
   const handleClose = () => {
+    if (prompt || generatedContent) {
+      setShowConfirmClose(true);
+    } else {
+      dispatch(setIsModalOpen(false));
+    }
+  };
+
+  const handleConfirmClose = () => {
     dispatch(setIsModalOpen(false));
+    dispatch(resetTemplateGeneration());
+    setShowConfirmClose(false);
+  };
+
+  const handleCancelClose = () => {
+    setShowConfirmClose(false);
   };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -96,115 +112,129 @@ const TemplateGenerationModal = () => {
   if (!selectedTemplate) return null;
 
   return (
-    <Dialog open={isModalOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl h-5/6 flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Generate Post from Template: {selectedTemplate?.name}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isModalOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-6xl h-5/6 flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Generate Post from Template: {selectedTemplate?.name}</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex flex-1 gap-4 h-full overflow-hidden">
-          {/* Left Side */}
-          <div className="w-1/2 h-full flex flex-col gap-2 overflow-y-auto p-1">
-            <Popover open={isPreviewExpanded} onOpenChange={setIsPreviewExpanded}>
-              <PopoverTrigger asChild className={cn(isPreviewExpanded && "ring-2 ring-blue-500")}>
-                <div className="h-fit w-full flex justify-between items-center border rounded-md p-2 cursor-pointer relative">
-                  <p>{selectedTemplate?.name}</p>
+          <div className="flex flex-1 gap-4 h-full overflow-hidden">
+            {/* Left Side */}
+            <div className="w-1/2 h-full flex flex-col gap-2 overflow-y-auto p-1">
+              <Popover open={isPreviewExpanded} onOpenChange={setIsPreviewExpanded}>
+                <PopoverTrigger asChild className={cn(isPreviewExpanded && "ring-2 ring-blue-500")}>
+                  <div className="h-fit w-full flex justify-between items-center border rounded-md p-2 cursor-pointer relative">
+                    <p>{selectedTemplate?.name}</p>
 
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      isPreviewExpanded ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-fit p-0 flex justify-center items-center rounded-xl"
-                align="center"
-              >
-                <PostTemplatePreview
-                  content={selectedTemplate?.content}
-                  channel={selectedTemplate?.channel}
-                  mediaUrls={selectedTemplate?.mediaUrls}
-                  isTemplate
-                />
-              </PopoverContent>
-            </Popover>
-
-            <div className="h-full flex flex-col gap-2">
-              <Textarea
-                placeholder="Enter a prompt to generate content based on this template..."
-                className="min-h-[100px] resize-y"
-                value={prompt}
-                onChange={handlePromptChange}
-              />
-
-              <div className="flex flex-wrap gap-2">
-                <p className="text-sm text-gray-500 w-full">Suggestions:</p>
-                {suggestions.map((suggestion, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="cursor-pointer"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <Button
-              onClick={handleGenerate}
-              disabled={!prompt || isGenerating}
-              className="mt-2 w-fit self-end"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Generate Post"
-              )}
-            </Button>
-          </div>
-
-          {/* Right Side */}
-          <div className="h-full w-1/2 border rounded-md p-1">
-            <div className="h-full flex flex-col justify-between overflow-y-auto">
-              <div className="p-4">
-                <h3 className="font-medium mb-2">Generated Post Preview</h3>
-                {generatedPostData ? (
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        isPreviewExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-fit p-0 flex justify-center items-center rounded-xl"
+                  align="center"
+                >
                   <PostTemplatePreview
-                    content={generatedPostData.content}
-                    channel={generatedPostData.channel}
-                    mediaUrls={generatedPostData.mediaUrls}
+                    content={selectedTemplate?.content}
+                    channel={selectedTemplate?.channel}
+                    mediaUrls={selectedTemplate?.mediaUrls}
                     isTemplate
                   />
-                ) : (
-                  <div className="flex items-center justify-center h-[300px] border rounded-md">
-                    <p className="text-gray-400">
-                      {isGenerating ? "Generating post..." : "Generated post will appear here"}
-                    </p>
-                  </div>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
 
-              <div className="w-full justify-end border-t p-2 flex gap-2">
-                <Button variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUseGeneratedPost}
-                  disabled={!generatedContent || isGenerating}
-                >
-                  Use Generated Post
-                </Button>
+              <div className="h-full flex flex-col gap-2">
+                <Textarea
+                  placeholder="Enter a prompt to generate content based on this template..."
+                  className="min-h-[100px] resize-y"
+                  value={prompt}
+                  onChange={handlePromptChange}
+                />
+
+                <div className="flex flex-wrap gap-2">
+                  <p className="text-sm text-gray-500 w-full">Suggestions:</p>
+                  {suggestions.map((suggestion, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="cursor-pointer"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <Button
+                onClick={handleGenerate}
+                disabled={!prompt || isGenerating}
+                className="mt-2 w-fit self-end"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Post"
+                )}
+              </Button>
+            </div>
+
+            {/* Right Side */}
+            <div className="h-full w-1/2 border rounded-md p-1">
+              <div className="h-full flex flex-col justify-between overflow-y-auto">
+                <div className="p-4">
+                  <h3 className="font-medium mb-2">Generated Post Preview</h3>
+                  {generatedPostData ? (
+                    <PostTemplatePreview
+                      content={generatedPostData.content}
+                      channel={generatedPostData.channel}
+                      mediaUrls={generatedPostData.mediaUrls}
+                      isTemplate
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] border rounded-md">
+                      <p className="text-gray-400">
+                        {isGenerating ? "Generating post..." : "Generated post will appear here"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full justify-end border-t p-2 flex gap-2">
+                  <Button variant="outline" onClick={handleClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleUseGeneratedPost}
+                    disabled={!generatedContent || isGenerating}
+                  >
+                    Use Generated Post
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={showConfirmClose}
+        onOpenChange={setShowConfirmClose}
+        title="Discard changes?"
+        description="You have unsaved changes. Are you sure you want to close this window and discard your changes?"
+        confirmText="Discard"
+        cancelText="Continue editing"
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        variant="destructive"
+      />
+    </>
   );
 };
 

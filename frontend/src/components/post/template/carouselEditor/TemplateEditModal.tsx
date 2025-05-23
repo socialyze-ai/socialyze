@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -43,8 +44,17 @@ const TemplateEditModal = ({
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<PreviewRef>(null);
+  const [showCloseAlert, setShowCloseAlert] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(open || false);
 
   const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+
+  // Handle external open state changes
+  useEffect(() => {
+    if (open !== undefined) {
+      setDialogOpen(open);
+    }
+  }, [open]);
 
   // Process initialTemplateData if provided
   useEffect(() => {
@@ -74,6 +84,30 @@ const TemplateEditModal = ({
   useEffect(() => {
     dispatch(recalculateSectionAssignments());
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && (images.length > 0 || texts.length > 0)) {
+      // If trying to close and there are unsaved changes
+      setShowCloseAlert(true);
+    } else {
+      setDialogOpen(open);
+      if (onOpenChange) {
+        onOpenChange(open);
+      }
+    }
+  };
+
+  const handleConfirmClose = () => {
+    setShowCloseAlert(false);
+    setDialogOpen(false);
+    if (onOpenChange) {
+      onOpenChange(false);
+    }
+  };
+
+  const handleCancelClose = () => {
+    setShowCloseAlert(false);
+  };
 
   // Helper to position an image centered on the canvas
   const getDefaultImagePosition = (imageWidth: number, imageHeight: number) => {
@@ -364,50 +398,64 @@ const TemplateEditModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {!open && (
-        <DialogTrigger asChild>
-          <Button>Create Custom {isGrid ? "Grid" : "Carousel"}</Button>
-        </DialogTrigger>
-      )}
+    <>
+      <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+        {!open && (
+          <DialogTrigger asChild>
+            <Button>Create Custom {isGrid ? "Grid" : "Carousel"}</Button>
+          </DialogTrigger>
+        )}
 
-      <DialogContent className="max-w-7xl h-5/6 overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Template</DialogTitle>
-        </DialogHeader>
+        <DialogContent className="max-w-7xl h-5/6 overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex flex-col gap-2">
-          {/* Preview at the top */}
-          <div className="grid grid-cols-7 gap-2 w-full h-fit">
-            <div className="col-span-5 h-full">
-              <Preview ref={previewRef} />
+          <div className="flex flex-col gap-2">
+            {/* Preview at the top */}
+            <div className="grid grid-cols-7 gap-2 w-full h-fit">
+              <div className="col-span-5 h-full">
+                <Preview ref={previewRef} />
+              </div>
+
+              <div className="col-span-2 h-full">
+                <CanvasOptions
+                  handleTemplateSaveAndUse={handleTemplateSaveAndUse}
+                  isLoading={isLoading}
+                />
+              </div>
             </div>
 
-            <div className="col-span-2 h-full">
-              <CanvasOptions
-                handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                isLoading={isLoading}
+            <div className="w-full">
+              <ContentAndMediaManager
+                handleMediaChange={handleMediaChange}
+                handleAddText={handleAddText}
               />
             </div>
+
+            <div className="w-full">
+              <Canvas />
+            </div>
           </div>
 
-          <div className="w-full">
-            <ContentAndMediaManager
-              handleMediaChange={handleMediaChange}
-              handleAddText={handleAddText}
-            />
-          </div>
+          {showTextEditor && (
+            <TextEditor onSave={handleSaveText} onCancel={() => setShowTextEditor(false)} />
+          )}
+        </DialogContent>
+      </Dialog>
 
-          <div className="w-full">
-            <Canvas />
-          </div>
-        </div>
-
-        {showTextEditor && (
-          <TextEditor onSave={handleSaveText} onCancel={() => setShowTextEditor(false)} />
-        )}
-      </DialogContent>
-    </Dialog>
+      <ConfirmDialog
+        open={showCloseAlert}
+        onOpenChange={setShowCloseAlert}
+        title="Discard changes?"
+        description="You have unsaved changes. Are you sure you want to discard them?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        variant="destructive"
+      />
+    </>
   );
 };
 
