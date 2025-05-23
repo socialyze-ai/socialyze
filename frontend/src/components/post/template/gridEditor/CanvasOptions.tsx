@@ -42,7 +42,9 @@ const CanvasOptions = ({
             <Input
               type="number"
               min={1}
-              max={6}
+              max={3}
+              defaultValue={3}
+              disabled={true}
               value={columns}
               onChange={(e) => setColumns(parseInt(e.target.value) || 3)}
               className="w-20"
@@ -50,7 +52,8 @@ const CanvasOptions = ({
             <Slider
               value={[columns]}
               min={1}
-              max={6}
+              max={3}
+              disabled={true}
               step={1}
               onValueChange={(value) => setColumns(value[0])}
               className="flex-1"
@@ -64,7 +67,7 @@ const CanvasOptions = ({
             <Input
               type="number"
               min={1}
-              max={6}
+              max={10}
               value={rows}
               onChange={(e) => setRows(parseInt(e.target.value) || 1)}
               className="w-20"
@@ -72,7 +75,7 @@ const CanvasOptions = ({
             <Slider
               value={[rows]}
               min={1}
-              max={6}
+              max={10}
               step={1}
               onValueChange={(value) => setRows(value[0])}
               className="flex-1"
