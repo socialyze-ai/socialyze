@@ -213,6 +213,182 @@ const dummyData = [
       "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/e61bc563-758f-4736-9c65-d8a2a9bc4b25/6a4bf246-258c-4d02-a163-e0c57ab37eb4_template-section-3.png",
     ],
   },
+  {
+    name: "Template 3",
+    template: {
+      aspectRatio: "1:1",
+      backgroundColor: "#ffffff",
+      canvasCount: 3,
+      sections: [
+        {
+          index: 0,
+          images: [
+            {
+              id: "164afd67-e3f4-4457-beea-23a9d5dcb9af",
+              src: "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/c4b3f8f4-cf50-44e9-b1df-e781a29d542f/d1b36cda-6a49-4cb8-8b77-9a847a9d5ce7_edited_image_164afd67-e3f4-4457-beea-23a9d5dcb9af.png",
+              position: {
+                x: -104,
+                y: -17.399999999999977,
+              },
+              size: {
+                width: 387.8666666666666,
+                height: 218.17499999999998,
+              },
+              canvasIndex: 0,
+              clipping: {
+                start: true,
+                clipAmount: 104,
+              },
+            },
+          ],
+          texts: [
+            {
+              id: "text-1747993523663",
+              content: "Hwllo world",
+              position: {
+                x: 79,
+                y: 67,
+              },
+              style: {
+                fontSize: 49,
+                color: "#000000",
+                fontFamily: "Ubuntu",
+                fontWeight: "500",
+                rotation: 0,
+              },
+              size: {
+                width: 323.4,
+                height: 58.8,
+              },
+              canvasIndex: 0,
+              clipping: {
+                end: true,
+                clipAmount: 274.4,
+              },
+            },
+          ],
+        },
+        {
+          index: 1,
+          images: [
+            {
+              id: "164afd67-e3f4-4457-beea-23a9d5dcb9af",
+              src: "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/c4b3f8f4-cf50-44e9-b1df-e781a29d542f/d1b36cda-6a49-4cb8-8b77-9a847a9d5ce7_edited_image_164afd67-e3f4-4457-beea-23a9d5dcb9af.png",
+              position: {
+                x: -104,
+                y: -17.399999999999977,
+              },
+              size: {
+                width: 387.8666666666666,
+                height: 218.17499999999998,
+              },
+              canvasIndex: 0,
+              clipping: {
+                start: true,
+                clipAmount: 232,
+              },
+            },
+          ],
+          texts: [
+            {
+              id: "text-1747993523663",
+              content: "Hwllo world",
+              position: {
+                x: 79,
+                y: 67,
+              },
+              style: {
+                fontSize: 49,
+                color: "#000000",
+                fontFamily: "Ubuntu",
+                fontWeight: "500",
+                rotation: 0,
+              },
+              size: {
+                width: 323.4,
+                height: 58.8,
+              },
+              canvasIndex: 0,
+              clipping: {
+                start: true,
+                clipAmount: 49,
+              },
+            },
+          ],
+        },
+        {
+          index: 2,
+          images: [
+            {
+              id: "164afd67-e3f4-4457-beea-23a9d5dcb9af",
+              src: "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/c4b3f8f4-cf50-44e9-b1df-e781a29d542f/d1b36cda-6a49-4cb8-8b77-9a847a9d5ce7_edited_image_164afd67-e3f4-4457-beea-23a9d5dcb9af.png",
+              position: {
+                x: -104,
+                y: -17.399999999999977,
+              },
+              size: {
+                width: 387.8666666666666,
+                height: 218.17499999999998,
+              },
+              canvasIndex: 0,
+              clipping: {
+                start: true,
+                clipAmount: 360,
+              },
+            },
+            {
+              id: "b89c7ae9-4e32-4789-8e0f-f5af3a85d9c6",
+              src: "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/b89c7ae9-4e32-4789-8e0f-f5af3a85d9c6/34045783-14b8-4861-b688-876089bf3cf8_unsplash-media.jpeg",
+              position: {
+                x: 300.40000000000003,
+                y: 19.600000000000023,
+              },
+              size: {
+                width: 179.19999999999996,
+                height: 268.79999999999995,
+              },
+              canvasIndex: 2,
+              clipping: {
+                end: true,
+                clipAmount: 95.60000000000002,
+              },
+            },
+          ],
+          texts: [
+            {
+              id: "text-1747993523663",
+              content: "Hwllo world",
+              position: {
+                x: 79,
+                y: 67,
+              },
+              style: {
+                fontSize: 49,
+                color: "#000000",
+                fontFamily: "Ubuntu",
+                fontWeight: "500",
+                rotation: 0,
+              },
+              size: {
+                width: 323.4,
+                height: 58.8,
+              },
+              canvasIndex: 0,
+              clipping: {
+                start: true,
+                clipAmount: 177,
+              },
+            },
+          ],
+        },
+      ],
+    },
+    outputUrls: [
+      "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/dc4437db-4d55-4d95-b002-cff4f6335984/507ccae4-b139-490f-9804-1a255820a2d6_template-section-1.png",
+      "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/80706d24-2cea-4be4-a64a-35fd078841c5/343901b6-54f4-43dd-bff6-f2487a7c5945_template-section-2.png",
+      "https://storage.googleapis.com/socialyze/67e2415f2f273b7d4db9e64f/1ad5a697-5c4a-45f9-89b8-8370f2035048/17e996bd-84c4-4efc-a725-410ee5627bba_template-section-3.png",
+    ],
+  },
 ];
 
 const CarouselTemplate = () => {
