@@ -29,6 +29,7 @@ import { setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { Loader2 } from "lucide-react";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -56,6 +57,8 @@ const TemplateEditModal = ({
   const [dialogOpen, setDialogOpen] = useState(open || false);
 
   const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+
+  console.log("isLoading Grid", isLoading);
 
   // Handle external open state changes
   useEffect(() => {
@@ -291,6 +294,7 @@ const TemplateEditModal = ({
       // Check if we have a valid preview reference
       if (!previewRef.current) {
         toast.error("Preview not available", { position: "top-center" });
+        setIsLoading(false);
         return;
       }
 
@@ -355,7 +359,6 @@ const TemplateEditModal = ({
               onError: (error) => {
                 console.error("Error uploading grid cell:", error);
                 toast.error(`Failed to upload cell ${i + 1}`, { position: "top-center" });
-                setIsLoading(false);
               },
             });
           },
@@ -391,7 +394,7 @@ const TemplateEditModal = ({
             images,
             texts,
             outputUrls,
-            socialPlatform: useSelector((state: RootState) => state.template.socialPlatform),
+            socialPlatform,
           })
           .then((response) => {
             if (response.success) {
@@ -399,9 +402,24 @@ const TemplateEditModal = ({
                 isSave ? "Template saved successfully:" : "Template processed successfully:",
                 response.data,
               );
-              if (onOpenChange) {
-                onOpenChange(false);
+
+              // Add media URLs to post creation state if not saving
+              if (!isSave) {
+                dispatch(setMediaUrls(uploadedImages));
               }
+
+              // Show success toast
+              toast.success(
+                isSave
+                  ? "Template saved and processed successfully!"
+                  : "Template added to post composer",
+                {
+                  position: "top-center",
+                },
+              );
+
+              // Close the dialog only on success
+              handleConfirmClose();
             } else {
               throw new Error(response.error || "Unknown error occurred");
             }
@@ -416,21 +434,6 @@ const TemplateEditModal = ({
             );
           })
           .finally(() => {
-            if (!isSave) {
-              dispatch(setMediaUrls(uploadedImages));
-            }
-            if (onOpenChange) {
-              onOpenChange(false);
-
-              toast.success(
-                isSave
-                  ? "Template saved and processed successfully!"
-                  : "Template added to post composer",
-                {
-                  position: "top-center",
-                },
-              );
-            }
             setIsLoading(false);
           });
       });
@@ -446,7 +449,7 @@ const TemplateEditModal = ({
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
         {!open && (
           <DialogTrigger asChild>
-            <Button>Edit</Button>
+            <Button>Create Custom Grid</Button>
           </DialogTrigger>
         )}
 
@@ -455,7 +458,17 @@ const TemplateEditModal = ({
             <DialogTitle>Edit Grid Template</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 relative">
+            {/* Loading overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Processing template...</p>
+                </div>
+              </div>
+            )}
+
             {/* Preview at the top */}
             <div className="grid grid-cols-7 gap-2 w-full h-fit">
               <div className="col-span-5 h-full">
@@ -486,7 +499,7 @@ const TemplateEditModal = ({
             </div>
           </div>
 
-          {showTextEditor && (
+          {showTextEditor && !isLoading && (
             <TextEditor onSave={handleSaveText} onCancel={() => setShowTextEditor(false)} />
           )}
         </DialogContent>

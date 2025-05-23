@@ -1,5 +1,4 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import TemplateEditModal from "./carouselEditor/TemplateEditModal";
 import { Book, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
@@ -10,6 +9,8 @@ import TemplateGenerationModal from "./TemplateGenerationModal";
 import TemplateCards from "./carouselEditor/TemplateCards";
 import CarouselTemplate from "./carouselEditor/CarouselTemplate";
 import GridTemplate from "./gridEditor/GridTemplate";
+import GridTemplateEditModal from "./gridEditor/TemplateEditModal";
+import CarouselTemplateEditModal from "./carouselEditor/TemplateEditModal";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -173,10 +174,11 @@ const TemplatePanel = () => {
       {(activeTab === "facebook" || activeTab === "instagram") &&
         (activeSuggestion[activeTab] === "Grid" || activeSuggestion[activeTab] === "Carousal") && (
           <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
-            <TemplateEditModal
-              isGrid={activeSuggestion[activeTab] === "Grid"}
-              socialPlatform={activeTab}
-            />
+            {activeSuggestion[activeTab] === "Grid" ? (
+              <GridTemplateEditModal socialPlatform={activeTab} />
+            ) : (
+              <CarouselTemplateEditModal socialPlatform={activeTab} />
+            )}
           </CardFooter>
         )}
     </Card>
