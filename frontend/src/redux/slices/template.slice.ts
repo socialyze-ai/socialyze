@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAction } from "@reduxjs/toolkit";
 
 export interface ImageItem {
   id: string;
@@ -26,22 +27,30 @@ export interface TextItem {
   canvasIndex: number; // Used primarily for preview, not restriction
 }
 
-interface TemplateState {
+export interface TemplateState {
   canvasCount: number;
   aspectRatio: string;
   backgroundColor: string;
   images: ImageItem[];
   texts: TextItem[];
   selectedItemId: string | null;
+  gridSize: {
+    columns: number;
+    rows: number;
+  };
 }
 
 const initialState: TemplateState = {
   canvasCount: 1,
-  aspectRatio: "16:9",
+  aspectRatio: "1:1",
   backgroundColor: "#ffffff",
   images: [],
   texts: [],
   selectedItemId: null,
+  gridSize: {
+    columns: 3,
+    rows: 1,
+  },
 };
 
 const templateSlice = createSlice({
@@ -184,6 +193,11 @@ const templateSlice = createSlice({
       });
     },
     resetTemplate: () => initialState,
+    setGridSize: (state, action: PayloadAction<{ columns: number; rows: number }>) => {
+      state.gridSize = action.payload;
+      // Update canvasCount based on the grid size
+      state.canvasCount = action.payload.columns * action.payload.rows;
+    },
   },
 });
 
@@ -205,6 +219,7 @@ export const {
   removeItem,
   recalculateSectionAssignments,
   resetTemplate,
+  setGridSize,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;

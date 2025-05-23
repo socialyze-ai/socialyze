@@ -11,6 +11,7 @@ import { setIsModalOpen, setSelectedTemplate } from "@/redux/slices/templateGene
 import TemplateGenerationModal from "./TemplateGenerationModal";
 import TemplateCards from "./carouselEditor/TemplateCards";
 import CarouselTemplate from "./carouselEditor/CarouselTemplate";
+import GridTemplate from "./gridEditor/GridTemplate";
 
 const mockSuggestions = [
   {
@@ -109,6 +110,8 @@ const TemplatePanel = () => {
                   );
                 })}
               </div>
+
+              <GridTemplate />
             </TabsContent>
 
             <TabsContent value="x">
