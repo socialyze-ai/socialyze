@@ -17,9 +17,10 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          set -e  # Exit on first error
           cd ~/socialyze
           git pull origin next
           cd backend
-          npm install
+          npm ci
           npm run build
-          pm2 restart socialyze-backend
+          pm2 restart socialyze-backend || pm2 start dist/index.js --name socialyze-backend
