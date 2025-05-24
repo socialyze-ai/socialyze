@@ -18,6 +18,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           set -e  # Exit on first error
+          sudo su - socialyze_co_in
           cd ~/socialyze
           git pull origin next
           cd backend
