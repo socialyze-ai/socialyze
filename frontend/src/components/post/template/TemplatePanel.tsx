@@ -13,6 +13,7 @@ import GridTemplateEditModal from "./gridEditor/TemplateEditModal";
 import CarouselTemplateEditModal from "./carouselEditor/TemplateEditModal";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { setSocialPlatform } from "@/redux/slices/template.slice";
 
 const linkedinSuggestions = ["Wisdom", "Advice", "Growth", "Content Marketing"];
 const instagramAndFacebookSuggestions = ["Grid", "Carousal", "Traveling", "Motivating"];
@@ -74,7 +75,10 @@ const TemplatePanel = () => {
         <Tabs
           defaultValue="facebook"
           className="flex flex-col justify-center"
-          onValueChange={(value) => setActiveTab(value)}
+          onValueChange={(value) => {
+            setActiveTab(value);
+            dispatch(setSocialPlatform(value));
+          }}
         >
           <TabsList className="flex gap-1 overflow-x-auto">
             <TabsTrigger value="facebook">Facebook</TabsTrigger>

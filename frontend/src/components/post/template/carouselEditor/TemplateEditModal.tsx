@@ -24,7 +24,7 @@ import { Media } from "@/components/post/MediaUploader";
 import { useUploadMedia } from "@/api/apiHooks/useMedia";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
-import { setMediaUrls } from "@/redux/slices/postCreation.slice";
+import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
@@ -391,6 +391,7 @@ const TemplateEditModal = ({
 
               // Close the dialog only on success
               handleConfirmClose();
+              dispatch(setIsTemplateSectionOpen(false));
             } else {
               throw new Error(response.error || "Unknown error occurred");
             }

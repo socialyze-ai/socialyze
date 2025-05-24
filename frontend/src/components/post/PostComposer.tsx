@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import { Book, Wand2 } from "lucide-react";
 import AIAssistantTextarea from "./aiAssistant/AIAssistantTextarea";
 import ThirdPartyContentGenerator from "./ThirdPartyContentGenerator";
+import { setSocialPlatform } from "@/redux/slices/template.slice";
 
 interface PostComposerProps {
   isPostModal?: boolean;
@@ -116,7 +117,12 @@ const PostComposer: React.FC<PostComposerProps> = ({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => dispatch(setIsTemplateSectionOpen(!isTemplateSectionOpen))}
+            onClick={() => {
+              dispatch(setIsTemplateSectionOpen(!isTemplateSectionOpen));
+              if (isTemplateSectionOpen) {
+                dispatch(setSocialPlatform(null));
+              }
+            }}
             className={cn(
               isTemplateSectionOpen && "bg-blue-600 text-white hover:bg-blue-400 hover:text-white",
             )}

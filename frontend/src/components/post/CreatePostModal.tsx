@@ -447,7 +447,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               ? "max-w-[90dvw]"
               : selectedChannels.length !== 0 && activeChannel
               ? "max-w-[60dvw]"
-              : "flex-1 h-fit",
+              : "flex-1",
           )}
           id="create-post-modal-content"
         >
