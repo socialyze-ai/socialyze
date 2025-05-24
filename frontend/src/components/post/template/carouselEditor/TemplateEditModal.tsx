@@ -37,6 +37,12 @@ interface TemplateEditModalProps {
   socialPlatform?: string | null;
 }
 
+// Supported social platforms
+const SUPPORTED_PLATFORMS = ["instagram", "facebook", "twitter", "linkedin", "tiktok"];
+
+// Upload timeout in milliseconds
+const UPLOAD_TIMEOUT = 30000; // 30 seconds
+
 const TemplateEditModal = ({
   open,
   onOpenChange,
@@ -52,10 +58,12 @@ const TemplateEditModal = ({
   const previewRef = useRef<PreviewRef>(null);
   const [showCloseAlert, setShowCloseAlert] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(open || false);
-
-  console.log("isLoading Carousel", isLoading);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+
+  console.log("isLoading Carousel", isLoading);
 
   // Handle external open state changes
   useEffect(() => {
@@ -64,33 +72,75 @@ const TemplateEditModal = ({
     }
   }, [open]);
 
+  // Cleanup function for when component unmounts or when processing is cancelled
+  useEffect(() => {
+    return () => {
+      // Abort any ongoing operations when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Process initialTemplateData if provided
   useEffect(() => {
     if (initialTemplateData) {
-      // Extract social platform if available
-      if (initialTemplateData.template && initialTemplateData.template.socialPlatform) {
-        dispatch(setSocialPlatform(initialTemplateData.template.socialPlatform));
-      } else if (socialPlatform) {
-        dispatch(setSocialPlatform(socialPlatform));
-      }
+      try {
+        // Validate initialTemplateData structure
+        if (!initialTemplateData.template) {
+          console.warn("Invalid template data: missing template property");
+          return;
+        }
 
-      // Extract images with deduplication
-      const allImages = [];
-      const seenImageIds = new Set();
-
-      if (initialTemplateData.template && initialTemplateData.template.sections) {
-        for (const section of initialTemplateData.template.sections) {
-          for (const image of section.images || []) {
-            // Only add image if we haven't seen its ID before
-            if (!seenImageIds.has(image.id)) {
-              // Remove clipping info which is calculated dynamically
-              const { clipping, ...imageWithoutClipping } = image;
-              allImages.push(imageWithoutClipping);
-              seenImageIds.add(image.id);
+        // Extract social platform if available
+        if (initialTemplateData.template && initialTemplateData.template.socialPlatform) {
+          // Validate social platform
+          const platform = initialTemplateData.template.socialPlatform.toLowerCase();
+          if (SUPPORTED_PLATFORMS.includes(platform)) {
+            dispatch(setSocialPlatform(platform));
+          } else {
+            console.warn(`Unsupported social platform: ${platform}`);
+            // Use default or fallback to provided socialPlatform
+            if (socialPlatform && SUPPORTED_PLATFORMS.includes(socialPlatform.toLowerCase())) {
+              dispatch(setSocialPlatform(socialPlatform));
             }
           }
+        } else if (socialPlatform && SUPPORTED_PLATFORMS.includes(socialPlatform.toLowerCase())) {
+          dispatch(setSocialPlatform(socialPlatform));
         }
-        dispatch(setImages(allImages));
+
+        // Extract images with deduplication
+        const allImages = [];
+        const seenImageIds = new Set();
+
+        if (initialTemplateData.template.sections) {
+          for (const section of initialTemplateData.template.sections) {
+            if (!Array.isArray(section.images)) {
+              continue; // Skip invalid sections
+            }
+
+            for (const image of section.images || []) {
+              // Validate image object
+              if (!image || !image.id || !image.src) {
+                continue; // Skip invalid images
+              }
+
+              // Only add image if we haven't seen its ID before
+              if (!seenImageIds.has(image.id)) {
+                // Remove clipping info which is calculated dynamically
+                const { clipping, ...imageWithoutClipping } = image;
+                allImages.push(imageWithoutClipping);
+                seenImageIds.add(image.id);
+              }
+            }
+          }
+          if (allImages.length > 0) {
+            dispatch(setImages(allImages));
+          }
+        }
+      } catch (error) {
+        console.error("Error processing template data:", error);
+        toast.error("Invalid template data format", { position: "top-center" });
       }
     } else if (socialPlatform) {
       dispatch(setSocialPlatform(socialPlatform));
@@ -103,6 +153,11 @@ const TemplateEditModal = ({
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
 
   const handleOpenChange = (open: boolean) => {
+    // Reset processing error when opening
+    if (open) {
+      setProcessingError(null);
+    }
+
     if (!open && (images.length > 0 || texts.length > 0)) {
       // If trying to close and there are unsaved changes
       setShowCloseAlert(true);
@@ -115,8 +170,14 @@ const TemplateEditModal = ({
   };
 
   const handleConfirmClose = () => {
+    // Cancel any ongoing operations
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     setShowCloseAlert(false);
     setDialogOpen(false);
+    setIsLoading(false); // Ensure loading state is reset
     if (onOpenChange) {
       onOpenChange(false);
     }
@@ -154,46 +215,63 @@ const TemplateEditModal = ({
   };
 
   const handleMediaChange = (selectedMedia: Media[]) => {
-    if (selectedMedia && selectedMedia.length > 0) {
-      // Get the last selected media (most recently added)
-      const newMedia = selectedMedia[selectedMedia.length - 1];
+    if (!selectedMedia || selectedMedia.length === 0) {
+      return;
+    }
 
-      // Check if this image ID already exists in the images array
-      const existingImageIndex = images.findIndex((img) => img.id === newMedia.id);
-      if (existingImageIndex !== -1) {
-        // Image already exists, skip adding it
-        return;
+    // Get the last selected media (most recently added)
+    const newMedia = selectedMedia[selectedMedia.length - 1];
+
+    // Validate media object
+    if (!newMedia || !newMedia.id || !newMedia.url) {
+      toast.error("Invalid media selected", { position: "top-center" });
+      return;
+    }
+
+    // Check if this image ID already exists in the images array
+    const existingImageIndex = images.findIndex((img) => img.id === newMedia.id);
+    if (existingImageIndex !== -1) {
+      // Image already exists, skip adding it
+      return;
+    }
+
+    // Create a temporary image to get dimensions
+    const img = new Image();
+
+    // Handle image loading errors
+    img.onerror = () => {
+      toast.error("Failed to load image. Please try another one.", { position: "top-center" });
+    };
+
+    img.onload = () => {
+      // Calculate appropriate size to fit in canvas (max 70% of canvas height)
+      const maxHeight = 384 * 0.7; // 70% of canvas height
+      let newWidth = img.width;
+      let newHeight = img.height;
+
+      if (newHeight > maxHeight) {
+        const ratio = maxHeight / newHeight;
+        newWidth = newWidth * ratio;
+        newHeight = maxHeight;
       }
 
-      // Create a temporary image to get dimensions
-      const img = new Image();
-      img.onload = () => {
-        // Calculate appropriate size to fit in canvas (max 70% of canvas height)
-        const maxHeight = 384 * 0.7; // 70% of canvas height
-        let newWidth = img.width;
-        let newHeight = img.height;
+      // Get centered position
+      const position = getDefaultImagePosition(newWidth, newHeight);
 
-        if (newHeight > maxHeight) {
-          const ratio = maxHeight / newHeight;
-          newWidth = newWidth * ratio;
-          newHeight = maxHeight;
-        }
-
-        // Get centered position
-        const position = getDefaultImagePosition(newWidth, newHeight);
-
-        const templateImage = {
-          id: newMedia.id,
-          src: newMedia.url,
-          position,
-          size: { width: newWidth, height: newHeight },
-          canvasIndex: 0, // This will be updated by recalculateSectionAssignments
-        };
-
-        dispatch(setImages([...images, templateImage]));
+      const templateImage = {
+        id: newMedia.id,
+        src: newMedia.url,
+        position,
+        size: { width: newWidth, height: newHeight },
+        canvasIndex: 0, // This will be updated by recalculateSectionAssignments
       };
-      img.src = newMedia.url;
-    }
+
+      dispatch(setImages([...images, templateImage]));
+    };
+
+    // Set crossOrigin to anonymous to handle CORS issues
+    img.crossOrigin = "anonymous";
+    img.src = newMedia.url;
   };
 
   const handleAddText = () => {
@@ -202,6 +280,10 @@ const TemplateEditModal = ({
 
   // Helper function to estimate text dimensions
   const estimateTextDimensions = (content: string, fontSize: number) => {
+    if (!content) {
+      return { width: 100, height: fontSize * 1.2 };
+    }
+
     // Split text by line breaks
     const lines = content.split("\n");
 
@@ -212,7 +294,7 @@ const TemplateEditModal = ({
     }
 
     // Calculate estimated width based on longest line
-    const estimatedWidth = maxLineLength * fontSize * 0.6;
+    const estimatedWidth = Math.max(50, maxLineLength * fontSize * 0.6);
 
     // Calculate canvas width based on aspect ratio
     let canvasWidth = 0;
@@ -238,12 +320,17 @@ const TemplateEditModal = ({
 
     // Calculate estimated height based on number of lines
     const lineHeight = fontSize * 1.2;
-    const estimatedHeight = lineHeight * Math.max(1, lines.length);
+    const estimatedHeight = Math.max(fontSize, lineHeight * Math.max(1, lines.length));
 
     return { width: finalWidth, height: estimatedHeight };
   };
 
   const handleSaveText = (text: string, style?: { fontSize: number; color: string }) => {
+    if (!text.trim()) {
+      toast.error("Text cannot be empty", { position: "top-center" });
+      return;
+    }
+
     const fontSize = style?.fontSize || 16;
     // Calculate dimensions based on content
     const { width, height } = estimateTextDimensions(text, fontSize);
@@ -263,15 +350,31 @@ const TemplateEditModal = ({
   // Generic function to process slides
   const processSlides = async (onComplete: (uploadedImages: Media[]) => void) => {
     try {
+      // Reset any previous errors
+      setProcessingError(null);
+
       // Check if we have a valid preview reference
       if (!previewRef.current) {
-        toast.error("Preview not available", { position: "top-center" });
+        const errorMsg = "Preview not available";
+        setProcessingError(errorMsg);
+        toast.error(errorMsg, { position: "top-center" });
         setIsLoading(false);
         return;
       }
 
       const totalSlides = previewRef.current.getTotalSlides();
+
+      // Validate that we have slides to process
+      if (totalSlides <= 0) {
+        const errorMsg = "No slides to process";
+        setProcessingError(errorMsg);
+        toast.error(errorMsg, { position: "top-center" });
+        setIsLoading(false);
+        return;
+      }
+
       const uploadedImages: Media[] = [];
+      let completedCount = 0; // Track both successful and failed uploads
 
       // Process each slide/box
       for (let i = 0; i < totalSlides; i++) {
@@ -284,81 +387,176 @@ const TemplateEditModal = ({
         // Get the canvas content element
         const canvasContentElement = previewRef.current.getCanvasContentElement();
         if (!canvasContentElement) {
-          toast.error(`Failed to capture content for slide ${i + 1}`, { position: "top-center" });
+          const errorMsg = `Failed to capture content for slide ${i + 1}`;
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          completedCount++;
+
+          // Check if all slides are processed (even with failures)
+          if (completedCount === totalSlides) {
+            if (uploadedImages.length === 0) {
+              const finalErrorMsg = "No slides were successfully processed";
+              setProcessingError(finalErrorMsg);
+              toast.error(finalErrorMsg, { position: "top-center" });
+              setIsLoading(false);
+              return;
+            }
+            onComplete(uploadedImages);
+          }
           continue;
         }
 
-        // Convert the preview to a canvas
-        const canvas = await html2canvas(canvasContentElement, {
-          backgroundColor,
-          scale: 2, // Higher quality
-          logging: false,
-          removeContainer: false,
-          allowTaint: true,
-          useCORS: true,
-        });
+        try {
+          // Convert the preview to a canvas
+          const canvas = await html2canvas(canvasContentElement, {
+            backgroundColor,
+            scale: 2, // Higher quality
+            logging: false,
+            removeContainer: false,
+            allowTaint: true,
+            useCORS: true,
+          });
 
-        // Convert canvas to blob
-        canvas.toBlob(
-          async (blob) => {
-            if (!blob) {
-              toast.error(`Failed to create image for slide ${i + 1}`, { position: "top-center" });
+          // Convert canvas to blob with timeout
+          const blobPromise = new Promise<Blob | null>((resolve) => {
+            canvas.toBlob((blob) => resolve(blob), "image/png", 0.9);
+          });
+
+          // Add timeout for blob creation
+          const blob = await Promise.race([
+            blobPromise,
+            new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error("Blob creation timed out")), 10000),
+            ),
+          ]);
+
+          if (!blob) {
+            const errorMsg = `Failed to create image for slide ${i + 1}`;
+            setProcessingError(errorMsg);
+            throw new Error(errorMsg);
+          }
+
+          // Create form data for upload
+          const formData = new FormData();
+          formData.append("file", blob, `template-section-${i + 1}.png`);
+          formData.append("postId", uuidv4());
+
+          // Upload the image
+          uploadMedia(formData, {
+            onSuccess: (response) => {
+              completedCount++;
+
+              if (response?.data?.url) {
+                // Add to uploaded images array
+                uploadedImages.push({
+                  id: uuidv4(),
+                  url: response.data.url,
+                  type: "image",
+                });
+              } else {
+                const errorMsg = `Invalid response for slide ${i + 1}`;
+                setProcessingError(errorMsg);
+                toast.error(errorMsg, { position: "top-center" });
+              }
+
+              // When all uploads are completed (successful or not), call the completion handler
+              if (completedCount === totalSlides) {
+                if (uploadedImages.length === 0) {
+                  const finalErrorMsg = "No slides were successfully processed";
+                  setProcessingError(finalErrorMsg);
+                  toast.error(finalErrorMsg, { position: "top-center" });
+                  setIsLoading(false);
+                  return;
+                }
+                onComplete(uploadedImages);
+              }
+            },
+            onError: (error) => {
+              completedCount++;
+              console.error("Error uploading template section:", error);
+              const errorMsg = `Failed to upload slide ${i + 1}`;
+              setProcessingError(errorMsg);
+              toast.error(errorMsg, { position: "top-center" });
+
+              // When all uploads are completed (successful or not), call the completion handler
+              if (completedCount === totalSlides) {
+                if (uploadedImages.length === 0) {
+                  const finalErrorMsg = "No slides were successfully processed";
+                  setProcessingError(finalErrorMsg);
+                  toast.error(finalErrorMsg, { position: "top-center" });
+                  setIsLoading(false);
+                  return;
+                }
+                onComplete(uploadedImages);
+              }
+            },
+          });
+        } catch (error) {
+          completedCount++;
+          console.error(`Error processing slide ${i + 1}:`, error);
+          const errorMsg = `Failed to process slide ${i + 1}: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`;
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+
+          // When all uploads are completed (successful or not), call the completion handler
+          if (completedCount === totalSlides) {
+            if (uploadedImages.length === 0) {
+              const finalErrorMsg = "No slides were successfully processed";
+              setProcessingError(finalErrorMsg);
+              toast.error(finalErrorMsg, { position: "top-center" });
+              setIsLoading(false);
               return;
             }
-
-            // Create form data for upload
-            const formData = new FormData();
-            formData.append("file", blob, `template-section-${i + 1}.png`);
-            formData.append("postId", uuidv4());
-
-            // Upload the image
-            uploadMedia(formData, {
-              onSuccess: (response) => {
-                if (response?.data?.url) {
-                  // Add to uploaded images array
-                  uploadedImages.push({
-                    id: uuidv4(),
-                    url: response.data.url,
-                    type: "image",
-                  });
-
-                  // When all images are uploaded, call the completion handler
-                  if (uploadedImages.length === totalSlides) {
-                    onComplete(uploadedImages);
-                  }
-                }
-              },
-              onError: (error) => {
-                console.error("Error uploading template section:", error);
-                toast.error(`Failed to upload slide ${i + 1}`, { position: "top-center" });
-              },
-            });
-          },
-          "image/png",
-          0.9,
-        );
+            onComplete(uploadedImages);
+          }
+        }
       }
     } catch (error) {
       console.error("Error processing slides:", error);
-      toast.error("Failed to process slides", { position: "top-center" });
+      const errorMsg = `Failed to process slides: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`;
+      setProcessingError(errorMsg);
+      toast.error(errorMsg, { position: "top-center" });
       setIsLoading(false);
     }
   };
 
   const handleTemplateSaveAndUse = async (isSave: boolean = false) => {
+    // Validate that we have content to process
+    if (images.length === 0 && texts.length === 0) {
+      const errorMsg = "Cannot process empty template. Please add images or text.";
+      setProcessingError(errorMsg);
+      toast.error(errorMsg, { position: "top-center" });
+      return;
+    }
+
     setIsLoading(true);
+    setProcessingError(null);
+
     try {
       // Ensure sections are calculated correctly before processing
       dispatch(recalculateSectionAssignments());
 
       // Process slides and save the template
       processSlides(async (uploadedImages) => {
+        // Validate we have images to process
+        if (uploadedImages.length === 0) {
+          const errorMsg = "No images were successfully processed";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          setIsLoading(false);
+          return;
+        }
+
         // Extract URLs for the API
         const outputUrls = uploadedImages.map((img) => img.url);
 
-        // Call API service to process template with the uploaded image URLs
-        apiService
-          .processTemplate({
+        try {
+          // Set a timeout for the API call
+          const apiPromise = apiService.processTemplate({
             canvasCount,
             aspectRatio,
             backgroundColor,
@@ -366,54 +564,69 @@ const TemplateEditModal = ({
             texts,
             outputUrls,
             socialPlatform,
-          })
-          .then((response) => {
-            if (response.success) {
-              console.log(
-                isSave ? "Template saved successfully:" : "Template processed successfully:",
-                response.data,
-              );
-
-              // Add media URLs to post creation state if not saving
-              if (!isSave) {
-                dispatch(setMediaUrls(uploadedImages));
-              }
-
-              // Show success toast
-              toast.success(
-                isSave
-                  ? "Template saved and processed successfully!"
-                  : "Template added to post composer",
-                {
-                  position: "top-center",
-                },
-              );
-
-              // Close the dialog only on success
-              handleConfirmClose();
-              dispatch(setIsTemplateSectionOpen(false));
-            } else {
-              throw new Error(response.error || "Unknown error occurred");
-            }
-          })
-          .catch((error) => {
-            console.error("Error processing template:", error);
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : "Error processing template. Please try again.",
-              { position: "top-center" },
-            );
-          })
-          .finally(() => {
-            setIsLoading(false);
           });
+
+          // Create a timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("API request timed out")), 30000); // 30 seconds timeout
+          });
+
+          // Race the API call against the timeout
+          const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
+
+          if (response.success) {
+            console.log(
+              isSave ? "Template saved successfully:" : "Template processed successfully:",
+              response.data,
+            );
+
+            // Add media URLs to post creation state if not saving
+            if (!isSave) {
+              dispatch(setMediaUrls(uploadedImages));
+            }
+
+            // Show success toast
+            toast.success(
+              isSave
+                ? "Template saved and processed successfully!"
+                : "Template added to post composer",
+              {
+                position: "top-center",
+              },
+            );
+
+            // Close the dialog only on success
+            handleConfirmClose();
+            dispatch(setIsTemplateSectionOpen(false));
+          } else {
+            const errorMsg = response.error || "Unknown error occurred";
+            setProcessingError(errorMsg);
+            throw new Error(errorMsg);
+          }
+        } catch (error) {
+          console.error("Error processing template:", error);
+          const errorMsg =
+            error instanceof Error ? error.message : "Error processing template. Please try again.";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+        } finally {
+          setIsLoading(false);
+        }
       });
     } catch (error) {
       console.error("Error processing template:", error);
-      toast.error("Failed to process template", { position: "top-center" });
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to process template. Please try again.";
+      setProcessingError(errorMsg);
+      toast.error(errorMsg, { position: "top-center" });
       setIsLoading(false);
     }
+  };
+
+  const handleCancelProcessing = () => {
+    setIsLoading(false);
+    setProcessingError(null);
+    toast.info("Processing cancelled", { position: "top-center" });
   };
 
   return (
@@ -436,7 +649,14 @@ const TemplateEditModal = ({
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Processing template...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {processingError ? `Error: ${processingError}` : "Processing template..."}
+                  </p>
+                  {processingError && (
+                    <Button variant="outline" size="sm" onClick={handleCancelProcessing}>
+                      Cancel
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

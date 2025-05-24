@@ -17,8 +17,51 @@ interface ApiResponse {
   error?: string;
 }
 
+// Supported aspect ratios
+const SUPPORTED_ASPECT_RATIOS = ["16:9", "1:1", "4:5"];
+
+// Helper to validate template data
+const validateTemplateData = (data: TemplateData): { valid: boolean; error?: string } => {
+  // Validate canvasCount
+  if (typeof data.canvasCount !== "number" || data.canvasCount <= 0) {
+    return { valid: false, error: "Invalid canvas count" };
+  }
+
+  // Validate aspectRatio
+  if (!SUPPORTED_ASPECT_RATIOS.includes(data.aspectRatio)) {
+    return { valid: false, error: "Unsupported aspect ratio" };
+  }
+
+  // Validate backgroundColor
+  if (
+    typeof data.backgroundColor !== "string" ||
+    !data.backgroundColor.match(/^#[0-9A-Fa-f]{6}$/)
+  ) {
+    return { valid: false, error: "Invalid background color format" };
+  }
+
+  // Validate gridSize
+  if (
+    !data.gridSize ||
+    typeof data.gridSize.columns !== "number" ||
+    typeof data.gridSize.rows !== "number" ||
+    data.gridSize.columns <= 0 ||
+    data.gridSize.rows <= 0
+  ) {
+    return { valid: false, error: "Invalid grid size" };
+  }
+
+  // Validate that we have either images or texts
+  if ((!data.images || data.images.length === 0) && (!data.texts || data.texts.length === 0)) {
+    return { valid: false, error: "Template must contain at least one image or text element" };
+  }
+
+  return { valid: true };
+};
+
 // Helper to estimate text width based on content and font size
 const estimateTextWidth = (text: string, fontSize: number): number => {
+  if (!text) return 0;
   // Approximate width: average character is ~0.6x font size wide
   return text.length * fontSize * 0.6;
 };
@@ -29,6 +72,15 @@ export const apiService = {
   processTemplate: async (templateData: TemplateData): Promise<ApiResponse> => {
     try {
       console.log("Processing template with data:", templateData);
+
+      // Validate template data
+      const validation = validateTemplateData(templateData);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "Invalid template data",
+        };
+      }
 
       // Each cell size in mm (50mm x 50mm per cell)
       const CELL_SIZE_MM = 50;
@@ -69,7 +121,12 @@ export const apiService = {
       const uniqueImages = [];
       const imageIds = new Set();
 
-      for (const image of templateData.images) {
+      for (const image of templateData.images || []) {
+        // Validate image object
+        if (!image || !image.id || !image.src) {
+          continue; // Skip invalid images
+        }
+
         if (!imageIds.has(image.id)) {
           imageIds.add(image.id);
           uniqueImages.push(image);
@@ -78,8 +135,16 @@ export const apiService = {
 
       // Simulate API processing for each grid cell
       const sections = [];
+      const totalCells = columns * rows;
 
-      for (let i = 0; i < templateData.canvasCount; i++) {
+      // Validate that canvasCount matches grid size
+      if (templateData.canvasCount !== totalCells) {
+        console.warn(
+          `Canvas count (${templateData.canvasCount}) doesn't match grid size (${totalCells}). Using grid size.`,
+        );
+      }
+
+      for (let i = 0; i < totalCells; i++) {
         // Calculate row and column for this cell
         const row = Math.floor(i / columns);
         const col = i % columns;
@@ -93,6 +158,9 @@ export const apiService = {
         // Find images that are at least partially in this cell
         const cellImages = uniqueImages
           .filter((img) => {
+            // Skip images without proper position or size
+            if (!img.position || !img.size) return false;
+
             const imgStartX = img.position.x;
             const imgEndX = img.position.x + img.size.width;
             const imgStartY = img.position.y;
@@ -137,8 +205,11 @@ export const apiService = {
           });
 
         // Find texts that are at least partially visible in this cell
-        const cellTexts = templateData.texts
+        const cellTexts = (templateData.texts || [])
           .filter((txt) => {
+            // Skip texts without proper position or content
+            if (!txt.position || !txt.content || !txt.style) return false;
+
             const txtX = txt.position.x;
             const txtY = txt.position.y;
             // Estimate text width based on content and font size
@@ -189,12 +260,39 @@ export const apiService = {
         });
       }
 
+      // Validate outputUrls if provided
+      if (templateData.outputUrls) {
+        if (!Array.isArray(templateData.outputUrls)) {
+          return {
+            success: false,
+            error: "Output URLs must be an array",
+          };
+        }
+
+        if (templateData.outputUrls.length !== totalCells) {
+          return {
+            success: false,
+            error: `Expected ${totalCells} output URLs, but got ${templateData.outputUrls.length}`,
+          };
+        }
+
+        // Validate each URL
+        for (const url of templateData.outputUrls) {
+          if (typeof url !== "string" || !url.trim()) {
+            return {
+              success: false,
+              error: "Invalid output URL",
+            };
+          }
+        }
+      }
+
       // Simulate processed output
       const output = {
         template: {
           aspectRatio: templateData.aspectRatio,
           backgroundColor: templateData.backgroundColor,
-          canvasCount: templateData.canvasCount,
+          canvasCount: totalCells,
           gridSize: templateData.gridSize,
           sections,
           socialPlatform: templateData.socialPlatform,
@@ -210,7 +308,8 @@ export const apiService = {
       console.error("Error processing template:", error);
       return {
         success: false,
-        error: "Failed to process template. Please try again.",
+        error:
+          error instanceof Error ? error.message : "Failed to process template. Please try again.",
       };
     }
   },
@@ -219,6 +318,15 @@ export const apiService = {
   saveTemplate: async (templateData: TemplateData): Promise<ApiResponse> => {
     try {
       console.log("Saving template with data:", templateData);
+
+      // Validate template data
+      const validation = validateTemplateData(templateData);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "Invalid template data",
+        };
+      }
 
       // Simulate successful save
       return {
@@ -232,7 +340,8 @@ export const apiService = {
       console.error("Error saving template:", error);
       return {
         success: false,
-        error: "Failed to save template. Please try again.",
+        error:
+          error instanceof Error ? error.message : "Failed to save template. Please try again.",
       };
     }
   },
