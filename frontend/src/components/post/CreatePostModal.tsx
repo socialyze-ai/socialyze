@@ -83,6 +83,9 @@ import { reset } from "@/redux/slices/aiAssistant.slice";
 import { htmlToText } from "html-to-text";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import TemplatePanel from "./template/TemplatePanel";
+import { RootState } from "@/redux/store";
+import { setSocialPlatform } from "@/redux/slices/template.slice";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -117,6 +120,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const mediaByChannel = useSelector(selectMediaByChannel);
   const isContentSynced = useSelector(selectIsContentSynced);
   const isCustomContent = useSelector(selectIsCustomContent);
+  const templateSocialPlatform = useSelector((state: RootState) => state.template.socialPlatform);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -131,6 +135,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     selectedDate ? new Date(selectedDate) : new Date(),
   );
 
+  // Filter channels based on template social platform
+  const filteredChannels = useMemo(() => {
+    console.log("templateSocialPlatform", templateSocialPlatform);
+
+    if (!templateSocialPlatform) {
+      return channels;
+    }
+    return channels.filter((channel) => channel.type === templateSocialPlatform);
+  }, [channels, templateSocialPlatform]);
+
   // Initialize content by channel when modal opens
   useEffect(() => {
     if (channels.length > 0) {
@@ -139,6 +153,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   }, [channels, dispatch]);
 
   const handleChannelToggle = (channelId: string) => {
+    const channel = getChannelById(channelId);
+
+    // If we have a template social platform and this channel doesn't match, show a toast
+    if (templateSocialPlatform && channel && channel.type !== templateSocialPlatform) {
+      toast.error(`This template is only for ${templateSocialPlatform} posts`, {
+        position: "top-center",
+      });
+      return;
+    }
+
     dispatch(toggleChannelSelection(channelId));
   };
 
@@ -344,6 +368,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
   const resetForm = () => {
     dispatch(resetPostCreation());
+    dispatch(unselectAllLabels());
+    dispatch(reset());
+    dispatch(setSocialPlatform(null));
   };
 
   const handleOpenAlert = () => {
@@ -351,20 +378,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   };
 
   const handleClose = () => {
-    // Check if there's content or media before closing
-    const hasContent = selectedChannels.some(
-      (channelId) =>
-        contentByChannel[channelId]?.trim() !== "" ||
-        (mediaByChannel[channelId] && mediaByChannel[channelId].length > 0),
-    );
-
-    if (hasContent) {
+    if (selectedChannels.length > 0 || postCreation.content || postCreation.mediaUrls.length > 0) {
       setIsCloseAlertOpen(true);
-    } else {
-      onClose();
-      resetForm();
-      setIsCloseAlertOpen(false);
+      return;
     }
+
+    resetForm();
+    onClose();
   };
 
   const getChannelById = (id: string): SocialChannel | undefined => {
@@ -413,31 +433,35 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     return htmlToText(removeBreakTags);
   }, [contentByChannel, activeChannel]);
 
+  const isLeftPanelOpen = postCreation.isAIAssistantOpen || postCreation.isTemplateSectionOpen;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
         <DialogContent
           className={cn(
             "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
-            postCreation.isAIAssistantOpen && selectedChannels.length === 0
+            isLeftPanelOpen && selectedChannels.length === 0
               ? "max-w-[60dvw]"
-              : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
+              : isLeftPanelOpen && selectedChannels.length !== 0
               ? "max-w-[90dvw]"
               : selectedChannels.length !== 0 && activeChannel
               ? "max-w-[60dvw]"
-              : "flex-1 h-fit",
+              : "flex-1",
           )}
           id="create-post-modal-content"
         >
           {/* AI Assistant */}
-          {postCreation.isAIAssistantOpen && (
+          {isLeftPanelOpen && (
             <div
               className={cn(
                 "h-full overflow-y-auto",
                 selectedChannels.length === 0 && !activeChannel ? "w-[40%]" : "w-[30%]",
               )}
             >
-              <AIAssistantPanel />
+              {postCreation.isAIAssistantOpen && <AIAssistantPanel />}
+
+              {postCreation.isTemplateSectionOpen && <TemplatePanel />}
             </div>
           )}
 
@@ -445,9 +469,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           <div
             className={cn(
               "overflow-y-auto bg-white p-5 rounded h-full",
-              postCreation.isAIAssistantOpen && selectedChannels.length === 0
+              isLeftPanelOpen && selectedChannels.length === 0
                 ? "w-[60%]"
-                : postCreation.isAIAssistantOpen && selectedChannels.length !== 0
+                : isLeftPanelOpen && selectedChannels.length !== 0
                 ? "w-[40%]"
                 : selectedChannels.length !== 0 && activeChannel
                 ? "w-[60%]"
@@ -466,6 +490,15 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 </DialogDescription>
               </div>
             </DialogHeader>
+
+            {templateSocialPlatform && (
+              <div className="flex items-center gap-2 my-2 p-2 bg-blue-50 rounded-md">
+                <Info size={16} className="text-blue-500" />
+                <span className="text-sm text-blue-700">
+                  This template is designed for {templateSocialPlatform} posts only
+                </span>
+              </div>
+            )}
 
             {channels.length === 0 ? (
               <div
@@ -487,36 +520,32 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             ) : (
               <div className="flex justify-between items-center my-4">
                 <div className="flex gap-3 flex-wrap">
-                  {channels?.map((channel) => {
-                    console.log("selectedChannels", channel);
-
-                    return (
-                      <button
-                        key={channel.id}
-                        className={`relative rounded-full p-1.5 ${
-                          selectedChannels.includes(channel.id)
-                            ? "shadow shadow-blue-500"
-                            : "opacity-60 hover:opacity-100"
-                        }`}
-                        onClick={() => handleChannelToggle(channel.id)}
+                  {filteredChannels?.map((channel) => (
+                    <button
+                      key={channel.id}
+                      className={`relative rounded-full p-1.5 ${
+                        selectedChannels.includes(channel.id)
+                          ? "shadow shadow-blue-500"
+                          : "opacity-60 hover:opacity-100"
+                      }`}
+                      onClick={() => handleChannelToggle(channel.id)}
+                    >
+                      <Avatar className="w-10 h-10 rounded-full">
+                        <AvatarImage src={channel.profileImage} />
+                        <AvatarFallback className="capitalize font-semibold text-xl">
+                          {channel.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div
+                        className={cn(
+                          "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
+                          selectedChannels.includes(channel.id) && "shadow-blue-500",
+                        )}
                       >
-                        <Avatar className="w-10 h-10 rounded-full">
-                          <AvatarImage src={channel.profileImage} />
-                          <AvatarFallback className="capitalize font-semibold text-xl">
-                            {channel.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={cn(
-                            "absolute bottom-1.5 -right-1 rounded-full overflow-hidden border border-gray-200 w-5 h-5 p-0.5 flex items-center justify-center bg-white z-50",
-                            selectedChannels.includes(channel.id) && "shadow-blue-500",
-                          )}
-                        >
-                          {getSocialIcon(channel.type, 16)}
-                        </div>
-                      </button>
-                    );
-                  })}
+                        {getSocialIcon(channel.type, 16)}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -708,7 +737,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             <div
               className={cn(
                 "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
-                postCreation.isAIAssistantOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
+                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
               )}
             >
               <div className="flex justify-between mb-2 w-full">
@@ -803,7 +832,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               onClick={() => {
                 onClose();
                 resetForm();
-                dispatch(reset());
                 setIsCloseAlertOpen(false);
               }}
             >

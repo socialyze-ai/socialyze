@@ -49,6 +49,7 @@ export interface PostCreationState {
 
   // Modal states
   isAIAssistantOpen: boolean;
+  isTemplateSectionOpen: boolean;
 }
 
 const initialState: PostCreationState = {
@@ -66,6 +67,7 @@ const initialState: PostCreationState = {
   scheduledDate: null,
   scheduledTime: "12:00",
   isAIAssistantOpen: false,
+  isTemplateSectionOpen: false,
   hashtagGroups: [],
 };
 
@@ -294,6 +296,16 @@ const postCreationSlice = createSlice({
     // Modals
     setIsAIAssistantOpen: (state, action: PayloadAction<boolean>) => {
       state.isAIAssistantOpen = action.payload;
+      if (action.payload) {
+        state.isTemplateSectionOpen = false;
+      }
+    },
+
+    setIsTemplateSectionOpen: (state, action: PayloadAction<boolean>) => {
+      state.isTemplateSectionOpen = action.payload;
+      if (action.payload) {
+        state.isAIAssistantOpen = false;
+      }
     },
 
     // Reset state
@@ -467,6 +479,7 @@ export const {
   setScheduledDate,
   setScheduledTime,
   setIsAIAssistantOpen,
+  setIsTemplateSectionOpen,
   resetPostCreation,
   initializeChannelContent,
   addHashtagGroupsFromApi,
