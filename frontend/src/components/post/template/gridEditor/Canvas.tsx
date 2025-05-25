@@ -153,6 +153,22 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     dispatch(setSelectedItem(null));
   };
 
+  // Add document click handler to deselect when clicking outside
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      // Check if the click target is not an image or text element
+      const target = e.target as HTMLElement;
+      if (!target.closest(".absolute")) {
+        dispatch(setSelectedItem(null));
+      }
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [dispatch]);
+
   // Start dragging an item
   const handleDragStart = (e: React.MouseEvent, position: { x: number; y: number }) => {
     e.stopPropagation();
@@ -897,100 +913,102 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
   }));
 
   return (
-    <div className="relative h-fit w-full bg-gray-50 shadow rounded-lg p-3 flex flex-col gap-2 overflow-x-auto">
+    <div className="w-full h-full bg-gray-50 shadow rounded-lg p-3">
       <p className="w-full text-center text-sm text-gray-600">
         Canvas Size: {widthMm}mm × {heightMm}mm ({aspectRatio}) - Grid: {columns}×{rows} - Each
         Cell: 50mm
       </p>
 
-      <div className="max-w-6xl mx-auto overflow-x-auto">
-        <div
-          ref={canvasRef}
-          className={`relative border border-gray-300 ${
-            selectedItemId ? "overflow-visible" : "overflow-hidden"
-          }`}
-          style={{
-            ...getGridCanvasStyle(),
-            position: "relative",
-            backgroundColor,
-          }}
-          onClick={handleCanvasClick}
-        >
-          {/* Container for all items */}
+      <div className="relative h-full w-full flex flex-col gap-2 overflow-x-auto">
+        <div className="max-w-6xl mx-auto my-auto">
           <div
-            className={`absolute top-0 left-0 w-full h-full ${
+            ref={canvasRef}
+            className={`relative border border-gray-300 ${
               selectedItemId ? "overflow-visible" : "overflow-hidden"
             }`}
+            style={{
+              ...getGridCanvasStyle(),
+              position: "relative",
+              backgroundColor,
+            }}
+            onClick={handleCanvasClick}
           >
-            {/* Grid lines */}
-            {renderGridLines()}
+            {/* Container for all items */}
+            <div
+              className={`absolute top-0 left-0 w-full h-full ${
+                selectedItemId ? "overflow-visible" : "overflow-hidden"
+              }`}
+            >
+              {/* Grid lines */}
+              {renderGridLines()}
 
-            {/* Canvas items */}
-            {renderCanvasItems()}
+              {/* Canvas items */}
+              {renderCanvasItems()}
+            </div>
           </div>
         </div>
+
+        {/* Controls for selected item */}
+        {selectedItemId && (
+          <div className="absolute top-2 right-2 bg-white rounded-md shadow-md p-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-500 h-8 w-8"
+              onClick={handleDeleteItem}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Text editor modal */}
+        {showTextEditor && editingTextId && (
+          <TextEditor
+            onSave={handleSaveEditedText}
+            onCancel={() => {
+              setShowTextEditor(false);
+              setEditingTextId(null);
+            }}
+            initialText={texts.find((txt) => txt.id === editingTextId)?.content || ""}
+            initialStyle={texts.find((txt) => txt.id === editingTextId)?.style}
+          />
+        )}
+
+        {/* Image Editor Dialog */}
+        <Dialog open={isEditImageDialogOpen} onOpenChange={setIsEditImageDialogOpen}>
+          <DialogContent className="max-w-4xl">
+            {imageToEdit && (
+              <ImageEditor
+                selectedImage={{
+                  id: imageToEdit.id,
+                  url: imageToEdit.src,
+                  type: "image",
+                }}
+                onSave={handleSaveEditedImage}
+                onCancel={() => setIsEditImageDialogOpen(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Image Replacement Dialog */}
+        <Dialog open={isReplaceImageDialogOpen} onOpenChange={setIsReplaceImageDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogTitle>Replace Image</DialogTitle>
+            <div className="py-4">
+              <p className="text-sm text-gray-500 mb-4">
+                Select a new image to replace the current one. Position and size will be maintained.
+              </p>
+              <MediaUploader
+                onlyTriggerButton={false}
+                onMediaChange={handleMediaSelect}
+                modalMode={true}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Controls for selected item */}
-      {selectedItemId && (
-        <div className="absolute top-2 right-2 bg-white rounded-md shadow-md p-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-red-500 h-8 w-8"
-            onClick={handleDeleteItem}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Text editor modal */}
-      {showTextEditor && editingTextId && (
-        <TextEditor
-          onSave={handleSaveEditedText}
-          onCancel={() => {
-            setShowTextEditor(false);
-            setEditingTextId(null);
-          }}
-          initialText={texts.find((txt) => txt.id === editingTextId)?.content || ""}
-          initialStyle={texts.find((txt) => txt.id === editingTextId)?.style}
-        />
-      )}
-
-      {/* Image Editor Dialog */}
-      <Dialog open={isEditImageDialogOpen} onOpenChange={setIsEditImageDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          {imageToEdit && (
-            <ImageEditor
-              selectedImage={{
-                id: imageToEdit.id,
-                url: imageToEdit.src,
-                type: "image",
-              }}
-              onSave={handleSaveEditedImage}
-              onCancel={() => setIsEditImageDialogOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Image Replacement Dialog */}
-      <Dialog open={isReplaceImageDialogOpen} onOpenChange={setIsReplaceImageDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>Replace Image</DialogTitle>
-          <div className="py-4">
-            <p className="text-sm text-gray-500 mb-4">
-              Select a new image to replace the current one. Position and size will be maintained.
-            </p>
-            <MediaUploader
-              onlyTriggerButton={false}
-              onMediaChange={handleMediaSelect}
-              modalMode={true}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 });

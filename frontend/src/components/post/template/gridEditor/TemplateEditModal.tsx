@@ -599,11 +599,11 @@ const TemplateEditModal = ({
         )}
 
         <DialogContent className="max-w-8xl h-full overflow-y-auto">
-          <DialogHeader className="h-fit">
-            <DialogTitle className="text-center">Edit Grid Template</DialogTitle>
-          </DialogHeader>
-
           <div className="flex flex-col gap-2 relative h-full w-full items-start">
+            <DialogHeader className="w-full mb-2">
+              <DialogTitle className="text-center">Edit Grid Template</DialogTitle>
+            </DialogHeader>
+
             {/* Loading overlay */}
             {isLoading && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -621,9 +621,11 @@ const TemplateEditModal = ({
               </div>
             )}
 
-            <div className="grid grid-cols-10 gap-2 w-full">
-              <div className="col-span-7 h-fit grid gap-2">
-                <ImageGallery />
+            <div className="grid grid-cols-10 gap-2 w-full h-full">
+              <div className="col-span-7 h-full flex flex-col gap-2">
+                <div className="h-fit w-full">
+                  <ImageGallery />
+                </div>
 
                 <Canvas ref={canvasRef} />
               </div>
@@ -643,40 +645,6 @@ const TemplateEditModal = ({
                 <Preview ref={previewRef} />
               </div>
             </div>
-
-            {/* <div>
-              <Separator />
-              <Separator />
-              <Separator />
-
-              <div className="grid grid-cols-7 gap-2 w-full h-fit">
-                <div className="col-span-5 h-full">
-                  <Preview ref={previewRef} />
-                </div>
-
-                <div className="col-span-2 h-full">
-                  <CanvasOptions
-                    handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                    isLoading={isLoading}
-                    columns={columns}
-                    setColumns={setColumns}
-                    rows={rows}
-                    setRows={setRows}
-                  />
-                </div>
-              </div>
-
-              <div className="w-full">
-                <ContentAndMediaManager
-                  handleMediaChange={handleMediaChange}
-                  handleAddText={handleAddText}
-                />
-              </div>
-
-              <div className="w-full">
-                <Canvas ref={canvasRef} />
-              </div>
-            </div> */}
           </div>
 
           {showTextEditor && !isLoading && (
