@@ -26,9 +26,9 @@ import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
-import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
+import ImageGallery from "./ImageGallery";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -598,12 +598,12 @@ const TemplateEditModal = ({
           </DialogTrigger>
         )}
 
-        <DialogContent className="max-w-7xl h-5/6 overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Grid Template</DialogTitle>
+        <DialogContent className="max-w-8xl h-full overflow-y-auto">
+          <DialogHeader className="h-fit">
+            <DialogTitle className="text-center">Edit Grid Template</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-2 relative">
+          <div className="flex flex-col gap-2 relative h-full w-full items-start">
             {/* Loading overlay */}
             {isLoading && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -621,13 +621,16 @@ const TemplateEditModal = ({
               </div>
             )}
 
-            {/* Preview at the top */}
-            <div className="grid grid-cols-7 gap-2 w-full h-fit">
-              <div className="col-span-5 h-full">
-                <Preview ref={previewRef} />
+            <div className="grid grid-cols-10 gap-2 w-full">
+              <div className="col-span-7 h-fit grid gap-2">
+                <div className="bg-white rounded-lg shadow p-1">
+                  <ImageGallery />
+                </div>
+
+                <Canvas ref={canvasRef} />
               </div>
 
-              <div className="col-span-2 h-full">
+              <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
                   isLoading={isLoading}
@@ -635,20 +638,47 @@ const TemplateEditModal = ({
                   setColumns={setColumns}
                   rows={rows}
                   setRows={setRows}
+                  handleMediaChange={handleMediaChange}
+                  handleAddText={handleAddText}
                 />
+
+                <Preview ref={previewRef} />
               </div>
             </div>
 
-            <div className="w-full">
-              <ContentAndMediaManager
-                handleMediaChange={handleMediaChange}
-                handleAddText={handleAddText}
-              />
-            </div>
+            {/* <div>
+              <Separator />
+              <Separator />
+              <Separator />
 
-            <div className="w-full">
-              <Canvas ref={canvasRef} />
-            </div>
+              <div className="grid grid-cols-7 gap-2 w-full h-fit">
+                <div className="col-span-5 h-full">
+                  <Preview ref={previewRef} />
+                </div>
+
+                <div className="col-span-2 h-full">
+                  <CanvasOptions
+                    handleTemplateSaveAndUse={handleTemplateSaveAndUse}
+                    isLoading={isLoading}
+                    columns={columns}
+                    setColumns={setColumns}
+                    rows={rows}
+                    setRows={setRows}
+                  />
+                </div>
+              </div>
+
+              <div className="w-full">
+                <ContentAndMediaManager
+                  handleMediaChange={handleMediaChange}
+                  handleAddText={handleAddText}
+                />
+              </div>
+
+              <div className="w-full">
+                <Canvas ref={canvasRef} />
+              </div>
+            </div> */}
           </div>
 
           {showTextEditor && !isLoading && (

@@ -78,7 +78,7 @@ const ImageGallery: React.FC = () => {
 
   if (images.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center my-4">
+      <div className="flex flex-col justify-center items-center my-2">
         <h3 className="font-medium">Added Images</h3>
         <p className="text-sm text-gray-500">No images added yet</p>
       </div>

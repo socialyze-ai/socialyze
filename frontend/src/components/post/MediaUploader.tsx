@@ -34,6 +34,7 @@ interface MediaUploaderProps {
   onMediaChange?: (media: Media[]) => void;
   modalMode?: boolean;
   channelId?: string; // Add channelId prop to identify which channel this uploader is for
+  iconButtonProps?: React.ComponentProps<typeof Button>;
 }
 
 const MediaUploader: React.FC<MediaUploaderProps> = ({
@@ -42,6 +43,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   onMediaChange,
   modalMode = false,
   channelId,
+  iconButtonProps,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -182,6 +184,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
             modalMode={modalMode}
             onMediaSelect={onMediaChange}
             channelId={channelId}
+            iconButtonProps={iconButtonProps}
           />
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -193,6 +196,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
               modalMode={modalMode}
               onMediaSelect={onMediaChange}
               channelId={channelId}
+              iconButtonProps={iconButtonProps}
             />
 
             {mediaToRender && mediaToRender.length > 0 && (
@@ -267,6 +271,7 @@ const MediaModal = ({
   modalMode = false,
   onMediaSelect,
   channelId,
+  iconButtonProps,
 }: {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -275,6 +280,7 @@ const MediaModal = ({
   modalMode?: boolean;
   onMediaSelect?: (media: Media[]) => void;
   channelId?: string;
+  iconButtonProps?: React.ComponentProps<typeof Button>;
 }) => {
   const dispatch = useDispatch();
   const { mediaUrls: globalMediaUrls } = useSelector(selectPostCreation);
@@ -442,7 +448,7 @@ const MediaModal = ({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" {...iconButtonProps}>
           <ImagePlus className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
