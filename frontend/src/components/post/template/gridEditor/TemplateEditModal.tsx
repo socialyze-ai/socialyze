@@ -22,7 +22,7 @@ import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
-import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
@@ -30,6 +30,7 @@ import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
+import { MultipleMediaUploadResponse } from "@/api/apiHooks/useMedia";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -63,7 +64,7 @@ const TemplateEditModal = ({
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
-  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+  const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
 
   console.log("isLoading Grid", isLoading);
 
@@ -397,10 +398,9 @@ const TemplateEditModal = ({
         return;
       }
 
-      const uploadedImages: Media[] = [];
-      let completedCount = 0; // Track both successful and failed uploads
+      // First process all cells to get image blobs
+      const imageBlobs: Blob[] = [];
 
-      // Process each cell
       for (let i = 0; i < totalCells; i++) {
         // Navigate to the cell
         previewRef.current.selectCell(i);
@@ -414,19 +414,6 @@ const TemplateEditModal = ({
           const errorMsg = `Failed to capture content for cell ${i + 1}`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
-          completedCount++;
-
-          // Check if all cells are processed (even with failures)
-          if (completedCount === totalCells) {
-            if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No cells were successfully processed";
-              setProcessingError(finalErrorMsg);
-              toast.error(finalErrorMsg, { position: "top-center" });
-              setIsLoading(false);
-              return;
-            }
-            onComplete(uploadedImages);
-          }
           continue;
         }
 
@@ -460,83 +447,72 @@ const TemplateEditModal = ({
             throw new Error(errorMsg);
           }
 
-          // Create form data for upload
-          const formData = new FormData();
-          formData.append("file", blob, `grid-cell-${i + 1}.png`);
-          formData.append("postId", uuidv4());
-
-          // Upload the image
-          uploadMedia(formData, {
-            onSuccess: (response) => {
-              completedCount++;
-
-              if (response?.data?.url) {
-                // Add to uploaded images array
-                uploadedImages.push({
-                  id: uuidv4(),
-                  url: response.data.url,
-                  type: "image",
-                });
-              } else {
-                const errorMsg = `Invalid response for cell ${i + 1}`;
-                setProcessingError(errorMsg);
-                toast.error(errorMsg, { position: "top-center" });
-              }
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalCells) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No cells were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-            onError: (error) => {
-              completedCount++;
-              console.error("Error uploading grid cell:", error);
-              const errorMsg = `Failed to upload cell ${i + 1}`;
-              setProcessingError(errorMsg);
-              toast.error(errorMsg, { position: "top-center" });
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalCells) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No cells were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-          });
+          // Add blob to our collection
+          imageBlobs.push(blob);
         } catch (error) {
-          completedCount++;
           console.error(`Error processing cell ${i + 1}:`, error);
           const errorMsg = `Failed to process cell ${i + 1}: ${
             error instanceof Error ? error.message : "Unknown error"
           }`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
+        }
+      }
 
-          // When all uploads are completed (successful or not), call the completion handler
-          if (completedCount === totalCells) {
+      // Check if we have any successful image blobs
+      if (imageBlobs.length === 0) {
+        const finalErrorMsg = "No cells were successfully processed";
+        setProcessingError(finalErrorMsg);
+        toast.error(finalErrorMsg, { position: "top-center" });
+        setIsLoading(false);
+        return;
+      }
+
+      // Create one FormData for all images
+      const formData = new FormData();
+      const postId = uuidv4();
+
+      // Append all blobs to the same formData
+      imageBlobs.forEach((blob, index) => {
+        formData.append("files", blob, `grid-cell-${index + 1}.png`);
+      });
+
+      formData.append("postId", postId);
+
+      // Upload all images in one API call
+      uploadMultipleMedia(formData, {
+        onSuccess: (response) => {
+          if (response?.data?.urls && Array.isArray(response.data.urls)) {
+            const uploadedImages: Media[] = response.data.urls.map((url: string) => ({
+              id: uuidv4(),
+              url,
+              type: "image",
+            }));
+
             if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No cells were successfully processed";
+              const finalErrorMsg = "No cells were successfully uploaded";
               setProcessingError(finalErrorMsg);
               toast.error(finalErrorMsg, { position: "top-center" });
               setIsLoading(false);
               return;
             }
+
             onComplete(uploadedImages);
+          } else {
+            const errorMsg = "Invalid response from server";
+            setProcessingError(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            setIsLoading(false);
           }
-        }
-      }
+        },
+        onError: (error) => {
+          console.error("Error uploading grid cells:", error);
+          const errorMsg = "Failed to upload cells";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          setIsLoading(false);
+        },
+      });
     } catch (error) {
       console.error("Error processing cells:", error);
       const errorMsg = `Failed to process grid cells: ${

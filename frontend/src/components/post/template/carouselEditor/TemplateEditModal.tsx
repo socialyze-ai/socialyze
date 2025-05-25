@@ -21,7 +21,7 @@ import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
-import { useUploadMedia } from "@/api/apiHooks/useMedia";
+import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
@@ -29,6 +29,7 @@ import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
+import { MultipleMediaUploadResponse } from "@/api/apiHooks/useMedia";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -61,7 +62,7 @@ const TemplateEditModal = ({
   const [processingError, setProcessingError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+  const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
 
   console.log("isLoading Carousel", isLoading);
 
@@ -373,10 +374,9 @@ const TemplateEditModal = ({
         return;
       }
 
-      const uploadedImages: Media[] = [];
-      let completedCount = 0; // Track both successful and failed uploads
+      // First process all slides to get image blobs
+      const imageBlobs: Blob[] = [];
 
-      // Process each slide/box
       for (let i = 0; i < totalSlides; i++) {
         // Navigate to the slide
         previewRef.current.goToSlide(i);
@@ -390,19 +390,6 @@ const TemplateEditModal = ({
           const errorMsg = `Failed to capture content for slide ${i + 1}`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
-          completedCount++;
-
-          // Check if all slides are processed (even with failures)
-          if (completedCount === totalSlides) {
-            if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No slides were successfully processed";
-              setProcessingError(finalErrorMsg);
-              toast.error(finalErrorMsg, { position: "top-center" });
-              setIsLoading(false);
-              return;
-            }
-            onComplete(uploadedImages);
-          }
           continue;
         }
 
@@ -436,83 +423,72 @@ const TemplateEditModal = ({
             throw new Error(errorMsg);
           }
 
-          // Create form data for upload
-          const formData = new FormData();
-          formData.append("file", blob, `template-section-${i + 1}.png`);
-          formData.append("postId", uuidv4());
-
-          // Upload the image
-          uploadMedia(formData, {
-            onSuccess: (response) => {
-              completedCount++;
-
-              if (response?.data?.url) {
-                // Add to uploaded images array
-                uploadedImages.push({
-                  id: uuidv4(),
-                  url: response.data.url,
-                  type: "image",
-                });
-              } else {
-                const errorMsg = `Invalid response for slide ${i + 1}`;
-                setProcessingError(errorMsg);
-                toast.error(errorMsg, { position: "top-center" });
-              }
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalSlides) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No slides were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-            onError: (error) => {
-              completedCount++;
-              console.error("Error uploading template section:", error);
-              const errorMsg = `Failed to upload slide ${i + 1}`;
-              setProcessingError(errorMsg);
-              toast.error(errorMsg, { position: "top-center" });
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalSlides) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No slides were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-          });
+          // Add blob to our collection
+          imageBlobs.push(blob);
         } catch (error) {
-          completedCount++;
           console.error(`Error processing slide ${i + 1}:`, error);
           const errorMsg = `Failed to process slide ${i + 1}: ${
             error instanceof Error ? error.message : "Unknown error"
           }`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
+        }
+      }
 
-          // When all uploads are completed (successful or not), call the completion handler
-          if (completedCount === totalSlides) {
+      // Check if we have any successful image blobs
+      if (imageBlobs.length === 0) {
+        const finalErrorMsg = "No slides were successfully processed";
+        setProcessingError(finalErrorMsg);
+        toast.error(finalErrorMsg, { position: "top-center" });
+        setIsLoading(false);
+        return;
+      }
+
+      // Create one FormData for all images
+      const formData = new FormData();
+      const postId = uuidv4();
+
+      // Append all blobs to the same formData
+      imageBlobs.forEach((blob, index) => {
+        formData.append("files", blob, `template-section-${index + 1}.png`);
+      });
+
+      formData.append("postId", postId);
+
+      // Upload all images in one API call
+      uploadMultipleMedia(formData, {
+        onSuccess: (response) => {
+          if (response?.data?.urls && Array.isArray(response.data.urls)) {
+            const uploadedImages: Media[] = response.data.urls.map((url: string) => ({
+              id: uuidv4(),
+              url,
+              type: "image",
+            }));
+
             if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No slides were successfully processed";
+              const finalErrorMsg = "No slides were successfully uploaded";
               setProcessingError(finalErrorMsg);
               toast.error(finalErrorMsg, { position: "top-center" });
               setIsLoading(false);
               return;
             }
+
             onComplete(uploadedImages);
+          } else {
+            const errorMsg = "Invalid response from server";
+            setProcessingError(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            setIsLoading(false);
           }
-        }
-      }
+        },
+        onError: (error) => {
+          console.error("Error uploading template sections:", error);
+          const errorMsg = "Failed to upload slides";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          setIsLoading(false);
+        },
+      });
     } catch (error) {
       console.error("Error processing slides:", error);
       const errorMsg = `Failed to process slides: ${
