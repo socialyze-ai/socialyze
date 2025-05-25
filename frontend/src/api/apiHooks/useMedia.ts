@@ -7,11 +7,28 @@ export interface MediaUploadResponse {
   mediaId: string;
 }
 
+export interface MultipleMediaUploadResponse {
+  urls: string[];
+}
+
 export const useUploadMedia = () => {
   return useMutation<ApiResponse<MediaUploadResponse>, Error, FormData>({
     mutationFn: async (data: FormData) => {
       return await smartRequest<MediaUploadResponse>(
         BACKEND_URL + "media/uploadMedia",
+        "POST",
+        getToken(),
+        data,
+      );
+    },
+  });
+};
+
+export const useUploadMultipleMedia = () => {
+  return useMutation<ApiResponse<MultipleMediaUploadResponse>, Error, FormData>({
+    mutationFn: async (data: FormData) => {
+      return await smartRequest<MultipleMediaUploadResponse>(
+        BACKEND_URL + "media/uploadMultipleMedia",
         "POST",
         getToken(),
         data,

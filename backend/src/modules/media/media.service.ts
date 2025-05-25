@@ -10,6 +10,7 @@ import { TenorService } from '../service/tenor.service';
 import { PexelsService } from '../service/pexels.service';
 import { UploadMediaWithLinkDto } from './dto/uploadMediaWithLink.dto';
 import { CommonService } from '../service/common.service';
+import { UploadMultipleMediaDto } from './dto/uploadMultipleMedia.dto';
 
 @Injectable()
 export class MediaService {
@@ -96,6 +97,32 @@ export class MediaService {
     } catch (error) {
       console.error('Failed to upload media for unsplash:', error);
       throw new Error('Failed to upload media for unsplash');
+    }
+  }
+
+  async uploadMultipleMedia(
+    mediaFiles: Express.Multer.File[],
+    uploadMultipleMediaDto: UploadMultipleMediaDto,
+    userId: string,
+  ) {
+    try {
+      const { postId } = uploadMultipleMediaDto;
+      const foldering = `${userId}/${postId}`;
+
+      // Upload each file and collect promises
+      const uploadPromises = mediaFiles.map((media) =>
+        this.gcsService.uploadMedia(media, foldering),
+      );
+
+      // Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises);
+
+      return {
+        urls: results.map((result) => (result as { url: string }).url),
+      };
+    } catch (error) {
+      console.error('Error uploading multiple media:', error);
+      throw new Error('Failed to upload multiple media files');
     }
   }
 }

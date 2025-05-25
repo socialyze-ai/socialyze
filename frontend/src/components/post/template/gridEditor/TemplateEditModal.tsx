@@ -17,13 +17,12 @@ import {
   setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas from "./Canvas";
+import Canvas, { CanvasRef } from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
-import { useUploadMedia } from "@/api/apiHooks/useMedia";
-import html2canvas from "html2canvas";
+import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
@@ -57,13 +56,14 @@ const TemplateEditModal = ({
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<PreviewRef>(null);
+  const canvasRef = useRef<CanvasRef>(null);
   const [columns, setColumns] = useState(gridSize?.columns || 3);
   const [rows, setRows] = useState(gridSize?.rows || Math.ceil(canvasCount / columns));
   const [showCloseAlert, setShowCloseAlert] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
-  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+  const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
 
   console.log("isLoading Grid", isLoading);
 
@@ -377,16 +377,16 @@ const TemplateEditModal = ({
     setProcessingError(null);
 
     try {
-      // Check if we have a valid preview reference
-      if (!previewRef.current) {
-        const errorMsg = "Preview not available";
+      // Check if we have a valid canvas reference
+      if (!canvasRef.current) {
+        const errorMsg = "Canvas not available";
         setProcessingError(errorMsg);
         toast.error(errorMsg, { position: "top-center" });
         setIsLoading(false);
         return;
       }
 
-      const totalCells = previewRef.current.getTotalCells();
+      const totalCells = canvasRef.current.getTotalCells();
 
       // Validate that we have cells to process
       if (totalCells <= 0) {
@@ -397,146 +397,87 @@ const TemplateEditModal = ({
         return;
       }
 
-      const uploadedImages: Media[] = [];
-      let completedCount = 0; // Track both successful and failed uploads
+      // First process all cells to get image blobs
+      const imageBlobs: Blob[] = [];
 
-      // Process each cell
       for (let i = 0; i < totalCells; i++) {
-        // Navigate to the cell
-        previewRef.current.selectCell(i);
-
-        // Wait for the cell to render
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Get the cell content element
-        const cellContentElement = previewRef.current.getCellContentElement(i);
-        if (!cellContentElement) {
-          const errorMsg = `Failed to capture content for cell ${i + 1}`;
-          setProcessingError(errorMsg);
-          toast.error(errorMsg, { position: "top-center" });
-          completedCount++;
-
-          // Check if all cells are processed (even with failures)
-          if (completedCount === totalCells) {
-            if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No cells were successfully processed";
-              setProcessingError(finalErrorMsg);
-              toast.error(finalErrorMsg, { position: "top-center" });
-              setIsLoading(false);
-              return;
-            }
-            onComplete(uploadedImages);
-          }
-          continue;
-        }
-
         try {
-          // Convert the preview to a canvas
-          const canvas = await html2canvas(cellContentElement, {
-            backgroundColor,
-            scale: 2, // Higher quality
-            logging: false,
-            removeContainer: false,
-            allowTaint: true,
-            useCORS: true,
-          });
-
-          // Convert canvas to blob with timeout
-          const blobPromise = new Promise<Blob | null>((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), "image/png", 0.9);
-          });
-
-          // Add timeout for blob creation
-          const blob = await Promise.race([
-            blobPromise,
-            new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error("Blob creation timed out")), 10000),
-            ),
-          ]);
+          // Use native canvas API to capture each cell
+          const blob = await canvasRef.current.captureCanvasContent(i);
 
           if (!blob) {
             const errorMsg = `Failed to create image for cell ${i + 1}`;
             setProcessingError(errorMsg);
-            throw new Error(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            continue;
           }
 
-          // Create form data for upload
-          const formData = new FormData();
-          formData.append("file", blob, `grid-cell-${i + 1}.png`);
-          formData.append("postId", uuidv4());
-
-          // Upload the image
-          uploadMedia(formData, {
-            onSuccess: (response) => {
-              completedCount++;
-
-              if (response?.data?.url) {
-                // Add to uploaded images array
-                uploadedImages.push({
-                  id: uuidv4(),
-                  url: response.data.url,
-                  type: "image",
-                });
-              } else {
-                const errorMsg = `Invalid response for cell ${i + 1}`;
-                setProcessingError(errorMsg);
-                toast.error(errorMsg, { position: "top-center" });
-              }
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalCells) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No cells were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-            onError: (error) => {
-              completedCount++;
-              console.error("Error uploading grid cell:", error);
-              const errorMsg = `Failed to upload cell ${i + 1}`;
-              setProcessingError(errorMsg);
-              toast.error(errorMsg, { position: "top-center" });
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalCells) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No cells were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-          });
+          // Add blob to our collection
+          imageBlobs.push(blob);
         } catch (error) {
-          completedCount++;
           console.error(`Error processing cell ${i + 1}:`, error);
           const errorMsg = `Failed to process cell ${i + 1}: ${
             error instanceof Error ? error.message : "Unknown error"
           }`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
+        }
+      }
 
-          // When all uploads are completed (successful or not), call the completion handler
-          if (completedCount === totalCells) {
+      // Check if we have any successful image blobs
+      if (imageBlobs.length === 0) {
+        const finalErrorMsg = "No cells were successfully processed";
+        setProcessingError(finalErrorMsg);
+        toast.error(finalErrorMsg, { position: "top-center" });
+        setIsLoading(false);
+        return;
+      }
+
+      // Create one FormData for all images
+      const formData = new FormData();
+      const postId = uuidv4();
+
+      // Append all blobs to the same formData
+      imageBlobs.forEach((blob, index) => {
+        formData.append("files", blob, `grid-cell-${index + 1}.png`);
+      });
+
+      formData.append("postId", postId);
+
+      // Upload all images in one API call
+      uploadMultipleMedia(formData, {
+        onSuccess: (response) => {
+          if (response?.data?.urls && Array.isArray(response.data.urls)) {
+            const uploadedImages: Media[] = response.data.urls.map((url: string) => ({
+              id: uuidv4(),
+              url,
+              type: "image",
+            }));
+
             if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No cells were successfully processed";
+              const finalErrorMsg = "No cells were successfully uploaded";
               setProcessingError(finalErrorMsg);
               toast.error(finalErrorMsg, { position: "top-center" });
               setIsLoading(false);
               return;
             }
+
             onComplete(uploadedImages);
+          } else {
+            const errorMsg = "Invalid response from server";
+            setProcessingError(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            setIsLoading(false);
           }
-        }
-      }
+        },
+        onError: (error) => {
+          console.error("Error uploading grid cells:", error);
+          const errorMsg = "Failed to upload cells";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          setIsLoading(false);
+        },
+      });
     } catch (error) {
       console.error("Error processing cells:", error);
       const errorMsg = `Failed to process grid cells: ${
@@ -706,7 +647,7 @@ const TemplateEditModal = ({
             </div>
 
             <div className="w-full">
-              <Canvas />
+              <Canvas ref={canvasRef} />
             </div>
           </div>
 

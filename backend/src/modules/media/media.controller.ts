@@ -4,15 +4,17 @@ import {
   Post,
   Req,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { MediaService } from './media.service';
 import { AuthInterceptor } from 'src/interceptor/authInterceptor.interceptor';
 import { GetImagesDto } from './dto/getImages.dto';
 import { UploadMediaDto } from './dto/uploadMedia.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
 import { UploadMediaWithLinkDto } from './dto/uploadMediaWithLink.dto';
+import { UploadMultipleMediaDto } from './dto/uploadMultipleMedia.dto';
 
 @Controller('media')
 @UseInterceptors(AuthInterceptor)
@@ -57,6 +59,21 @@ export class MediaController {
     const userId = req.user.userId;
     return this.mediaService.uploadMediaForUnsplash(
       uploadMediaForUnsplashDto,
+      userId,
+    );
+  }
+
+  @Post('uploadMultipleMedia')
+  @UseInterceptors(FilesInterceptor('files', 10)) // Allow up to 10 files
+  uploadMultipleMedia(
+    @UploadedFiles() mediaFiles: Express.Multer.File[],
+    @Body() uploadMultipleMediaDto: UploadMultipleMediaDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.mediaService.uploadMultipleMedia(
+      mediaFiles,
+      uploadMultipleMediaDto,
       userId,
     );
   }

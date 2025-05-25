@@ -16,13 +16,12 @@ import {
   setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas from "./Canvas";
+import Canvas, { CanvasRef } from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
-import { useUploadMedia } from "@/api/apiHooks/useMedia";
-import html2canvas from "html2canvas";
+import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
@@ -56,12 +55,13 @@ const TemplateEditModal = ({
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<PreviewRef>(null);
+  const canvasRef = useRef<CanvasRef>(null);
   const [showCloseAlert, setShowCloseAlert] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { mutate: uploadMedia, isPending: isUploading } = useUploadMedia();
+  const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
 
   console.log("isLoading Carousel", isLoading);
 
@@ -353,169 +353,110 @@ const TemplateEditModal = ({
       // Reset any previous errors
       setProcessingError(null);
 
-      // Check if we have a valid preview reference
-      if (!previewRef.current) {
-        const errorMsg = "Preview not available";
+      // Check if we have a valid canvas reference
+      if (!canvasRef.current) {
+        const errorMsg = "Canvas not available";
         setProcessingError(errorMsg);
         toast.error(errorMsg, { position: "top-center" });
         setIsLoading(false);
         return;
       }
 
-      const totalSlides = previewRef.current.getTotalSlides();
+      const totalBoxes = canvasRef.current.getTotalBoxes();
 
-      // Validate that we have slides to process
-      if (totalSlides <= 0) {
-        const errorMsg = "No slides to process";
+      // Validate that we have boxes to process
+      if (totalBoxes <= 0) {
+        const errorMsg = "No boxes to process";
         setProcessingError(errorMsg);
         toast.error(errorMsg, { position: "top-center" });
         setIsLoading(false);
         return;
       }
 
-      const uploadedImages: Media[] = [];
-      let completedCount = 0; // Track both successful and failed uploads
+      // First process all boxes to get image blobs
+      const imageBlobs: Blob[] = [];
 
-      // Process each slide/box
-      for (let i = 0; i < totalSlides; i++) {
-        // Navigate to the slide
-        previewRef.current.goToSlide(i);
-
-        // Wait for the slide to render
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Get the canvas content element
-        const canvasContentElement = previewRef.current.getCanvasContentElement();
-        if (!canvasContentElement) {
-          const errorMsg = `Failed to capture content for slide ${i + 1}`;
-          setProcessingError(errorMsg);
-          toast.error(errorMsg, { position: "top-center" });
-          completedCount++;
-
-          // Check if all slides are processed (even with failures)
-          if (completedCount === totalSlides) {
-            if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No slides were successfully processed";
-              setProcessingError(finalErrorMsg);
-              toast.error(finalErrorMsg, { position: "top-center" });
-              setIsLoading(false);
-              return;
-            }
-            onComplete(uploadedImages);
-          }
-          continue;
-        }
-
+      for (let i = 0; i < totalBoxes; i++) {
         try {
-          // Convert the preview to a canvas
-          const canvas = await html2canvas(canvasContentElement, {
-            backgroundColor,
-            scale: 2, // Higher quality
-            logging: false,
-            removeContainer: false,
-            allowTaint: true,
-            useCORS: true,
-          });
-
-          // Convert canvas to blob with timeout
-          const blobPromise = new Promise<Blob | null>((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), "image/png", 0.9);
-          });
-
-          // Add timeout for blob creation
-          const blob = await Promise.race([
-            blobPromise,
-            new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error("Blob creation timed out")), 10000),
-            ),
-          ]);
+          // Use native canvas API to capture each box
+          const blob = await canvasRef.current.captureCanvasContent(i);
 
           if (!blob) {
-            const errorMsg = `Failed to create image for slide ${i + 1}`;
+            const errorMsg = `Failed to create image for box ${i + 1}`;
             setProcessingError(errorMsg);
-            throw new Error(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            continue;
           }
 
-          // Create form data for upload
-          const formData = new FormData();
-          formData.append("file", blob, `template-section-${i + 1}.png`);
-          formData.append("postId", uuidv4());
-
-          // Upload the image
-          uploadMedia(formData, {
-            onSuccess: (response) => {
-              completedCount++;
-
-              if (response?.data?.url) {
-                // Add to uploaded images array
-                uploadedImages.push({
-                  id: uuidv4(),
-                  url: response.data.url,
-                  type: "image",
-                });
-              } else {
-                const errorMsg = `Invalid response for slide ${i + 1}`;
-                setProcessingError(errorMsg);
-                toast.error(errorMsg, { position: "top-center" });
-              }
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalSlides) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No slides were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-            onError: (error) => {
-              completedCount++;
-              console.error("Error uploading template section:", error);
-              const errorMsg = `Failed to upload slide ${i + 1}`;
-              setProcessingError(errorMsg);
-              toast.error(errorMsg, { position: "top-center" });
-
-              // When all uploads are completed (successful or not), call the completion handler
-              if (completedCount === totalSlides) {
-                if (uploadedImages.length === 0) {
-                  const finalErrorMsg = "No slides were successfully processed";
-                  setProcessingError(finalErrorMsg);
-                  toast.error(finalErrorMsg, { position: "top-center" });
-                  setIsLoading(false);
-                  return;
-                }
-                onComplete(uploadedImages);
-              }
-            },
-          });
+          // Add blob to our collection
+          imageBlobs.push(blob);
         } catch (error) {
-          completedCount++;
-          console.error(`Error processing slide ${i + 1}:`, error);
-          const errorMsg = `Failed to process slide ${i + 1}: ${
+          console.error(`Error processing box ${i + 1}:`, error);
+          const errorMsg = `Failed to process box ${i + 1}: ${
             error instanceof Error ? error.message : "Unknown error"
           }`;
           setProcessingError(errorMsg);
           toast.error(errorMsg, { position: "top-center" });
+        }
+      }
 
-          // When all uploads are completed (successful or not), call the completion handler
-          if (completedCount === totalSlides) {
+      // Check if we have any successful image blobs
+      if (imageBlobs.length === 0) {
+        const finalErrorMsg = "No boxes were successfully processed";
+        setProcessingError(finalErrorMsg);
+        toast.error(finalErrorMsg, { position: "top-center" });
+        setIsLoading(false);
+        return;
+      }
+
+      // Create one FormData for all images
+      const formData = new FormData();
+      const postId = uuidv4();
+
+      // Append all blobs to the same formData
+      imageBlobs.forEach((blob, index) => {
+        formData.append("files", blob, `template-section-${index + 1}.png`);
+      });
+
+      formData.append("postId", postId);
+
+      // Upload all images in one API call
+      uploadMultipleMedia(formData, {
+        onSuccess: (response) => {
+          if (response?.data?.urls && Array.isArray(response.data.urls)) {
+            const uploadedImages: Media[] = response.data.urls.map((url: string) => ({
+              id: uuidv4(),
+              url,
+              type: "image",
+            }));
+
             if (uploadedImages.length === 0) {
-              const finalErrorMsg = "No slides were successfully processed";
+              const finalErrorMsg = "No boxes were successfully uploaded";
               setProcessingError(finalErrorMsg);
               toast.error(finalErrorMsg, { position: "top-center" });
               setIsLoading(false);
               return;
             }
+
             onComplete(uploadedImages);
+          } else {
+            const errorMsg = "Invalid response from server";
+            setProcessingError(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            setIsLoading(false);
           }
-        }
-      }
+        },
+        onError: (error) => {
+          console.error("Error uploading template sections:", error);
+          const errorMsg = "Failed to upload boxes";
+          setProcessingError(errorMsg);
+          toast.error(errorMsg, { position: "top-center" });
+          setIsLoading(false);
+        },
+      });
     } catch (error) {
-      console.error("Error processing slides:", error);
-      const errorMsg = `Failed to process slides: ${
+      console.error("Error processing boxes:", error);
+      const errorMsg = `Failed to process boxes: ${
         error instanceof Error ? error.message : "Unknown error"
       }`;
       setProcessingError(errorMsg);
@@ -683,7 +624,7 @@ const TemplateEditModal = ({
             </div>
 
             <div className="w-full">
-              <Canvas />
+              <Canvas ref={canvasRef} />
             </div>
           </div>
 
