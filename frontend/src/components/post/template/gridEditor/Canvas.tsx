@@ -948,20 +948,6 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
           </div>
         </div>
 
-        {/* Controls for selected item */}
-        {selectedItemId && (
-          <div className="absolute top-2 right-2 bg-white rounded-md shadow-md p-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-red-500 h-8 w-8"
-              onClick={handleDeleteItem}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
         {/* Text editor modal */}
         {showTextEditor && editingTextId && (
           <TextEditor
@@ -1004,6 +990,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 onlyTriggerButton={false}
                 onMediaChange={handleMediaSelect}
                 modalMode={true}
+                isTemplateEditor={true}
               />
             </div>
           </DialogContent>

@@ -925,6 +925,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 onlyTriggerButton={false}
                 onMediaChange={handleMediaSelect}
                 modalMode={true}
+                isTemplateEditor={true}
               />
             </div>
           </DialogContent>

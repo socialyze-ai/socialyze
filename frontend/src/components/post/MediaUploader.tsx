@@ -35,6 +35,7 @@ interface MediaUploaderProps {
   modalMode?: boolean;
   channelId?: string; // Add channelId prop to identify which channel this uploader is for
   iconButtonProps?: React.ComponentProps<typeof Button>;
+  isTemplateEditor?: boolean;
 }
 
 const MediaUploader: React.FC<MediaUploaderProps> = ({
@@ -44,6 +45,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   modalMode = false,
   channelId,
   iconButtonProps,
+  isTemplateEditor = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -199,7 +201,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
               iconButtonProps={iconButtonProps}
             />
 
-            {mediaToRender && mediaToRender.length > 0 && (
+            {!isTemplateEditor && mediaToRender && mediaToRender.length > 0 && (
               <Card className="relative">
                 <CardContent className="p-0 overflow-hidden">
                   <div className="flex flex-wrap">
