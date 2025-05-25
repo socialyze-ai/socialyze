@@ -14,6 +14,7 @@ import {
   setText,
   recalculateSectionAssignments,
   setSocialPlatform,
+  resetTemplate,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas, { CanvasRef } from "./Canvas";
@@ -178,7 +179,8 @@ const TemplateEditModal = ({
 
     setShowCloseAlert(false);
     setDialogOpen(false);
-    setIsLoading(false); // Ensure loading state is reset
+    setIsLoading(false);
+    dispatch(resetTemplate());
     if (onOpenChange) {
       onOpenChange(false);
     }

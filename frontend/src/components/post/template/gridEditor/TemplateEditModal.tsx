@@ -162,6 +162,17 @@ const TemplateEditModal = ({
     dispatch(recalculateSectionAssignments());
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
 
+  // Reset all states when dialog is closed
+  const resetAllStates = () => {
+    setShowTextEditor(false);
+    setIsLoading(false);
+    setProcessingError(null);
+    setColumns(gridSize?.columns || 3);
+    setRows(gridSize?.rows || Math.ceil(canvasCount / columns));
+    dispatch(setImages([]));
+    dispatch(setText([]));
+  };
+
   const handleOpenChange = (open: boolean) => {
     // Reset processing error when opening
     if (open) {
@@ -173,6 +184,9 @@ const TemplateEditModal = ({
       setShowCloseAlert(true);
     } else {
       setDialogOpen(open);
+      if (!open) {
+        resetAllStates();
+      }
       if (onOpenChange) {
         onOpenChange(open);
       }
@@ -182,7 +196,8 @@ const TemplateEditModal = ({
   const handleConfirmClose = () => {
     setShowCloseAlert(false);
     setDialogOpen(false);
-    setIsLoading(false); // Ensure loading state is reset
+    resetAllStates();
+
     if (onOpenChange) {
       onOpenChange(false);
     }
