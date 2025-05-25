@@ -26,9 +26,9 @@ import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
-import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
+import ImageGallery from "./ImageGallery";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -162,6 +162,17 @@ const TemplateEditModal = ({
     dispatch(recalculateSectionAssignments());
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
 
+  // Reset all states when dialog is closed
+  const resetAllStates = () => {
+    setShowTextEditor(false);
+    setIsLoading(false);
+    setProcessingError(null);
+    setColumns(gridSize?.columns || 3);
+    setRows(gridSize?.rows || Math.ceil(canvasCount / columns));
+    dispatch(setImages([]));
+    dispatch(setText([]));
+  };
+
   const handleOpenChange = (open: boolean) => {
     // Reset processing error when opening
     if (open) {
@@ -173,6 +184,9 @@ const TemplateEditModal = ({
       setShowCloseAlert(true);
     } else {
       setDialogOpen(open);
+      if (!open) {
+        resetAllStates();
+      }
       if (onOpenChange) {
         onOpenChange(open);
       }
@@ -182,7 +196,8 @@ const TemplateEditModal = ({
   const handleConfirmClose = () => {
     setShowCloseAlert(false);
     setDialogOpen(false);
-    setIsLoading(false); // Ensure loading state is reset
+    resetAllStates();
+
     if (onOpenChange) {
       onOpenChange(false);
     }
@@ -598,12 +613,12 @@ const TemplateEditModal = ({
           </DialogTrigger>
         )}
 
-        <DialogContent className="max-w-7xl h-5/6 overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Grid Template</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-8xl h-full overflow-y-auto">
+          <div className="flex flex-col gap-2 relative h-full w-full items-start">
+            <DialogHeader className="w-full mb-2">
+              <DialogTitle className="text-center">Edit Grid Template</DialogTitle>
+            </DialogHeader>
 
-          <div className="flex flex-col gap-2 relative">
             {/* Loading overlay */}
             {isLoading && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -621,13 +636,16 @@ const TemplateEditModal = ({
               </div>
             )}
 
-            {/* Preview at the top */}
-            <div className="grid grid-cols-7 gap-2 w-full h-fit">
-              <div className="col-span-5 h-full">
-                <Preview ref={previewRef} />
+            <div className="grid grid-cols-10 gap-2 w-full h-full">
+              <div className="col-span-7 h-full flex flex-col gap-2">
+                <div className="h-fit w-full">
+                  <ImageGallery />
+                </div>
+
+                <Canvas ref={canvasRef} />
               </div>
 
-              <div className="col-span-2 h-full">
+              <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
                   isLoading={isLoading}
@@ -635,19 +653,12 @@ const TemplateEditModal = ({
                   setColumns={setColumns}
                   rows={rows}
                   setRows={setRows}
+                  handleMediaChange={handleMediaChange}
+                  handleAddText={handleAddText}
                 />
+
+                <Preview ref={previewRef} isInstagram />
               </div>
-            </div>
-
-            <div className="w-full">
-              <ContentAndMediaManager
-                handleMediaChange={handleMediaChange}
-                handleAddText={handleAddText}
-              />
-            </div>
-
-            <div className="w-full">
-              <Canvas ref={canvasRef} />
             </div>
           </div>
 
