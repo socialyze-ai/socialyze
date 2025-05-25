@@ -64,7 +64,13 @@ export class MediaController {
   }
 
   @Post('uploadMultipleMedia')
-  @UseInterceptors(FilesInterceptor('files', 15))
+  @UseInterceptors(
+    FilesInterceptor('files', 15, {
+      limits: {
+        fileSize: 15 * 1024 * 1024,
+      },
+    }),
+  )
   uploadMultipleMedia(
     @UploadedFiles() mediaFiles: Express.Multer.File[],
     @Body() uploadMultipleMediaDto: UploadMultipleMediaDto,
