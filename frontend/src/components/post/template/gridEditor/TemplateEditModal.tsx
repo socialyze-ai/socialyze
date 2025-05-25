@@ -623,9 +623,7 @@ const TemplateEditModal = ({
 
             <div className="grid grid-cols-10 gap-2 w-full">
               <div className="col-span-7 h-fit grid gap-2">
-                <div className="bg-white rounded-lg shadow p-1">
-                  <ImageGallery />
-                </div>
+                <ImageGallery />
 
                 <Canvas ref={canvasRef} />
               </div>
