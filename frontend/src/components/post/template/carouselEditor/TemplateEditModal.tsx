@@ -22,14 +22,12 @@ import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
 import { Media } from "@/components/post/MediaUploader";
 import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
-import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
-import { MultipleMediaUploadResponse } from "@/api/apiHooks/useMedia";
 
 interface TemplateEditModalProps {
   open?: boolean;
