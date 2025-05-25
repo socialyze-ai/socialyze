@@ -71,7 +71,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
         if (!ctx) return null;
 
         // Set high resolution
-        const scale = 2; // Higher quality
+        const scale = 4; // Higher quality
         canvas.width = sectionWidth * scale;
         canvas.height = canvasHeight * scale;
 
@@ -79,6 +79,10 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.scale(scale, scale);
+
+        // Enable high-quality image rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
 
         // Translate context to offset the section
         ctx.translate(-boxIndex * sectionWidth, 0);
@@ -182,7 +186,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
 
         // Convert canvas to blob
         return new Promise<Blob | null>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
+          canvas.toBlob((blob) => resolve(blob), "image/png", 1.0);
         });
       } catch (error) {
         console.error(`Error capturing canvas content for box ${boxIndex}:`, error);
