@@ -11,7 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Check, RefreshCcw, Save, Type, Grid, PanelRight, Palette } from "lucide-react";
+import {
+  Check,
+  RefreshCcw,
+  Save,
+  Type,
+  Grid,
+  PanelRight,
+  Palette,
+  Grid2x2Plus,
+  Proportions,
+} from "lucide-react";
 import MediaUploader, { Media } from "../../MediaUploader";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ReactNode } from "react";
@@ -75,7 +85,7 @@ const CanvasOptions = ({
   return (
     <div className="flex gap-2 w-full justify-between h-fit">
       <div className="flex items-center gap-2 w-fit bg-white p-2 rounded-lg shadow">
-        <PopoverButton icon={<Grid className="h-5 w-5" />} label="Grid">
+        <PopoverButton icon={<Grid2x2Plus className="h-5 w-5" />} label="Grid">
           <div className="w-48">
             <p className="text-sm font-medium mb-2">Rows: {rows}</p>
             <Slider
@@ -88,7 +98,11 @@ const CanvasOptions = ({
           </div>
         </PopoverButton>
 
-        <PopoverButton icon={<PanelRight className="h-5 w-5" />} label="Ratio" className="w-20 p-0">
+        {/* <PopoverButton
+          icon={<Proportions className="h-5 w-5" />}
+          label="Ratio"
+          className="w-20 p-0"
+        >
           <Select value={aspectRatio} onValueChange={(value) => dispatch(setAspectRatio(value))}>
             <SelectTrigger>
               <SelectValue placeholder="Aspect ratio" />
@@ -99,7 +113,7 @@ const CanvasOptions = ({
               <SelectItem value="4:5">4:5</SelectItem>
             </SelectContent>
           </Select>
-        </PopoverButton>
+        </PopoverButton> */}
 
         <Tooltip>
           <TooltipTrigger>

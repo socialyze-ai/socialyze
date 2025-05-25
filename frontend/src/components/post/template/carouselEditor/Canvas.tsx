@@ -629,7 +629,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
       lines.push(
         <div
           key={`line-${i}`}
-          className="absolute border-l border-dashed border-gray-400"
+          className="absolute border-l border-dashed border-gray-400 z-40"
           style={{
             left: `${sectionWidth * i}px`,
             height: "100%",

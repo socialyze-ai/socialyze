@@ -2,7 +2,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { setAspectRatio, setBackgroundColor, setCanvasCount } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import React from "react";
+import React, { ReactNode } from "react";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import {
@@ -13,14 +13,63 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import {
+  Check,
+  RefreshCcw,
+  Save,
+  Type,
+  Grid,
+  PanelRight,
+  BetweenVerticalEnd,
+  Proportions,
+} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { ColorPicker } from "@/components/ui/color-picker";
+import MediaUploader, { Media } from "../../MediaUploader";
+
+// Generic PopoverButton component
+const PopoverButton = ({
+  icon,
+  label,
+  children,
+  className,
+}: {
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) => {
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="shadow">
+              {icon}
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+      <PopoverContent side="bottom" className={cn("w-full", className)}>
+        {children}
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const CanvasOptions = ({
   handleTemplateSaveAndUse,
   isLoading,
+  handleMediaChange,
+  handleAddText,
 }: {
   handleTemplateSaveAndUse: (isSave: boolean) => void;
   isLoading: boolean;
+  handleMediaChange?: (media: Media[]) => void;
+  handleAddText?: () => void;
 }) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor } = useSelector(
@@ -28,37 +77,29 @@ const CanvasOptions = ({
   );
 
   return (
-    <div className="flex flex-col gap-3 justify-between h-full bg-white p-4 rounded-lg shadow">
-      <h3 className="font-medium">Canvas Options</h3>
-
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm mb-1">Number of Sections</label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={canvasCount}
-              onChange={(e) => dispatch(setCanvasCount(parseInt(e.target.value) || 1))}
-              className="w-20"
-            />
+    <div className="flex gap-2 w-full justify-between h-fit">
+      <div className="flex items-center gap-2 w-fit bg-white p-2 rounded-lg shadow">
+        <PopoverButton icon={<BetweenVerticalEnd className="h-5 w-5" />} label="Sections">
+          <div className="w-48">
+            <p className="text-sm font-medium mb-2">Sections: {canvasCount}</p>
             <Slider
               value={[canvasCount]}
               min={1}
               max={10}
               step={1}
               onValueChange={(value) => dispatch(setCanvasCount(value[0]))}
-              className="flex-1"
             />
           </div>
-        </div>
+        </PopoverButton>
 
-        <div>
-          <label className="block text-sm mb-1">Aspect Ratio</label>
+        <PopoverButton
+          icon={<Proportions className="h-5 w-5" />}
+          label="Ratio"
+          className="w-20 p-0"
+        >
           <Select value={aspectRatio} onValueChange={(value) => dispatch(setAspectRatio(value))}>
             <SelectTrigger>
-              <SelectValue placeholder="Select aspect ratio" />
+              <SelectValue placeholder="Aspect ratio" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="16:9">16:9</SelectItem>
@@ -66,43 +107,78 @@ const CanvasOptions = ({
               <SelectItem value="4:5">4:5</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </PopoverButton>
 
-        <div>
-          <label className="block text-sm mb-1">Background Color</label>
-          <div className="flex gap-2">
-            <Input
-              type="color"
+        <Tooltip>
+          <TooltipTrigger>
+            <ColorPicker
               value={backgroundColor}
-              onChange={(e) => dispatch(setBackgroundColor(e.target.value))}
-              className="w-12 h-10 p-1"
+              onChange={(color) => dispatch(setBackgroundColor(color))}
+              className="cursor-pointer shadow"
             />
-            <Input
-              type="text"
-              value={backgroundColor}
-              onChange={(e) => dispatch(setBackgroundColor(e.target.value))}
-              className="flex-1"
+          </TooltipTrigger>
+          <TooltipContent>Background</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger>
+            <MediaUploader
+              onlyTriggerButton={true}
+              onMediaChange={handleMediaChange}
+              iconButtonProps={{ variant: "ghost", className: "shadow" }}
             />
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>Media</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="ghost" size="icon" onClick={handleAddText} className="shadow">
+              <Type className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Text</TooltipContent>
+        </Tooltip>
       </div>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={() => handleTemplateSaveAndUse(true)}
-          disabled={isLoading}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Saving..." : "Save"}
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={() => handleTemplateSaveAndUse(false)}
-          disabled={isLoading}
-        >
-          {isLoading ? "Processing..." : "Use"}
-        </Button>
+
+      <div className="flex justify-end gap-2 w-fit bg-white p-2 rounded-lg shadow">
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              onClick={() => handleTemplateSaveAndUse(true)}
+              disabled={isLoading}
+              className="shadow"
+            >
+              {isLoading ? (
+                <RefreshCcw className="h-5 w-5 animate-spin" />
+              ) : (
+                <Save className="h-5 w-5" />
+              )}
+              Save
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Save template</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              onClick={() => handleTemplateSaveAndUse(false)}
+              disabled={isLoading}
+              className="bg-blue-600 text-white shadow"
+            >
+              {isLoading ? (
+                <RefreshCcw className="h-5 w-5 animate-spin" />
+              ) : (
+                <Check className="h-5 w-5" />
+              )}
+              Use
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Use template</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

@@ -491,7 +491,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
       lines.push(
         <div
           key={`vline-${i}`}
-          className="absolute border-l border-dashed border-gray-400 z-50"
+          className="absolute border-l border-dashed border-gray-400 z-40"
           style={{
             left: `${cellWidth * i}px`,
             height: "100%",
@@ -506,7 +506,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
       lines.push(
         <div
           key={`hline-${i}`}
-          className="absolute border-t border-dashed border-gray-400 z-50"
+          className="absolute border-t border-dashed border-gray-400 z-40"
           style={{
             top: `${cellHeight * i}px`,
             width: "100%",
