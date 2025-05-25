@@ -8,9 +8,8 @@ import { GcsService } from '../service/gcs.service';
 import { UploadMediaForUnsplashDto } from './dto/uploadMediaForUnsplash.dto';
 import { TenorService } from '../service/tenor.service';
 import { PexelsService } from '../service/pexels.service';
-import { UploadMediaWithLinkDto } from './dto/uploadMediaWithLink.dto';
 import { CommonService } from '../service/common.service';
-import { UploadMultipleMediaDto } from './dto/uploadMultipleMedia.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class MediaService {
@@ -100,25 +99,23 @@ export class MediaService {
     }
   }
 
-  async uploadMultipleMedia(
-    mediaFiles: Express.Multer.File[],
-    uploadMultipleMediaDto: UploadMultipleMediaDto,
-    userId: string,
-  ) {
+  async uploadMultipleMedia(mediaFiles: Express.Multer.File[], userId: string) {
     try {
-      const { postId } = uploadMultipleMediaDto;
-      const foldering = `${userId}/${postId}`;
+      const mediaIds = mediaFiles.map(() => uuidv4());
 
-      // Upload each file and collect promises
-      const uploadPromises = mediaFiles.map((media) =>
-        this.gcsService.uploadMedia(media, foldering),
-      );
+      const uploadPromises = mediaFiles.map((media, index) => {
+        const mediaId = mediaIds[index];
+        const uniqueFoldering = `${userId}/${mediaId}`;
+        return this.gcsService.uploadMedia(media, uniqueFoldering);
+      });
 
-      // Wait for all uploads to complete
       const results = await Promise.all(uploadPromises);
 
       return {
-        urls: results.map((result) => (result as { url: string }).url),
+        urls: results.map((result, index) => ({
+          id: mediaIds[index],
+          url: (result as { url: string }).url,
+        })),
       };
     } catch (error) {
       console.error('Error uploading multiple media:', error);

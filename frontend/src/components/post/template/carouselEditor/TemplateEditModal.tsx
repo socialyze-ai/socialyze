@@ -424,9 +424,9 @@ const TemplateEditModal = ({
       uploadMultipleMedia(formData, {
         onSuccess: (response) => {
           if (response?.data?.urls && Array.isArray(response.data.urls)) {
-            const uploadedImages: Media[] = response.data.urls.map((url: string) => ({
-              id: uuidv4(),
-              url,
+            const uploadedImages: Media[] = response.data.urls.map((item) => ({
+              id: item.id,
+              url: item.url,
               type: "image",
             }));
 

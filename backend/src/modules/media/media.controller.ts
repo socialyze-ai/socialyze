@@ -64,17 +64,13 @@ export class MediaController {
   }
 
   @Post('uploadMultipleMedia')
-  @UseInterceptors(FilesInterceptor('files', 10)) // Allow up to 10 files
+  @UseInterceptors(FilesInterceptor('files', 15))
   uploadMultipleMedia(
     @UploadedFiles() mediaFiles: Express.Multer.File[],
     @Body() uploadMultipleMediaDto: UploadMultipleMediaDto,
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.mediaService.uploadMultipleMedia(
-      mediaFiles,
-      uploadMultipleMediaDto,
-      userId,
-    );
+    return this.mediaService.uploadMultipleMedia(mediaFiles, userId);
   }
 }

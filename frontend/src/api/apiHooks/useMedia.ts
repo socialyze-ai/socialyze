@@ -8,7 +8,10 @@ export interface MediaUploadResponse {
 }
 
 export interface MultipleMediaUploadResponse {
-  urls: string[];
+  urls: Array<{
+    id: string;
+    url: string;
+  }>;
 }
 
 export const useUploadMedia = () => {
