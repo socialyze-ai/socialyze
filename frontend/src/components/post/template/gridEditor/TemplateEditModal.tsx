@@ -642,7 +642,7 @@ const TemplateEditModal = ({
                   handleAddText={handleAddText}
                 />
 
-                <Preview ref={previewRef} />
+                <Preview ref={previewRef} isInstagram />
               </div>
             </div>
           </div>
