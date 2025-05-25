@@ -17,7 +17,7 @@ import {
   setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas from "./Canvas";
+import Canvas, { CanvasRef } from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
@@ -58,6 +58,7 @@ const TemplateEditModal = ({
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<PreviewRef>(null);
+  const canvasRef = useRef<CanvasRef>(null);
   const [columns, setColumns] = useState(gridSize?.columns || 3);
   const [rows, setRows] = useState(gridSize?.rows || Math.ceil(canvasCount / columns));
   const [showCloseAlert, setShowCloseAlert] = useState(false);
@@ -378,16 +379,16 @@ const TemplateEditModal = ({
     setProcessingError(null);
 
     try {
-      // Check if we have a valid preview reference
-      if (!previewRef.current) {
-        const errorMsg = "Preview not available";
+      // Check if we have a valid canvas reference
+      if (!canvasRef.current) {
+        const errorMsg = "Canvas not available";
         setProcessingError(errorMsg);
         toast.error(errorMsg, { position: "top-center" });
         setIsLoading(false);
         return;
       }
 
-      const totalCells = previewRef.current.getTotalCells();
+      const totalCells = canvasRef.current.getTotalCells();
 
       // Validate that we have cells to process
       if (totalCells <= 0) {
@@ -402,49 +403,15 @@ const TemplateEditModal = ({
       const imageBlobs: Blob[] = [];
 
       for (let i = 0; i < totalCells; i++) {
-        // Navigate to the cell
-        previewRef.current.selectCell(i);
-
-        // Wait for the cell to render
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Get the cell content element
-        const cellContentElement = previewRef.current.getCellContentElement(i);
-        if (!cellContentElement) {
-          const errorMsg = `Failed to capture content for cell ${i + 1}`;
-          setProcessingError(errorMsg);
-          toast.error(errorMsg, { position: "top-center" });
-          continue;
-        }
-
         try {
-          // Convert the preview to a canvas
-          const canvas = await html2canvas(cellContentElement, {
-            backgroundColor,
-            scale: 2, // Higher quality
-            logging: false,
-            removeContainer: false,
-            allowTaint: true,
-            useCORS: true,
-          });
-
-          // Convert canvas to blob with timeout
-          const blobPromise = new Promise<Blob | null>((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), "image/png", 0.9);
-          });
-
-          // Add timeout for blob creation
-          const blob = await Promise.race([
-            blobPromise,
-            new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error("Blob creation timed out")), 10000),
-            ),
-          ]);
+          // Use native canvas API to capture each cell
+          const blob = await canvasRef.current.captureCanvasContent(i);
 
           if (!blob) {
             const errorMsg = `Failed to create image for cell ${i + 1}`;
             setProcessingError(errorMsg);
-            throw new Error(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            continue;
           }
 
           // Add blob to our collection
@@ -682,7 +649,7 @@ const TemplateEditModal = ({
             </div>
 
             <div className="w-full">
-              <Canvas />
+              <Canvas ref={canvasRef} />
             </div>
           </div>
 

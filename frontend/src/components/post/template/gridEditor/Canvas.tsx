@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Trash2, X, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,13 @@ import MediaUploader from "../../MediaUploader";
 // Add TextAlign type
 type TextAlign = "left" | "center" | "right" | "justify";
 
-const Canvas = () => {
+// Add CanvasRef interface for external access to canvas functions
+export interface CanvasRef {
+  captureCanvasContent: (cellIndex: number) => Promise<Blob | null>;
+  getTotalCells: () => number;
+}
+
+const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor, images, texts, selectedItemId, gridSize } =
     useSelector((state: RootState) => state.template);
@@ -715,6 +721,177 @@ const Canvas = () => {
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm();
 
+  // Expose methods to parent components via ref
+  useImperativeHandle(ref, () => ({
+    captureCanvasContent: async (cellIndex: number): Promise<Blob | null> => {
+      if (!canvasRef.current) return null;
+
+      try {
+        // Calculate grid cell dimensions
+        const totalCells = columns * rows;
+        if (cellIndex >= totalCells) return null;
+
+        // Calculate which row and column this cell is in
+        const row = Math.floor(cellIndex / columns);
+        const col = cellIndex % columns;
+
+        // Get canvas dimensions
+        const canvasWidth = parseFloat(getGridCanvasStyle().width);
+        const canvasHeight = parseFloat(getGridCanvasStyle().height);
+
+        // Calculate cell dimensions
+        const cellWidth = canvasWidth / columns;
+        const cellHeight = canvasHeight / rows;
+
+        // Create a new canvas for this cell
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+
+        // Set high resolution
+        const scale = 2; // Higher quality
+        canvas.width = cellWidth * scale;
+        canvas.height = cellHeight * scale;
+
+        // Set background color
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(scale, scale);
+
+        // Translate context to offset the cell
+        ctx.translate(-col * cellWidth, -row * cellHeight);
+
+        // Draw all images that are visible in this cell
+        for (const img of images) {
+          // Check if image is visible in this cell
+          const imgLeft = img.position.x;
+          const imgRight = img.position.x + img.size.width;
+          const imgTop = img.position.y;
+          const imgBottom = img.position.y + img.size.height;
+
+          const cellLeft = col * cellWidth;
+          const cellRight = (col + 1) * cellWidth;
+          const cellTop = row * cellHeight;
+          const cellBottom = (row + 1) * cellHeight;
+
+          // Skip if image is not visible in this cell
+          if (
+            imgRight < cellLeft ||
+            imgLeft > cellRight ||
+            imgBottom < cellTop ||
+            imgTop > cellBottom
+          )
+            continue;
+
+          // Load image
+          const imgElement = new Image();
+          imgElement.crossOrigin = "anonymous";
+
+          // Draw image when loaded
+          await new Promise<void>((resolve, reject) => {
+            imgElement.onload = () => {
+              ctx.drawImage(
+                imgElement,
+                img.position.x,
+                img.position.y,
+                img.size.width,
+                img.size.height,
+              );
+              resolve();
+            };
+            imgElement.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
+            imgElement.src = img.src;
+          });
+        }
+
+        // Draw all texts that are visible in this cell
+        for (const txt of texts) {
+          // Estimate text dimensions
+          const estimatedWidth = txt.content.length * txt.style.fontSize * 0.6;
+          const estimatedHeight = txt.style.fontSize * 1.2;
+
+          // Ensure we're working with numbers for calculations
+          const txtWidth = typeof txt.size?.width === "number" ? txt.size.width : estimatedWidth;
+          const txtHeight =
+            typeof txt.size?.height === "number" ? txt.size.height : estimatedHeight;
+
+          const txtLeft = txt.position.x;
+          const txtRight = txtLeft + txtWidth;
+          const txtTop = txt.position.y;
+          const txtBottom = txtTop + txtHeight;
+
+          const cellLeft = col * cellWidth;
+          const cellRight = (col + 1) * cellWidth;
+          const cellTop = row * cellHeight;
+          const cellBottom = (row + 1) * cellHeight;
+
+          // Skip if text is not visible in this cell
+          if (
+            txtRight < cellLeft ||
+            txtLeft > cellRight ||
+            txtBottom < cellTop ||
+            txtTop > cellBottom
+          )
+            continue;
+
+          // Set text styles
+          ctx.font = `${txt.style.fontWeight || "normal"} ${txt.style.fontSize}px ${
+            txt.style.fontFamily || "Arial"
+          }`;
+          ctx.fillStyle = txt.style.color;
+          ctx.textBaseline = "top";
+
+          // Apply rotation if needed
+          if (txt.style.rotation) {
+            ctx.save();
+            const centerX = txt.position.x + txtWidth / 2;
+            const centerY = txt.position.y + txtHeight / 2;
+            ctx.translate(centerX, centerY);
+            ctx.rotate((txt.style.rotation * Math.PI) / 180);
+            ctx.translate(-centerX, -centerY);
+          }
+
+          // Draw text
+          // Convert TextAlign to CanvasTextAlign, skipping 'justify' which isn't supported
+          let textAlign: CanvasTextAlign = "left";
+          if (txt.style.textAlign === "center" || txt.style.textAlign === "right") {
+            textAlign = txt.style.textAlign as CanvasTextAlign;
+          }
+          ctx.textAlign = textAlign;
+
+          // Handle multi-line text
+          const lines = txt.content.split("\n");
+          const lineHeight = txt.style.fontSize * 1.2;
+
+          lines.forEach((line, i) => {
+            let x = txt.position.x;
+            if (textAlign === "center") {
+              x += txtWidth / 2;
+            } else if (textAlign === "right") {
+              x += txtWidth;
+            }
+            ctx.fillText(line, x, txt.position.y + i * lineHeight);
+          });
+
+          // Restore context if rotation was applied
+          if (txt.style.rotation) {
+            ctx.restore();
+          }
+        }
+
+        // Convert canvas to blob
+        return new Promise<Blob | null>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
+        });
+      } catch (error) {
+        console.error(`Error capturing canvas content for cell ${cellIndex}:`, error);
+        return null;
+      }
+    },
+
+    getTotalCells: () => columns * rows,
+  }));
+
   return (
     <div className="relative h-fit w-full bg-gray-50 shadow rounded-lg p-3 flex flex-col gap-2 overflow-x-auto">
       <p className="w-full text-center text-sm text-gray-600">
@@ -812,6 +989,8 @@ const Canvas = () => {
       </Dialog>
     </div>
   );
-};
+});
+
+Canvas.displayName = "Canvas";
 
 export default Canvas;
