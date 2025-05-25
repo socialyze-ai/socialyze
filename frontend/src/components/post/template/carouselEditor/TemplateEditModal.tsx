@@ -270,7 +270,7 @@ const TemplateEditModal = ({
     };
 
     // Set crossOrigin to anonymous to handle CORS issues
-    img.crossOrigin = "anonymous";
+    img.crossOrigin = "Anonymous";
     img.src = newMedia.url;
   };
 
