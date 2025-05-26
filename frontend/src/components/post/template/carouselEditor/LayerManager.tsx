@@ -5,14 +5,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import {
   setSelectedItem,
-  bringToFront,
-  sendToBack,
   moveForward,
   moveBackward,
   normalizeZIndices,
 } from "@/redux/slices/template.slice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const LayerManager = () => {
   const dispatch = useDispatch();
@@ -49,16 +48,6 @@ const LayerManager = () => {
     dispatch(setSelectedItem(id));
   };
 
-  const handleBringToFront = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(bringToFront(id));
-  };
-
-  const handleSendToBack = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(sendToBack(id));
-  };
-
   const handleMoveForward = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch(moveForward(id));
@@ -77,7 +66,7 @@ const LayerManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-2 w-full">
+    <div className="bg-white rounded-lg shadow p-2 w-full h-full">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4" />
@@ -108,12 +97,19 @@ const LayerManager = () => {
 
                 <div className="ml-2 flex items-center gap-1 flex-1">
                   {item.type === "image" ? (
-                    <>
-                      <div className="h-4 w-4 bg-gray-200 rounded-sm overflow-hidden">
-                        <img src={item.src} className="h-full w-full object-cover" alt="" />
-                      </div>
-                      <span className="text-xs">Image</span>
-                    </>
+                    <Tooltip>
+                      <TooltipTrigger className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-gray-200 rounded-sm overflow-hidden">
+                          <img src={item.src} className="h-full w-full object-cover" alt="" />
+                        </div>
+                        <span className="text-xs">Image</span>
+                      </TooltipTrigger>
+                      <TooltipContent className="p-0 border-none">
+                        <div className="h-40 w-40 bg-gray-200 rounded-sm overflow-hidden">
+                          <img src={item.src} className="h-full w-full object-cover" alt="" />
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   ) : (
                     <>
                       <Type className="h-4 w-4 text-green-500" />

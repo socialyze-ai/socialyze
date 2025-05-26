@@ -242,76 +242,7 @@ const templateSlice = createSlice({
         text.zIndex = action.payload.zIndex;
       }
     },
-    bringToFront: (state, action: PayloadAction<string>) => {
-      // Get the highest z-index currently in use
-      const allItems = [...state.images, ...state.texts];
-      if (allItems.length === 0) return;
 
-      // Find the item to bring to front
-      const image = state.images.find((img) => img.id === action.payload);
-      const text = state.texts.find((txt) => txt.id === action.payload);
-
-      if (!image && !text) return;
-
-      // Set this item's z-index higher than all others
-      const targetItem = image || text;
-      if (targetItem) {
-        // Temporarily set to a very high value
-        targetItem.zIndex = Number.MAX_SAFE_INTEGER;
-      }
-
-      // Normalize all z-indices
-      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
-      sortedItems.forEach((item, index) => {
-        const newZIndex = index + 1;
-
-        if (state.images.some((img) => img.id === item.id)) {
-          const img = state.images.find((img) => img.id === item.id);
-          if (img) img.zIndex = newZIndex;
-        } else {
-          const txt = state.texts.find((txt) => txt.id === item.id);
-          if (txt) txt.zIndex = newZIndex;
-        }
-      });
-
-      // Update nextZIndex
-      state.nextZIndex = allItems.length + 1;
-    },
-    sendToBack: (state, action: PayloadAction<string>) => {
-      // Get all items
-      const allItems = [...state.images, ...state.texts];
-      if (allItems.length === 0) return;
-
-      // Find the item to send to back
-      const image = state.images.find((img) => img.id === action.payload);
-      const text = state.texts.find((txt) => txt.id === action.payload);
-
-      if (!image && !text) return;
-
-      // Set this item's z-index lower than all others
-      const targetItem = image || text;
-      if (targetItem) {
-        // Temporarily set to a very low value
-        targetItem.zIndex = -Number.MAX_SAFE_INTEGER;
-      }
-
-      // Normalize all z-indices
-      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
-      sortedItems.forEach((item, index) => {
-        const newZIndex = index + 1;
-
-        if (state.images.some((img) => img.id === item.id)) {
-          const img = state.images.find((img) => img.id === item.id);
-          if (img) img.zIndex = newZIndex;
-        } else {
-          const txt = state.texts.find((txt) => txt.id === item.id);
-          if (txt) txt.zIndex = newZIndex;
-        }
-      });
-
-      // Update nextZIndex
-      state.nextZIndex = allItems.length + 1;
-    },
     moveForward: (state, action: PayloadAction<string>) => {
       // Get all items
       const allItems = [...state.images, ...state.texts];
@@ -434,8 +365,6 @@ export const {
   setGridSize,
   setSocialPlatform,
   updateItemZIndex,
-  bringToFront,
-  sendToBack,
   moveForward,
   moveBackward,
   normalizeZIndices,

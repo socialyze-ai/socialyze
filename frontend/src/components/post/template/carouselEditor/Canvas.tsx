@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Trash2, X, Pencil, RotateCw, Plus, MoveUp, MoveDown } from "lucide-react";
+import { Trash2, X, Pencil, RotateCw, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   updateImagePosition,
@@ -12,8 +12,6 @@ import {
   setSelectedItem,
   removeItem,
   setImages,
-  bringToFront,
-  sendToBack,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
@@ -701,41 +699,6 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 {/* Control buttons */}
                 {isSelected && (
                   <div className="absolute -top-3 -right-2 flex">
-                    {/* Layer control buttons */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-6 w-6 rounded-full mr-1 z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(bringToFront(img.id));
-                          }}
-                        >
-                          <MoveUp className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Bring to Front</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-6 w-6 rounded-full mr-1 z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(sendToBack(img.id));
-                          }}
-                        >
-                          <MoveDown className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Send to Back</TooltipContent>
-                    </Tooltip>
-
                     {/* Edit button */}
                     <Button
                       variant="secondary"
@@ -838,41 +801,6 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 {/* Control buttons */}
                 {isSelected && (
                   <div className="absolute -top-2 -right-2 flex">
-                    {/* Layer control buttons */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-5 w-5 rounded-full mr-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(bringToFront(txt.id));
-                          }}
-                        >
-                          <MoveUp className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Bring to Front</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-5 w-5 rounded-full mr-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(sendToBack(txt.id));
-                          }}
-                        >
-                          <MoveDown className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Send to Back</TooltipContent>
-                    </Tooltip>
-
                     {/* Edit button */}
                     <Button
                       variant="secondary"
