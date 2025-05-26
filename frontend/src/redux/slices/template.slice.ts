@@ -341,6 +341,51 @@ const templateSlice = createSlice({
       // Update nextZIndex to be one more than the highest assigned z-index
       state.nextZIndex = allItems.length + 1;
     },
+
+    reorderLayers: (
+      state,
+      action: PayloadAction<{ itemId: string; fromIndex: number; toIndex: number }>,
+    ) => {
+      // Get all items and sort by z-index (highest first, matching LayerManager display)
+      const allItems = [...state.images, ...state.texts];
+      const sortedItems = [...allItems].sort((a, b) => b.zIndex - a.zIndex);
+
+      const { itemId, fromIndex, toIndex } = action.payload;
+
+      // Validate indices
+      if (
+        fromIndex < 0 ||
+        fromIndex >= sortedItems.length ||
+        toIndex < 0 ||
+        toIndex >= sortedItems.length ||
+        fromIndex === toIndex
+      ) {
+        return;
+      }
+
+      // Remove the item from its current position and insert at new position
+      const [movedItem] = sortedItems.splice(fromIndex, 1);
+      sortedItems.splice(toIndex, 0, movedItem);
+
+      // Reassign z-indices based on new order
+      // Since sortedItems is ordered from highest to lowest z-index,
+      // we assign z-indices in reverse order (highest index gets highest z-index)
+      sortedItems.forEach((item, index) => {
+        const newZIndex = sortedItems.length - index;
+
+        // Update the item in the appropriate collection
+        if (state.images.some((img) => img.id === item.id)) {
+          const image = state.images.find((img) => img.id === item.id);
+          if (image) image.zIndex = newZIndex;
+        } else {
+          const text = state.texts.find((txt) => txt.id === item.id);
+          if (text) text.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex
+      state.nextZIndex = allItems.length + 1;
+    },
   },
 });
 
@@ -368,6 +413,7 @@ export const {
   moveForward,
   moveBackward,
   normalizeZIndices,
+  reorderLayers,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;

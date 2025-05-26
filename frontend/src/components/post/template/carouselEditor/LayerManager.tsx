@@ -1,5 +1,5 @@
-import React from "react";
-import { Layers, Type, ArrowUp, ArrowDown, Image } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Layers, Type, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
@@ -8,14 +8,28 @@ import {
   moveForward,
   moveBackward,
   normalizeZIndices,
+  reorderLayers,
 } from "@/redux/slices/template.slice";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface DragState {
+  isDragging: boolean;
+  dragIndex: number | null;
+  dragOverIndex: number | null;
+  previewZIndices: Record<string, number> | null;
+}
 
 const LayerManager = () => {
   const dispatch = useDispatch();
   const { images, texts, selectedItemId } = useSelector((state: RootState) => state.template);
+
+  const [dragState, setDragState] = useState<DragState>({
+    isDragging: false,
+    dragIndex: null,
+    dragOverIndex: null,
+    previewZIndices: null,
+  });
 
   // Normalize z-indices when component mounts or when items change
   useEffect(() => {
@@ -58,11 +72,114 @@ const LayerManager = () => {
     dispatch(moveBackward(id));
   };
 
-  // Function to get layer position text
-  const getLayerPositionText = (zIndex: number) => {
-    if (zIndex === totalLayers) return "Top Layer";
-    if (zIndex === 1) return "Bottom Layer";
-    return `Layer ${zIndex} of ${totalLayers}`;
+  // Calculate preview z-indices during drag
+  const calculatePreviewZIndices = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return null;
+
+    // Create a copy of the sorted items to manipulate
+    const itemsCopy = [...sortedItems];
+    const [movedItem] = itemsCopy.splice(fromIndex, 1);
+    itemsCopy.splice(toIndex, 0, movedItem);
+
+    // Create a map of id -> preview z-index
+    const previewMap: Record<string, number> = {};
+
+    // Assign z-indices (highest at top)
+    itemsCopy.forEach((item, index) => {
+      previewMap[item.id] = itemsCopy.length - index;
+    });
+
+    return previewMap;
+  };
+
+  // Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number, itemId: string) => {
+    e.dataTransfer.setData("text/plain", itemId);
+    e.dataTransfer.effectAllowed = "move";
+
+    setDragState({
+      isDragging: true,
+      dragIndex: index,
+      dragOverIndex: null,
+      previewZIndices: null,
+    });
+  };
+
+  const handleDragEnd = () => {
+    setDragState({
+      isDragging: false,
+      dragIndex: null,
+      dragOverIndex: null,
+      previewZIndices: null,
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    // Only update if the dragOverIndex is changing
+    if (dragState.dragOverIndex !== index) {
+      const { dragIndex } = dragState;
+
+      // Calculate preview z-indices
+      const previewZIndices =
+        dragIndex !== null ? calculatePreviewZIndices(dragIndex, index) : null;
+
+      setDragState((prev) => ({
+        ...prev,
+        dragOverIndex: index,
+        previewZIndices,
+      }));
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear dragOverIndex if we're actually leaving the container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragState((prev) => ({
+        ...prev,
+        dragOverIndex: null,
+        previewZIndices: null,
+      }));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    const draggedItemId = e.dataTransfer.getData("text/plain");
+    const { dragIndex } = dragState;
+
+    if (dragIndex === null || dragIndex === dropIndex) {
+      setDragState({
+        isDragging: false,
+        dragIndex: null,
+        dragOverIndex: null,
+        previewZIndices: null,
+      });
+      return;
+    }
+
+    // Dispatch reorder action
+    dispatch(
+      reorderLayers({
+        itemId: draggedItemId,
+        fromIndex: dragIndex,
+        toIndex: dropIndex,
+      }),
+    );
+
+    setDragState({
+      isDragging: false,
+      dragIndex: null,
+      dragOverIndex: null,
+      previewZIndices: null,
+    });
   };
 
   return (
@@ -76,23 +193,38 @@ const LayerManager = () => {
       </div>
 
       {/* Layer Stack Visualization */}
-      <ScrollArea className="h-[200px] pr-2">
+      <div className="h-full max-h-[200px] overflow-y-auto">
         {sortedItems.length === 0 ? (
           <div className="text-center py-4 text-sm text-gray-500">
             No layers yet. Add images or text to see them here.
           </div>
         ) : (
           <div className="space-y-1">
-            {sortedItems.map((item) => (
+            {sortedItems.map((item, index) => (
               <div
                 key={`layer-${item.id}`}
-                className={`flex items-center p-1 rounded cursor-pointer hover:bg-gray-100 ${
+                draggable
+                onDragStart={(e) => handleDragStart(e, index, item.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`flex items-center p-1 rounded cursor-pointer transition-all ${
                   selectedItemId === item.id ? "bg-blue-50 ring-1 ring-blue-200" : ""
-                }`}
+                } ${
+                  dragState.isDragging && dragState.dragIndex === index
+                    ? "opacity-50 transform scale-95"
+                    : ""
+                } ${
+                  dragState.dragOverIndex === index && dragState.dragIndex !== index
+                    ? "border-t-2 border-blue-400"
+                    : ""
+                } hover:bg-gray-100`}
                 onClick={() => handleSelectItem(item.id)}
               >
-                <div className="w-5 text-center">
-                  <span className="text-xs font-medium">{item.zIndex}</span>
+                {/* Drag Handle */}
+                <div className="cursor-grab active:cursor-grabbing mr-1">
+                  <GripVertical className="h-3 w-3 text-gray-400" />
                 </div>
 
                 <div className="ml-2 flex items-center gap-1 flex-1">
@@ -114,7 +246,7 @@ const LayerManager = () => {
                     <>
                       <Type className="h-4 w-4 text-green-500" />
                       <span className="text-xs truncate max-w-[100px]">
-                        {(item as any).content.substring(0, 10)}...
+                        {item.content.substring(0, 10)}...
                       </span>
                     </>
                   )}
@@ -146,7 +278,7 @@ const LayerManager = () => {
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 };
