@@ -775,6 +775,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                   zIndex: txt.zIndex,
                   transform: `rotate(${rotation}deg)`,
                   transformOrigin: "center center",
+                  userSelect: "none",
                 }}
                 onClick={(e) => handleSelectItem(txt.id, e)}
                 onMouseDown={(e) => handleDragStart(e, txt.position)}
@@ -793,6 +794,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                     width: "100%",
                     height: "100%",
                     overflowWrap: "break-word",
+                    pointerEvents: "none",
                   }}
                 >
                   {txt.content}
@@ -879,6 +881,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
               ...getAspectRatioStyle(),
               position: "relative",
               backgroundColor,
+              userSelect: "none",
             }}
             onClick={handleCanvasClick}
           >
