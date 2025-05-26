@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Trash2, X, Pencil, RotateCw, Plus } from "lucide-react";
+import { Trash2, X, Pencil, RotateCw, Plus, MoveUp, MoveDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   updateImagePosition,
@@ -12,6 +12,8 @@ import {
   setSelectedItem,
   removeItem,
   setImages,
+  bringToFront,
+  sendToBack,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
@@ -19,6 +21,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Media } from "../../MediaUploader";
 import ImageEditor from "../../editor/ImageEditor";
 import MediaUploader from "../../MediaUploader";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Add TextAlign type
 type TextAlign = "left" | "center" | "right" | "justify";
@@ -660,175 +663,258 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
 
   // Render all items on the canvas
   const renderCanvasItems = () => {
+    // Combine images and texts into a single array
+    const allItems = [
+      ...images.map((img) => ({ ...img, type: "image" as const })),
+      ...texts.map((txt) => ({ ...txt, type: "text" as const })),
+    ];
+
+    // Sort items by z-index (lowest first, so higher z-index items render on top)
+    const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
     return (
       <>
-        {/* Render all images */}
-        {images.map((img) => {
-          const isSelected = selectedItemId === img.id;
-          const isHovered = hoveredImageId === img.id;
+        {sortedItems.map((item) => {
+          if (item.type === "image") {
+            const img = item;
+            const isSelected = selectedItemId === img.id;
+            const isHovered = hoveredImageId === img.id;
 
-          return (
-            <div
-              key={img.id}
-              className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500" : ""}`}
-              style={{
-                left: `${img.position.x}px`,
-                top: `${img.position.y}px`,
-                width: `${img.size.width}px`,
-                height: `${img.size.height}px`,
-                zIndex: isSelected ? 10 : 1,
-              }}
-              onClick={(e) => handleSelectItem(img.id, e)}
-              onMouseDown={(e) => handleDragStart(e, img.position)}
-              onMouseEnter={() => setHoveredImageId(img.id)}
-              onMouseLeave={() => setHoveredImageId(null)}
-            >
-              <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
-
-              {/* Control buttons */}
-              {isSelected && (
-                <div className="absolute -top-3 -right-2 flex">
-                  {/* Edit button */}
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-6 w-6 rounded-full mr-1 z-10"
-                    onClick={(e) => handleEditImage(img.id, e)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-
-                  {/* X button for quick removal */}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-6 w-6 rounded-full z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dispatch(removeItem(img.id));
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Replace image button - only visible when hovered */}
-              {isHovered && (
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="opacity-90 hover:opacity-100"
-                    onClick={(e) => handleReplaceImage(img.id, e)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Replace Image
-                  </Button>
-                </div>
-              )}
-
-              {/* Resize handle - only visible when selected */}
-              {isSelected && (
-                <div
-                  className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
-                  onMouseDown={(e) => handleResizeStart(e, img.size)}
-                >
-                  <div className="w-2 h-2 bg-white"></div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Render all texts */}
-        {texts.map((txt) => {
-          const isSelected = selectedItemId === txt.id;
-          const textSize =
-            txt.size ||
-            estimateTextDimensions(txt.content, txt.style.fontSize, txt.style.fontFamily);
-          const rotation = txt.style.rotation || 0;
-
-          return (
-            <div
-              key={txt.id}
-              className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"}`}
-              style={{
-                left: `${txt.position.x}px`,
-                top: `${txt.position.y}px`,
-                width: typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
-                height:
-                  typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
-                zIndex: isSelected ? 10 : 1,
-                transform: `rotate(${rotation}deg)`,
-                transformOrigin: "center center",
-              }}
-              onClick={(e) => handleSelectItem(txt.id, e)}
-              onMouseDown={(e) => handleDragStart(e, txt.position)}
-            >
+            return (
               <div
+                key={img.id}
+                className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500" : ""}`}
                 style={{
-                  fontSize: `${txt.style.fontSize}px`,
-                  color: txt.style.color,
-                  fontFamily: txt.style.fontFamily || "inherit",
-                  fontWeight: txt.style.fontWeight || "normal",
-                  fontStyle: txt.style.fontStyle || "normal",
-                  lineHeight: txt.style.lineHeight || "normal",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  textAlign: (txt.style.textAlign as TextAlign) || "left",
-                  width: "100%",
-                  height: "100%",
-                  overflowWrap: "break-word",
+                  left: `${img.position.x}px`,
+                  top: `${img.position.y}px`,
+                  width: `${img.size.width}px`,
+                  height: `${img.size.height}px`,
+                  zIndex: img.zIndex,
                 }}
+                onClick={(e) => handleSelectItem(img.id, e)}
+                onMouseDown={(e) => handleDragStart(e, img.position)}
+                onMouseEnter={() => setHoveredImageId(img.id)}
+                onMouseLeave={() => setHoveredImageId(null)}
               >
-                {txt.content}
+                <img src={img.src} alt="User uploaded" className="w-full h-full object-cover" />
+
+                {/* Control buttons */}
+                {isSelected && (
+                  <div className="absolute -top-3 -right-2 flex">
+                    {/* Layer control buttons */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-6 w-6 rounded-full mr-1 z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch(bringToFront(img.id));
+                          }}
+                        >
+                          <MoveUp className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Bring to Front</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-6 w-6 rounded-full mr-1 z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch(sendToBack(img.id));
+                          }}
+                        >
+                          <MoveDown className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Send to Back</TooltipContent>
+                    </Tooltip>
+
+                    {/* Edit button */}
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-6 w-6 rounded-full mr-1 z-10"
+                      onClick={(e) => handleEditImage(img.id, e)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+
+                    {/* X button for quick removal */}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-6 w-6 rounded-full z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch(removeItem(img.id));
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Replace image button - only visible when hovered */}
+                {isHovered && (
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="opacity-90 hover:opacity-100"
+                      onClick={(e) => handleReplaceImage(img.id, e)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Replace Image
+                    </Button>
+                  </div>
+                )}
+
+                {/* Resize handle - only visible when selected */}
+                {isSelected && (
+                  <div
+                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+                    onMouseDown={(e) => handleResizeStart(e, img.size)}
+                  >
+                    <div className="w-2 h-2 bg-white"></div>
+                  </div>
+                )}
               </div>
+            );
+          } else {
+            // Text item
+            const txt = item;
+            const isSelected = selectedItemId === txt.id;
+            const textSize =
+              txt.size ||
+              estimateTextDimensions(txt.content, txt.style.fontSize, txt.style.fontFamily);
+            const rotation = txt.style.rotation || 0;
 
-              {/* Control buttons */}
-              {isSelected && (
-                <div className="absolute -top-2 -right-2 flex">
-                  {/* Edit button */}
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-5 w-5 rounded-full mr-1"
-                    onClick={(e) => handleEditText(txt.id, e)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-
-                  {/* X button for quick removal */}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-5 w-5 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dispatch(removeItem(txt.id));
-                    }}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Resize handle - only visible when selected */}
-              {isSelected && (
+            return (
+              <div
+                key={txt.id}
+                className={`absolute cursor-move ${
+                  isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"
+                }`}
+                style={{
+                  left: `${txt.position.x}px`,
+                  top: `${txt.position.y}px`,
+                  width:
+                    typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
+                  height:
+                    typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
+                  zIndex: txt.zIndex,
+                  transform: `rotate(${rotation}deg)`,
+                  transformOrigin: "center center",
+                }}
+                onClick={(e) => handleSelectItem(txt.id, e)}
+                onMouseDown={(e) => handleDragStart(e, txt.position)}
+              >
                 <div
-                  className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
-                  onMouseDown={(e) => {
-                    // Ensure we have numeric values for width and height
-                    const width = typeof txt.size?.width === "number" ? txt.size.width : 100;
-                    const height = typeof txt.size?.height === "number" ? txt.size.height : 50;
-                    handleResizeStart(e, { width, height });
+                  style={{
+                    fontSize: `${txt.style.fontSize}px`,
+                    color: txt.style.color,
+                    fontFamily: txt.style.fontFamily || "inherit",
+                    fontWeight: txt.style.fontWeight || "normal",
+                    fontStyle: txt.style.fontStyle || "normal",
+                    lineHeight: txt.style.lineHeight || "normal",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    textAlign: (txt.style.textAlign as TextAlign) || "left",
+                    width: "100%",
+                    height: "100%",
+                    overflowWrap: "break-word",
                   }}
                 >
-                  <div className="w-2 h-2 bg-white"></div>
+                  {txt.content}
                 </div>
-              )}
-            </div>
-          );
+
+                {/* Control buttons */}
+                {isSelected && (
+                  <div className="absolute -top-2 -right-2 flex">
+                    {/* Layer control buttons */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-5 w-5 rounded-full mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch(bringToFront(txt.id));
+                          }}
+                        >
+                          <MoveUp className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Bring to Front</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-5 w-5 rounded-full mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch(sendToBack(txt.id));
+                          }}
+                        >
+                          <MoveDown className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Send to Back</TooltipContent>
+                    </Tooltip>
+
+                    {/* Edit button */}
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-5 w-5 rounded-full mr-1"
+                      onClick={(e) => handleEditText(txt.id, e)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+
+                    {/* X button for quick removal */}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-5 w-5 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch(removeItem(txt.id));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Resize handle - only visible when selected */}
+                {isSelected && (
+                  <div
+                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+                    onMouseDown={(e) => {
+                      // Ensure we have numeric values for width and height
+                      const width = typeof txt.size?.width === "number" ? txt.size.width : 100;
+                      const height = typeof txt.size?.height === "number" ? txt.size.height : 50;
+                      handleResizeStart(e, { width, height });
+                    }}
+                  >
+                    <div className="w-2 h-2 bg-white"></div>
+                  </div>
+                )}
+              </div>
+            );
+          }
         })}
       </>
     );

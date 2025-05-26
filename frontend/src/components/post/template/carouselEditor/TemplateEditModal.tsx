@@ -15,6 +15,8 @@ import {
   recalculateSectionAssignments,
   setSocialPlatform,
   resetTemplate,
+  removeItem,
+  normalizeZIndices,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas, { CanvasRef } from "./Canvas";
@@ -29,7 +31,8 @@ import CanvasOptions from "./CanvasOptions";
 import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
-import ImageGallery from "./ImageGallery";
+import ImageAndTextStack from "./ImageAndTextStack";
+import LayerManager from "./LayerManager";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -267,9 +270,13 @@ const TemplateEditModal = ({
         position,
         size: { width: newWidth, height: newHeight },
         canvasIndex: 0, // This will be updated by recalculateSectionAssignments
+        zIndex: 1, // Add default zIndex
       };
 
       dispatch(setImages([...images, templateImage]));
+
+      // Normalize z-indices after adding new image
+      dispatch(normalizeZIndices());
     };
 
     // Set crossOrigin to anonymous to handle CORS issues
@@ -345,8 +352,14 @@ const TemplateEditModal = ({
       style: style || { fontSize: 16, color: "#000000" },
       size: { width, height },
       canvasIndex: 0, // Will be updated by recalculateSectionAssignments
+      zIndex: 1,
     };
+
     dispatch(setText([...texts, newText]));
+
+    // Normalize z-indices after adding new text
+    dispatch(normalizeZIndices());
+
     setShowTextEditor(false);
   };
 
@@ -607,7 +620,7 @@ const TemplateEditModal = ({
             <div className="grid grid-cols-10 gap-2 w-full h-full">
               <div className="col-span-7 h-full flex flex-col gap-2">
                 <div className="h-fit w-full">
-                  <ImageGallery />
+                  <ImageAndTextStack />
                 </div>
 
                 <Canvas ref={canvasRef} />
@@ -622,6 +635,8 @@ const TemplateEditModal = ({
                 />
 
                 <Preview ref={previewRef} />
+
+                <LayerManager />
               </div>
             </div>
           </div>

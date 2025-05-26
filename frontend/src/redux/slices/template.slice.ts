@@ -7,6 +7,7 @@ export interface ImageItem {
   position: { x: number; y: number };
   size: { width: number; height: number };
   canvasIndex: number; // Used primarily for preview, not restriction
+  zIndex: number; // Layer ordering
 }
 
 export interface TextItem {
@@ -25,6 +26,7 @@ export interface TextItem {
     lineHeight?: string;
   };
   canvasIndex: number; // Used primarily for preview, not restriction
+  zIndex: number; // Layer ordering
 }
 
 export interface TemplateState {
@@ -39,6 +41,7 @@ export interface TemplateState {
     rows: number;
   };
   socialPlatform: string | null;
+  nextZIndex: number; // Track the next available z-index
 }
 
 const initialState: TemplateState = {
@@ -53,6 +56,7 @@ const initialState: TemplateState = {
     rows: 1,
   },
   socialPlatform: null,
+  nextZIndex: 1, // Start z-index at 1
 };
 
 const templateSlice = createSlice({
@@ -69,16 +73,36 @@ const templateSlice = createSlice({
       state.backgroundColor = action.payload;
     },
     setImages: (state, action: PayloadAction<ImageItem[]>) => {
-      state.images = action.payload;
+      // Ensure all images have a zIndex, use the existing one or assign a new one
+      state.images = action.payload.map((img) => ({
+        ...img,
+        zIndex: img.zIndex || state.nextZIndex++,
+      }));
     },
     addImage: (state, action: PayloadAction<ImageItem>) => {
-      state.images.push(action.payload);
+      // Assign a z-index if not provided
+      const newImage = {
+        ...action.payload,
+        zIndex: action.payload.zIndex || state.nextZIndex,
+      };
+      state.images.push(newImage);
+      state.nextZIndex++;
     },
     setText: (state, action: PayloadAction<TextItem[]>) => {
-      state.texts = action.payload;
+      // Ensure all texts have a zIndex, use the existing one or assign a new one
+      state.texts = action.payload.map((txt) => ({
+        ...txt,
+        zIndex: txt.zIndex || state.nextZIndex++,
+      }));
     },
     addText: (state, action: PayloadAction<TextItem>) => {
-      state.texts.push(action.payload);
+      // Assign a z-index if not provided
+      const newText = {
+        ...action.payload,
+        zIndex: action.payload.zIndex || state.nextZIndex,
+      };
+      state.texts.push(newText);
+      state.nextZIndex++;
     },
     updateImagePosition: (
       state,
@@ -203,6 +227,189 @@ const templateSlice = createSlice({
     setSocialPlatform: (state, action: PayloadAction<string | null>) => {
       state.socialPlatform = action.payload;
     },
+    // New actions for layer management
+    updateItemZIndex: (state, action: PayloadAction<{ id: string; zIndex: number }>) => {
+      // Try to find the item in images
+      const image = state.images.find((img) => img.id === action.payload.id);
+      if (image) {
+        image.zIndex = action.payload.zIndex;
+        return;
+      }
+
+      // If not found in images, try texts
+      const text = state.texts.find((txt) => txt.id === action.payload.id);
+      if (text) {
+        text.zIndex = action.payload.zIndex;
+      }
+    },
+    bringToFront: (state, action: PayloadAction<string>) => {
+      // Get the highest z-index currently in use
+      const allItems = [...state.images, ...state.texts];
+      if (allItems.length === 0) return;
+
+      // Find the item to bring to front
+      const image = state.images.find((img) => img.id === action.payload);
+      const text = state.texts.find((txt) => txt.id === action.payload);
+
+      if (!image && !text) return;
+
+      // Set this item's z-index higher than all others
+      const targetItem = image || text;
+      if (targetItem) {
+        // Temporarily set to a very high value
+        targetItem.zIndex = Number.MAX_SAFE_INTEGER;
+      }
+
+      // Normalize all z-indices
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+      sortedItems.forEach((item, index) => {
+        const newZIndex = index + 1;
+
+        if (state.images.some((img) => img.id === item.id)) {
+          const img = state.images.find((img) => img.id === item.id);
+          if (img) img.zIndex = newZIndex;
+        } else {
+          const txt = state.texts.find((txt) => txt.id === item.id);
+          if (txt) txt.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex
+      state.nextZIndex = allItems.length + 1;
+    },
+    sendToBack: (state, action: PayloadAction<string>) => {
+      // Get all items
+      const allItems = [...state.images, ...state.texts];
+      if (allItems.length === 0) return;
+
+      // Find the item to send to back
+      const image = state.images.find((img) => img.id === action.payload);
+      const text = state.texts.find((txt) => txt.id === action.payload);
+
+      if (!image && !text) return;
+
+      // Set this item's z-index lower than all others
+      const targetItem = image || text;
+      if (targetItem) {
+        // Temporarily set to a very low value
+        targetItem.zIndex = -Number.MAX_SAFE_INTEGER;
+      }
+
+      // Normalize all z-indices
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+      sortedItems.forEach((item, index) => {
+        const newZIndex = index + 1;
+
+        if (state.images.some((img) => img.id === item.id)) {
+          const img = state.images.find((img) => img.id === item.id);
+          if (img) img.zIndex = newZIndex;
+        } else {
+          const txt = state.texts.find((txt) => txt.id === item.id);
+          if (txt) txt.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex
+      state.nextZIndex = allItems.length + 1;
+    },
+    moveForward: (state, action: PayloadAction<string>) => {
+      // Get all items
+      const allItems = [...state.images, ...state.texts];
+      if (allItems.length <= 1) return;
+
+      // Sort items by z-index
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
+      // Find the current item's index in the sorted array
+      const currentIndex = sortedItems.findIndex((item) => item.id === action.payload);
+
+      // If this is already the topmost item or not found, do nothing
+      if (currentIndex === -1 || currentIndex === sortedItems.length - 1) return;
+
+      // Swap positions with the item above
+      const temp = sortedItems[currentIndex];
+      sortedItems[currentIndex] = sortedItems[currentIndex + 1];
+      sortedItems[currentIndex + 1] = temp;
+
+      // Reassign z-indices based on new order
+      sortedItems.forEach((item, index) => {
+        const newZIndex = index + 1;
+
+        if (state.images.some((img) => img.id === item.id)) {
+          const img = state.images.find((img) => img.id === item.id);
+          if (img) img.zIndex = newZIndex;
+        } else {
+          const txt = state.texts.find((txt) => txt.id === item.id);
+          if (txt) txt.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex
+      state.nextZIndex = allItems.length + 1;
+    },
+    moveBackward: (state, action: PayloadAction<string>) => {
+      // Get all items
+      const allItems = [...state.images, ...state.texts];
+      if (allItems.length <= 1) return;
+
+      // Sort items by z-index
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
+      // Find the current item's index in the sorted array
+      const currentIndex = sortedItems.findIndex((item) => item.id === action.payload);
+
+      // If this is already the bottommost item or not found, do nothing
+      if (currentIndex <= 0) return;
+
+      // Swap positions with the item below
+      const temp = sortedItems[currentIndex];
+      sortedItems[currentIndex] = sortedItems[currentIndex - 1];
+      sortedItems[currentIndex - 1] = temp;
+
+      // Reassign z-indices based on new order
+      sortedItems.forEach((item, index) => {
+        const newZIndex = index + 1;
+
+        if (state.images.some((img) => img.id === item.id)) {
+          const img = state.images.find((img) => img.id === item.id);
+          if (img) img.zIndex = newZIndex;
+        } else {
+          const txt = state.texts.find((txt) => txt.id === item.id);
+          if (txt) txt.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex
+      state.nextZIndex = allItems.length + 1;
+    },
+    // Add a new action to normalize z-indices
+    normalizeZIndices: (state) => {
+      // Combine all items into a single array
+      const allItems = [...state.images, ...state.texts];
+
+      // If there are no items, nothing to normalize
+      if (allItems.length === 0) return;
+
+      // Sort all items by their current z-index
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
+      // Reassign z-indices as consecutive integers starting from 1
+      sortedItems.forEach((item, index) => {
+        const newZIndex = index + 1;
+
+        // Update the item in the appropriate collection
+        if (state.images.some((img) => img.id === item.id)) {
+          const image = state.images.find((img) => img.id === item.id);
+          if (image) image.zIndex = newZIndex;
+        } else {
+          const text = state.texts.find((txt) => txt.id === item.id);
+          if (text) text.zIndex = newZIndex;
+        }
+      });
+
+      // Update nextZIndex to be one more than the highest assigned z-index
+      state.nextZIndex = allItems.length + 1;
+    },
   },
 });
 
@@ -226,6 +433,12 @@ export const {
   resetTemplate,
   setGridSize,
   setSocialPlatform,
+  updateItemZIndex,
+  bringToFront,
+  sendToBack,
+  moveForward,
+  moveBackward,
+  normalizeZIndices,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;
