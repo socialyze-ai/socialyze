@@ -12,6 +12,7 @@ import {
   setSelectedItem,
   removeItem,
   setImages,
+  updateItemZIndex,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
@@ -32,9 +33,8 @@ export interface CanvasRef {
 
 const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
   const dispatch = useDispatch();
-  const { canvasCount, aspectRatio, backgroundColor, images, texts, selectedItemId } = useSelector(
-    (state: RootState) => state.template,
-  );
+  const { canvasCount, aspectRatio, backgroundColor, images, texts, selectedItemId, nextZIndex } =
+    useSelector((state: RootState) => state.template);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -52,6 +52,10 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     size: { width: number; height: number };
   } | null>(null);
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
+
+  // Keep track of previous image and text counts to detect new additions
+  const prevImagesLengthRef = useRef<number>(images.length);
+  const prevTextsLengthRef = useRef<number>(texts.length);
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
@@ -863,6 +867,43 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
   };
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm();
+
+  // Auto-select newly added items and ensure they are at top layer
+  useEffect(() => {
+    // Check for new image
+    if (images.length > prevImagesLengthRef.current) {
+      const newImage = images[images.length - 1];
+
+      // Select the new image
+      dispatch(setSelectedItem(newImage.id));
+
+      // Set it to the highest z-index
+      const allItems = [...images, ...texts];
+      const highestZIndex =
+        allItems.length > 0 ? Math.max(...allItems.map((item) => item.zIndex)) : 0;
+
+      dispatch(updateItemZIndex({ id: newImage.id, zIndex: highestZIndex + 1 }));
+
+      prevImagesLengthRef.current = images.length;
+    }
+
+    // Check for new text
+    if (texts.length > prevTextsLengthRef.current) {
+      const newText = texts[texts.length - 1];
+
+      // Select the new text
+      dispatch(setSelectedItem(newText.id));
+
+      // Set it to the highest z-index
+      const allItems = [...images, ...texts];
+      const highestZIndex =
+        allItems.length > 0 ? Math.max(...allItems.map((item) => item.zIndex)) : 0;
+
+      dispatch(updateItemZIndex({ id: newText.id, zIndex: highestZIndex + 1 }));
+
+      prevTextsLengthRef.current = texts.length;
+    }
+  }, [images, texts, dispatch]);
 
   return (
     <div className="w-full h-full bg-gray-50 shadow rounded-lg p-3">
