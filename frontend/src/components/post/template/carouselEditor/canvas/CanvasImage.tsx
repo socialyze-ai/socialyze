@@ -112,6 +112,7 @@ export default React.memo<CanvasImageProps>(CanvasImage, (prevProps, nextProps) 
     prevProps.img.size.width === nextProps.img.size.width &&
     prevProps.img.size.height === nextProps.img.size.height &&
     prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isHovered === nextProps.isHovered
+    prevProps.isHovered === nextProps.isHovered &&
+    prevProps.img.zIndex === nextProps.img.zIndex
   );
 });
