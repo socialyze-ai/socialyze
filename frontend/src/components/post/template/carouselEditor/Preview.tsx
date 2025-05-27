@@ -21,6 +21,7 @@ interface ExtendedTextStyle extends Record<string, any> {
   fontStyle?: CSSProperties["fontStyle"];
   lineHeight?: CSSProperties["lineHeight"];
   fontFamily?: string;
+  rotation?: number;
 }
 
 // Add PreviewRef interface for external access to preview functions
@@ -234,6 +235,8 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
                     width: "100%",
                     height: "100%",
                     overflowWrap: "break-word",
+                    transform: style.rotation ? `rotate(${style.rotation}deg)` : "none",
+                    transformOrigin: "center center",
                   }}
                 >
                   {item.content}
