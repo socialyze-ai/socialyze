@@ -8,7 +8,7 @@ interface CanvasImageProps {
   isSelected: boolean;
   isHovered: boolean;
   onSelectItem: (id: string, e: React.MouseEvent) => void;
-  onDragStart: (e: React.MouseEvent, position: { x: number; y: number }) => void;
+  onDragStart: (e: React.MouseEvent, position: { x: number; y: number }, id: string) => void;
   onResizeStart: (e: React.MouseEvent, size: { width: number; height: number }) => void;
   onEditImage: (id: string, e: React.MouseEvent) => void;
   onReplaceImage: (id: string, e: React.MouseEvent) => void;
@@ -32,16 +32,20 @@ const CanvasImage: React.FC<CanvasImageProps> = ({
 }) => {
   return (
     <div
-      className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+      className={`absolute cursor-move canvas-item ${isSelected ? "ring-2 ring-blue-500" : ""} ${
+        isHovered ? "hovered" : ""
+      }`}
       style={{
         left: `${img.position.x}px`,
         top: `${img.position.y}px`,
         width: `${img.size.width}px`,
         height: `${img.size.height}px`,
         zIndex: img.zIndex,
+        willChange: "transform",
+        transform: "translateZ(0)" /* Force GPU acceleration */,
       }}
       onClick={(e) => onSelectItem(img.id, e)}
-      onMouseDown={(e) => onDragStart(e, img.position)}
+      onMouseDown={(e) => onDragStart(e, img.position, img.id)}
       onMouseEnter={() => onMouseEnter(img.id)}
       onMouseLeave={() => onMouseLeave()}
     >
@@ -100,4 +104,14 @@ const CanvasImage: React.FC<CanvasImageProps> = ({
   );
 };
 
-export default CanvasImage;
+export default React.memo<CanvasImageProps>(CanvasImage, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if these props changed
+  return (
+    prevProps.img.position.x === nextProps.img.position.x &&
+    prevProps.img.position.y === nextProps.img.position.y &&
+    prevProps.img.size.width === nextProps.img.size.width &&
+    prevProps.img.size.height === nextProps.img.size.height &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isHovered === nextProps.isHovered
+  );
+});

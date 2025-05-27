@@ -177,3 +177,13 @@
 .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
 }
+
+/* Add to your CSS */
+.canvas-item {
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+.dragging {
+  pointer-events: none; /* Prevent hover effects during drag */
+}

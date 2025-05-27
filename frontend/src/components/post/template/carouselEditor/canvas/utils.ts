@@ -6,6 +6,9 @@ export const BOX_SIZE_MM = 50; // Base box size in mm
 export const PX_PER_MM = 3.78; // Approximate conversion factor
 export const BOX_SIZE_PX = BOX_SIZE_MM * PX_PER_MM; // Base box size in pixels
 
+// Cache for text dimension calculations
+const dimensionsCache = new Map<string, { width: number; height: number }>();
+
 // Calculate aspect ratio dimensions
 export const getAspectRatioStyle = (aspectRatio: string, canvasCount: number) => {
   // Calculate the base width based on box count
@@ -55,6 +58,14 @@ export const estimateTextDimensions = (
   aspectRatio?: string,
   canvasCount?: number,
 ) => {
+  // Create a cache key using all input parameters
+  const cacheKey = `${content}-${fontSize}-${fontFamily}-${aspectRatio}-${canvasCount}`;
+
+  // Check if we have a cached result
+  if (dimensionsCache.has(cacheKey)) {
+    return dimensionsCache.get(cacheKey)!;
+  }
+
   // Split text by line breaks
   const lines = content.split("\n");
 
@@ -94,7 +105,10 @@ export const estimateTextDimensions = (
   const lineHeight = fontSize * 1.2;
   const estimatedHeight = lineHeight * Math.max(1, lines.length);
 
-  return { width: finalWidth, height: estimatedHeight };
+  // Cache the result before returning
+  const result = { width: finalWidth, height: estimatedHeight };
+  dimensionsCache.set(cacheKey, result);
+  return result;
 };
 
 // Get canvas dimensions in mm for display

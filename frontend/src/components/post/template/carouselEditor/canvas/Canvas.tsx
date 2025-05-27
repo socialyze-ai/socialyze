@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import {
@@ -62,6 +62,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     handleCanvasClick,
     handleDragStart,
     handleResizeStart,
+    itemDragPositions,
   } = useCanvasItems();
 
   // Canvas capture functionality
@@ -81,149 +82,170 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
   }));
 
   // Handle editing text
-  const handleEditText = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const textToEdit = texts.find((txt) => txt.id === id);
-    if (textToEdit) {
-      setEditingTextId(id);
-      setShowTextEditor(true);
-    }
-  };
+  const handleEditText = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const textToEdit = texts.find((txt) => txt.id === id);
+      if (textToEdit) {
+        setEditingTextId(id);
+        setShowTextEditor(true);
+      }
+    },
+    [texts],
+  );
 
   // Handle saving edited text
-  const handleSaveEditedText = (
-    content: string,
-    style?: {
-      fontSize: number;
-      color: string;
-      fontFamily?: string;
-      fontWeight?: string;
-      rotation?: number;
-    },
-  ) => {
-    if (editingTextId) {
-      const textToUpdate = texts.find((txt) => txt.id === editingTextId);
-      if (textToUpdate) {
-        // Calculate new font size
-        const fontSize = style?.fontSize || textToUpdate.style.fontSize;
-        const fontFamily = style?.fontFamily || textToUpdate.style.fontFamily;
+  const handleSaveEditedText = useCallback(
+    (
+      content: string,
+      style?: {
+        fontSize: number;
+        color: string;
+        fontFamily?: string;
+        fontWeight?: string;
+        rotation?: number;
+      },
+    ) => {
+      if (editingTextId) {
+        const textToUpdate = texts.find((txt) => txt.id === editingTextId);
+        if (textToUpdate) {
+          // Calculate new font size
+          const fontSize = style?.fontSize || textToUpdate.style.fontSize;
+          const fontFamily = style?.fontFamily || textToUpdate.style.fontFamily;
 
-        // Calculate new dimensions
-        const { width, height } = estimateTextDimensions(
-          content,
-          fontSize,
-          fontFamily,
-          aspectRatio,
-          canvasCount,
-        );
+          // Calculate new dimensions
+          const { width, height } = estimateTextDimensions(
+            content,
+            fontSize,
+            fontFamily,
+            aspectRatio,
+            canvasCount,
+          );
 
-        // Update text content
-        dispatch(
-          updateTextContent({
-            id: editingTextId,
-            content: content,
-          }),
-        );
+          // Update text content
+          dispatch(
+            updateTextContent({
+              id: editingTextId,
+              content: content,
+            }),
+          );
 
-        // Update text style
-        dispatch(
-          updateTextStyle({
-            id: editingTextId,
-            style: {
-              ...textToUpdate.style,
-              ...(style || {}),
-            },
-          }),
-        );
+          // Update text style
+          dispatch(
+            updateTextStyle({
+              id: editingTextId,
+              style: {
+                ...textToUpdate.style,
+                ...(style || {}),
+              },
+            }),
+          );
 
-        // Update text size based on new content
-        dispatch(
-          updateTextSize({
-            id: editingTextId,
-            size: {
-              width: width as number,
-              height: height as number,
-            },
-          }),
-        );
+          // Update text size based on new content
+          dispatch(
+            updateTextSize({
+              id: editingTextId,
+              size: {
+                width: width as number,
+                height: height as number,
+              },
+            }),
+          );
+        }
+        setShowTextEditor(false);
+        setEditingTextId(null);
       }
-      setShowTextEditor(false);
-      setEditingTextId(null);
-    }
-  };
+    },
+    [editingTextId, texts, dispatch, aspectRatio, canvasCount],
+  );
 
   // Handle editing an image
-  const handleEditImage = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const imageToEdit = images.find((img) => img.id === id);
-    if (imageToEdit) {
-      setImageToEdit({
-        id: imageToEdit.id,
-        src: imageToEdit.src,
-      });
-      setIsEditImageDialogOpen(true);
-    }
-  };
+  const handleEditImage = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const imageToEdit = images.find((img) => img.id === id);
+      if (imageToEdit) {
+        setImageToEdit({
+          id: imageToEdit.id,
+          src: imageToEdit.src,
+        });
+        setIsEditImageDialogOpen(true);
+      }
+    },
+    [images],
+  );
 
   // Handle save edited image
-  const handleSaveEditedImage = (editedImageUrl: string, selectedMedia: Media) => {
-    if (!imageToEdit) return;
+  const handleSaveEditedImage = useCallback(
+    (editedImageUrl: string, selectedMedia: Media) => {
+      if (!imageToEdit) return;
 
-    // Update the image with edited version
-    const updatedImages = images.map((img) =>
-      img.id === imageToEdit.id ? { ...img, src: editedImageUrl } : img,
-    );
+      // Update the image with edited version
+      const updatedImages = images.map((img) =>
+        img.id === imageToEdit.id ? { ...img, src: editedImageUrl } : img,
+      );
 
-    dispatch(setImages(updatedImages));
-    setIsEditImageDialogOpen(false);
-    setImageToEdit(null);
-  };
+      dispatch(setImages(updatedImages));
+      setIsEditImageDialogOpen(false);
+      setImageToEdit(null);
+    },
+    [imageToEdit, images, dispatch],
+  );
 
   // Handle replacing an image
-  const handleReplaceImage = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const image = images.find((img) => img.id === id);
-    if (image) {
-      setImageToReplace({
-        id: image.id,
-        position: image.position,
-        size: image.size,
-      });
-      setIsReplaceImageDialogOpen(true);
-    }
-  };
+  const handleReplaceImage = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const image = images.find((img) => img.id === id);
+      if (image) {
+        setImageToReplace({
+          id: image.id,
+          position: image.position,
+          size: image.size,
+        });
+        setIsReplaceImageDialogOpen(true);
+      }
+    },
+    [images],
+  );
 
   // Handle media selection for image replacement
-  const handleMediaSelect = (selectedMedia: Media[]) => {
-    if (!imageToReplace || selectedMedia.length === 0) return;
+  const handleMediaSelect = useCallback(
+    (selectedMedia: Media[]) => {
+      if (!imageToReplace || selectedMedia.length === 0) return;
 
-    // Get the last selected media (most recently added)
-    const newMedia = selectedMedia[selectedMedia.length - 1];
+      // Get the last selected media (most recently added)
+      const newMedia = selectedMedia[selectedMedia.length - 1];
 
-    // Update the image with the new media while keeping position and size
-    const updatedImages = images.map((img) =>
-      img.id === imageToReplace.id
-        ? {
-            ...img,
-            id: newMedia.id, // Update ID to the new media ID
-            src: newMedia.url, // Update source to the new media URL
-          }
-        : img,
-    );
+      // Update the image with the new media while keeping position and size
+      const updatedImages = images.map((img) =>
+        img.id === imageToReplace.id
+          ? {
+              ...img,
+              id: newMedia.id, // Update ID to the new media ID
+              src: newMedia.url, // Update source to the new media URL
+            }
+          : img,
+      );
 
-    dispatch(setImages(updatedImages));
-    setIsReplaceImageDialogOpen(false);
-    setImageToReplace(null);
-  };
+      dispatch(setImages(updatedImages));
+      setIsReplaceImageDialogOpen(false);
+      setImageToReplace(null);
+    },
+    [imageToReplace, images, dispatch],
+  );
 
   // Handle item deletion
-  const handleDeleteItem = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(removeItem(id));
-  };
+  const handleDeleteItem = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      dispatch(removeItem(id));
+    },
+    [dispatch],
+  );
 
-  // Render all items on the canvas
-  const renderCanvasItems = () => {
+  // Memoize sorted items array
+  const sortedItems = useMemo(() => {
     // Combine images and texts into a single array
     const allItems = [
       ...images.map((img) => ({ ...img, type: "image" as const })),
@@ -231,8 +253,11 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     ];
 
     // Sort items by z-index (lowest first, so higher z-index items render on top)
-    const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+    return [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+  }, [images, texts]);
 
+  // Render all items on the canvas
+  const renderCanvasItems = useCallback(() => {
     return (
       <>
         {sortedItems.map((item) => {
@@ -241,14 +266,20 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
             const isSelected = selectedItemId === img.id;
             const isHovered = hoveredImageId === img.id;
 
+            // Use item-specific drag position when dragging
+            const position =
+              isDragging && selectedItemId === img.id && itemDragPositions[img.id]
+                ? itemDragPositions[img.id]
+                : img.position;
+
             return (
               <CanvasImage
                 key={img.id}
-                img={img}
+                img={{ ...img, position }}
                 isSelected={isSelected}
                 isHovered={isHovered}
                 onSelectItem={handleSelectItem}
-                onDragStart={handleDragStart}
+                onDragStart={(e, pos) => handleDragStart(e, pos, img.id)}
                 onResizeStart={handleResizeStart}
                 onEditImage={handleEditImage}
                 onReplaceImage={handleReplaceImage}
@@ -261,6 +292,13 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
             // Text item
             const txt = item as CanvasTextItem;
             const isSelected = selectedItemId === txt.id;
+
+            // Use item-specific drag position when dragging
+            const position =
+              isDragging && selectedItemId === txt.id && itemDragPositions[txt.id]
+                ? itemDragPositions[txt.id]
+                : txt.position;
+
             const textSize =
               txt.size ||
               estimateTextDimensions(txt.content, txt.style.fontSize, txt.style.fontFamily);
@@ -268,11 +306,11 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
             return (
               <CanvasText
                 key={txt.id}
-                txt={txt}
+                txt={{ ...txt, position }}
                 isSelected={isSelected}
                 textSize={textSize}
                 onSelectItem={handleSelectItem}
-                onDragStart={handleDragStart}
+                onDragStart={(e, pos) => handleDragStart(e, pos, txt.id)}
                 onResizeStart={handleResizeStart}
                 onEditText={handleEditText}
                 onRemoveItem={handleDeleteItem}
@@ -282,7 +320,21 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
         })}
       </>
     );
-  };
+  }, [
+    sortedItems,
+    selectedItemId,
+    hoveredImageId,
+    handleSelectItem,
+    handleDragStart,
+    handleResizeStart,
+    handleEditImage,
+    handleReplaceImage,
+    handleDeleteItem,
+    setHoveredImageId,
+    handleEditText,
+    itemDragPositions,
+    isDragging,
+  ]);
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm(aspectRatio, canvasCount);
   const canvasStyle = getAspectRatioStyle(aspectRatio, canvasCount);

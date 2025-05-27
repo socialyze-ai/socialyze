@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import {
@@ -23,44 +23,72 @@ export const useCanvasItems = () => {
   const [resizeStart, setResizeStart] = useState({ width: 0, height: 0 });
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
 
+  // Track separate position for each item during dragging
+  const [itemDragPositions, setItemDragPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
+  const dragTimeoutRef = useRef<NodeJS.Timeout>();
+
   // Keep track of previous image and text counts to detect new additions
   const prevImagesLengthRef = useRef<number>(images.length);
   const prevTextsLengthRef = useRef<number>(texts.length);
 
-  // Handle item selection
-  const handleSelectItem = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(setSelectedItem(id));
-  };
+  // Keep track of currently selected item type
+  const selectedItemRef = useRef<{
+    type: "image" | "text" | null;
+  }>({
+    type: null,
+  });
 
-  // Handle canvas click (deselect all items)
-  const handleCanvasClick = () => {
+  // Handle item selection with useCallback
+  const handleSelectItem = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      dispatch(setSelectedItem(id));
+    },
+    [dispatch],
+  );
+
+  // Handle canvas click (deselect all items) with useCallback
+  const handleCanvasClick = useCallback(() => {
     dispatch(setSelectedItem(null));
-  };
+  }, [dispatch]);
 
-  // Start dragging an item
-  const handleDragStart = (e: React.MouseEvent, position: { x: number; y: number }) => {
-    e.stopPropagation();
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
+  // Start dragging an item with useCallback
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent, position: { x: number; y: number }, itemId: string) => {
+      e.stopPropagation();
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      });
 
-  // Start resizing an item
-  const handleResizeStart = (e: React.MouseEvent, size: { width: number; height: number }) => {
-    e.stopPropagation();
-    setIsResizing(true);
-    setResizeStart({
-      width: size.width,
-      height: size.height,
-    });
-    setDragStart({
-      x: e.clientX,
-      y: e.clientY,
-    });
-  };
+      // Initialize or update this item's drag position
+      setItemDragPositions((prev) => ({
+        ...prev,
+        [itemId]: position,
+      }));
+    },
+    [],
+  );
+
+  // Start resizing an item with useCallback
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, size: { width: number; height: number }) => {
+      e.stopPropagation();
+      setIsResizing(true);
+      setResizeStart({
+        width: size.width,
+        height: size.height,
+      });
+      setDragStart({
+        x: e.clientX,
+        y: e.clientY,
+      });
+    },
+    [],
+  );
 
   // Handle mouse move for dragging and resizing
   useEffect(() => {
@@ -68,20 +96,31 @@ export const useCanvasItems = () => {
       if (!selectedItemId) return;
 
       if (isDragging) {
-        const selectedImage = images.find((img) => img.id === selectedItemId);
-        const selectedText = texts.find((txt) => txt.id === selectedItemId);
-
-        // Allow positioning outside canvas bounds
+        // Update local position immediately for smooth visual feedback
         const newPosition = {
           x: e.clientX - dragStart.x,
           y: e.clientY - dragStart.y,
         };
 
-        if (selectedImage) {
-          dispatch(updateImagePosition({ id: selectedItemId, position: newPosition }));
-        } else if (selectedText) {
-          dispatch(updateTextPosition({ id: selectedItemId, position: newPosition }));
-        }
+        // Update only the selected item's drag position
+        setItemDragPositions((prev) => ({
+          ...prev,
+          [selectedItemId]: newPosition,
+        }));
+
+        // Throttle Redux updates
+        if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+        dragTimeoutRef.current = setTimeout(() => {
+          // Only dispatch to Redux every 16ms (60fps)
+          const selectedImage = images.find((img) => img.id === selectedItemId);
+          const selectedText = texts.find((txt) => txt.id === selectedItemId);
+
+          if (selectedImage) {
+            dispatch(updateImagePosition({ id: selectedItemId, position: newPosition }));
+          } else if (selectedText) {
+            dispatch(updateTextPosition({ id: selectedItemId, position: newPosition }));
+          }
+        }, 16);
       }
 
       if (isResizing) {
@@ -163,6 +202,28 @@ export const useCanvasItems = () => {
     };
 
     const handleMouseUp = () => {
+      if (isDragging) {
+        // On mouse up, ensure the final position is correctly updated in Redux
+        const selectedImage = images.find((img) => img.id === selectedItemId);
+        const selectedText = texts.find((txt) => txt.id === selectedItemId);
+
+        if (selectedImage && selectedItemId && itemDragPositions[selectedItemId]) {
+          dispatch(
+            updateImagePosition({
+              id: selectedItemId,
+              position: itemDragPositions[selectedItemId],
+            }),
+          );
+        } else if (selectedText && selectedItemId && itemDragPositions[selectedItemId]) {
+          dispatch(
+            updateTextPosition({
+              id: selectedItemId,
+              position: itemDragPositions[selectedItemId],
+            }),
+          );
+        }
+      }
+
       setIsDragging(false);
       setIsResizing(false);
     };
@@ -176,7 +237,70 @@ export const useCanvasItems = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing, selectedItemId, dragStart, resizeStart, images, texts, dispatch]);
+  }, [
+    isDragging,
+    isResizing,
+    selectedItemId,
+    dragStart,
+    resizeStart,
+    images,
+    texts,
+    dispatch,
+    itemDragPositions,
+  ]);
+
+  // Update item drag positions when items change in Redux store
+  useEffect(() => {
+    // Update drag positions map when images or texts change in Redux
+    const updatedDragPositions = { ...itemDragPositions };
+    let changed = false;
+
+    // Update image positions
+    images.forEach((img) => {
+      if (
+        !itemDragPositions[img.id] ||
+        itemDragPositions[img.id].x !== img.position.x ||
+        itemDragPositions[img.id].y !== img.position.y
+      ) {
+        updatedDragPositions[img.id] = img.position;
+        changed = true;
+      }
+    });
+
+    // Update text positions
+    texts.forEach((txt) => {
+      if (
+        !itemDragPositions[txt.id] ||
+        itemDragPositions[txt.id].x !== txt.position.x ||
+        itemDragPositions[txt.id].y !== txt.position.y
+      ) {
+        updatedDragPositions[txt.id] = txt.position;
+        changed = true;
+      }
+    });
+
+    if (changed && !isDragging) {
+      setItemDragPositions(updatedDragPositions);
+    }
+  }, [images, texts, isDragging]);
+
+  // Update selected item ref when selection changes
+  useEffect(() => {
+    if (selectedItemId) {
+      const selectedImage = images.find((img) => img.id === selectedItemId);
+      const selectedText = texts.find((txt) => txt.id === selectedItemId);
+
+      if (selectedImage) {
+        selectedItemRef.current = {
+          type: "image",
+        };
+      } else if (selectedText) {
+        selectedItemRef.current = {
+          type: "text",
+        };
+      }
+    }
+  }, [selectedItemId, images, texts]);
 
   // Auto-select newly added items and ensure they are at top layer
   useEffect(() => {
@@ -242,5 +366,6 @@ export const useCanvasItems = () => {
     handleCanvasClick,
     handleDragStart,
     handleResizeStart,
+    itemDragPositions,
   };
 };

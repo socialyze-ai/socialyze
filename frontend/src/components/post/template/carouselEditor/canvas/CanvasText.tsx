@@ -8,7 +8,7 @@ interface CanvasTextProps {
   isSelected: boolean;
   textSize: { width: string | number; height: string | number };
   onSelectItem: (id: string, e: React.MouseEvent) => void;
-  onDragStart: (e: React.MouseEvent, position: { x: number; y: number }) => void;
+  onDragStart: (e: React.MouseEvent, position: { x: number; y: number }, id: string) => void;
   onResizeStart: (e: React.MouseEvent, size: { width: number; height: number }) => void;
   onEditText: (id: string, e: React.MouseEvent) => void;
   onRemoveItem: (id: string, e: React.MouseEvent) => void;
@@ -28,19 +28,22 @@ const CanvasText: React.FC<CanvasTextProps> = ({
 
   return (
     <div
-      className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"}`}
+      className={`absolute cursor-move canvas-item ${
+        isSelected ? "ring-2 ring-blue-500 p-1" : "p-1"
+      }`}
       style={{
         left: `${txt.position.x}px`,
         top: `${txt.position.y}px`,
         width: typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
         height: typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
         zIndex: txt.zIndex,
-        transform: `rotate(${rotation}deg)`,
+        transform: `rotate(${rotation}deg) translateZ(0)`,
         transformOrigin: "center center",
         userSelect: "none",
+        willChange: "transform",
       }}
       onClick={(e) => onSelectItem(txt.id, e)}
-      onMouseDown={(e) => onDragStart(e, txt.position)}
+      onMouseDown={(e) => onDragStart(e, txt.position, txt.id)}
     >
       <div
         style={{
@@ -105,4 +108,16 @@ const CanvasText: React.FC<CanvasTextProps> = ({
   );
 };
 
-export default CanvasText;
+export default React.memo<CanvasTextProps>(CanvasText, (prevProps, nextProps) => {
+  return (
+    prevProps.txt.position.x === nextProps.txt.position.x &&
+    prevProps.txt.position.y === nextProps.txt.position.y &&
+    prevProps.txt.content === nextProps.txt.content &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.textSize.width === nextProps.textSize.width &&
+    prevProps.textSize.height === nextProps.textSize.height &&
+    prevProps.txt.style.fontSize === nextProps.txt.style.fontSize &&
+    prevProps.txt.style.color === nextProps.txt.style.color &&
+    prevProps.txt.style.rotation === nextProps.txt.style.rotation
+  );
+});
