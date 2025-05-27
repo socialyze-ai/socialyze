@@ -20,6 +20,7 @@ interface ExtendedTextStyle extends Record<string, any> {
   fontStyle?: CSSProperties["fontStyle"];
   lineHeight?: CSSProperties["lineHeight"];
   fontFamily?: string;
+  rotation?: number;
 }
 
 // Add PreviewRef interface for external access to preview functions
@@ -224,6 +225,43 @@ const Preview = forwardRef<PreviewRef, { isInstagram?: boolean }>(
         };
       };
 
+      // Combine images and texts into a single array with type annotation
+      const allItems = [
+        ...images.map((img) => ({ ...img, type: "image" as const })),
+        ...texts.map((txt) => ({ ...txt, type: "text" as const })),
+      ];
+
+      // Sort items by z-index (lowest first, so higher z-index items render on top)
+      const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
+      // Filter items that are visible in the current cell
+      const visibleItems = sortedItems.filter((item) => {
+        const itemLeft = item.position.x;
+        const itemRight =
+          itemLeft +
+          (item.type === "image"
+            ? item.size.width
+            : typeof item.size?.width === "number"
+            ? item.size.width
+            : item.content.length * item.style.fontSize * 0.6);
+        const itemTop = item.position.y;
+        const itemBottom =
+          itemTop +
+          (item.type === "image"
+            ? item.size.height
+            : typeof item.size?.height === "number"
+            ? item.size.height
+            : item.style.fontSize * 1.2);
+
+        // If the item is completely outside the cell, don't render it
+        return !(
+          itemRight < cellStartX ||
+          itemLeft > cellEndX ||
+          itemBottom < cellStartY ||
+          itemTop > cellEndY
+        );
+      });
+
       return (
         <div
           key={`cell-${cellIndex}`}
@@ -235,120 +273,85 @@ const Preview = forwardRef<PreviewRef, { isInstagram?: boolean }>(
           }}
           onClick={() => handleCellClick(cellIndex)}
         >
-          {/* Render images that are at least partially visible in this cell */}
-          {images.map((img) => {
-            // Check if image is at least partially visible in current cell
-            const imgLeft = img.position.x;
-            const imgRight = img.position.x + img.size.width;
-            const imgTop = img.position.y;
-            const imgBottom = img.position.y + img.size.height;
+          {/* Render all visible items sorted by z-index */}
+          {visibleItems.map((item) => {
+            const positionStyle = getAdjustedPosition(item.position);
 
-            // If the image is completely outside the cell, don't render it
-            if (
-              imgRight < cellStartX ||
-              imgLeft > cellEndX ||
-              imgBottom < cellStartY ||
-              imgTop > cellEndY
-            ) {
-              return null;
-            }
+            if (item.type === "image") {
+              // Calculate the scaled dimensions
+              const scaledWidth = item.size.width * scaleFactor;
+              const scaledHeight = item.size.height * scaleFactor;
 
-            const positionStyle = getAdjustedPosition(img.position);
-
-            // Calculate the scaled dimensions
-            const scaledWidth = img.size.width * scaleFactor;
-            const scaledHeight = img.size.height * scaleFactor;
-
-            return (
-              <div
-                key={`preview-img-${cellIndex}-${img.id}`}
-                className="absolute"
-                style={{
-                  ...positionStyle,
-                  width: `${scaledWidth}px`,
-                  height: `${scaledHeight}px`,
-                }}
-              >
-                <img src={img.src} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            );
-          })}
-
-          {/* Render texts that are at least partially visible in this cell */}
-          {texts.map((txt) => {
-            // Check if text is at least partially visible in current cell
-            const txtLeft = txt.position.x;
-            const txtTop = txt.position.y;
-
-            // Estimate text dimensions
-            const estimatedWidth = txt.content.length * txt.style.fontSize * 0.6; // Approximate width
-            const estimatedHeight = txt.style.fontSize * 1.2; // Approximate height
-
-            const txtRight =
-              txtLeft + (typeof txt.size?.width === "number" ? txt.size.width : estimatedWidth);
-            const txtBottom =
-              txtTop + (typeof txt.size?.height === "number" ? txt.size.height : estimatedHeight);
-
-            // If text is completely outside the cell, don't render it
-            if (
-              txtRight < cellStartX ||
-              txtLeft > cellEndX ||
-              txtBottom < cellStartY ||
-              txtTop > cellEndY
-            ) {
-              return null;
-            }
-
-            const positionStyle = getAdjustedPosition(txt.position);
-
-            // Scale the font size
-            const scaledFontSize = txt.style.fontSize * scaleFactor;
-
-            // Treat txt.style as an extended style object
-            const style = txt.style as ExtendedTextStyle;
-
-            // Get text size if defined, otherwise calculate based on content
-            const textSize = txt.size || {
-              width: txt.content.length * scaledFontSize * 0.6, // Approximate width
-              height: scaledFontSize * 1.2, // Approximate height
-            };
-
-            // Scale the text size
-            const scaledWidth =
-              typeof textSize.width === "number" ? textSize.width * scaleFactor : textSize.width;
-            const scaledHeight =
-              typeof textSize.height === "number" ? textSize.height * scaleFactor : textSize.height;
-
-            return (
-              <div
-                key={`preview-txt-${cellIndex}-${txt.id}`}
-                className="absolute"
-                style={{
-                  ...positionStyle,
-                  width: typeof scaledWidth === "number" ? `${scaledWidth}px` : scaledWidth,
-                  height: typeof scaledHeight === "number" ? `${scaledHeight}px` : scaledHeight,
-                }}
-              >
+              return (
                 <div
+                  key={`preview-img-${cellIndex}-${item.id}`}
+                  className="absolute"
                   style={{
-                    fontSize: `${scaledFontSize}px`,
-                    color: style.color,
-                    fontFamily: style.fontFamily || "inherit",
-                    wordWrap: "break-word",
-                    whiteSpace: "pre-wrap",
-                    textAlign: style.textAlign || "left",
-                    fontWeight: style.fontWeight || "normal",
-                    fontStyle: style.fontStyle || "normal",
-                    lineHeight: style.lineHeight || "normal",
-                    width: "100%",
-                    height: "100%",
-                    overflowWrap: "break-word",
+                    ...positionStyle,
+                    width: `${scaledWidth}px`,
+                    height: `${scaledHeight}px`,
+                    zIndex: item.zIndex,
                   }}
                 >
-                  {txt.content}
+                  <img src={item.src} alt="Preview" className="w-full h-full object-cover" />
                 </div>
-              </div>
-            );
+              );
+            } else {
+              // Text item
+              // Scale the font size
+              const scaledFontSize = item.style.fontSize * scaleFactor;
+
+              // Treat item.style as an extended style object
+              const style = item.style as ExtendedTextStyle;
+
+              // Get text size if defined, otherwise calculate based on content
+              const textSize = item.size || {
+                width: item.content.length * scaledFontSize * 0.6, // Approximate width
+                height: scaledFontSize * 1.2, // Approximate height
+              };
+
+              // Scale the text size
+              const scaledWidth =
+                typeof textSize.width === "number" ? textSize.width * scaleFactor : textSize.width;
+              const scaledHeight =
+                typeof textSize.height === "number"
+                  ? textSize.height * scaleFactor
+                  : textSize.height;
+
+              return (
+                <div
+                  key={`preview-txt-${cellIndex}-${item.id}`}
+                  className="absolute"
+                  style={{
+                    ...positionStyle,
+                    width: typeof scaledWidth === "number" ? `${scaledWidth}px` : scaledWidth,
+                    height: typeof scaledHeight === "number" ? `${scaledHeight}px` : scaledHeight,
+                    zIndex: item.zIndex,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: `${scaledFontSize}px`,
+                      color: style.color,
+                      fontFamily: style.fontFamily || "inherit",
+                      wordWrap: "break-word",
+                      whiteSpace: "pre-wrap",
+                      textAlign: style.textAlign || "left",
+                      fontWeight: style.fontWeight || "normal",
+                      fontStyle: style.fontStyle || "normal",
+                      lineHeight: style.lineHeight || "normal",
+                      width: "100%",
+                      height: "100%",
+                      overflowWrap: "break-word",
+                      transform: style.rotation ? `rotate(${style.rotation}deg)` : "none",
+                      transformOrigin: "center center",
+                    }}
+                  >
+                    {item.content}
+                  </div>
+                </div>
+              );
+            }
           })}
         </div>
       );

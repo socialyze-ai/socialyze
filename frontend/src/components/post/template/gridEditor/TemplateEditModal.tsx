@@ -17,7 +17,6 @@ import {
   setSocialPlatform,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas, { CanvasRef } from "./Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
@@ -28,7 +27,10 @@ import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreat
 import CanvasOptions from "./CanvasOptions";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
-import ImageGallery from "./ImageGallery";
+import { CanvasRef } from "./canvas/types";
+import Canvas from "./canvas/Canvas";
+import LayerManager from "./LayerManager";
+import ImageAndTextStack from "./ImageAndTextStack";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -303,6 +305,7 @@ const TemplateEditModal = ({
         position,
         size: { width: newWidth, height: newHeight },
         canvasIndex: 0, // This will be updated by recalculateSectionAssignments
+        zIndex: 1, // Add default zIndex
       };
 
       dispatch(setImages([...images, templateImage]));
@@ -380,7 +383,8 @@ const TemplateEditModal = ({
       position: { x: 50, y: 50 },
       style: style || { fontSize: 16, color: "#000000" },
       size: { width, height },
-      canvasIndex: 0, // Will be updated by recalculateSectionAssignments
+      canvasIndex: 0,
+      zIndex: 1,
     };
     dispatch(setText([...texts, newText]));
     setShowTextEditor(false);
@@ -639,10 +643,10 @@ const TemplateEditModal = ({
             <div className="grid grid-cols-10 gap-2 w-full h-full">
               <div className="col-span-7 h-full flex flex-col gap-2">
                 <div className="h-fit w-full">
-                  <ImageGallery />
+                  <ImageAndTextStack />
                 </div>
 
-                <Canvas ref={canvasRef} />
+                <Canvas ref={canvasRef} columns={columns} rows={rows} />
               </div>
 
               <div className="col-span-3 h-fit space-y-2">
@@ -656,6 +660,8 @@ const TemplateEditModal = ({
                   handleMediaChange={handleMediaChange}
                   handleAddText={handleAddText}
                 />
+
+                <LayerManager />
 
                 <Preview ref={previewRef} isInstagram />
               </div>
