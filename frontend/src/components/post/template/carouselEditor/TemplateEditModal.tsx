@@ -19,7 +19,7 @@ import {
   normalizeZIndices,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas, { CanvasRef } from "./Canvas";
+import Canvas from "./canvas/Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
@@ -28,11 +28,11 @@ import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
-import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
 import ImageAndTextStack from "./ImageAndTextStack";
 import LayerManager from "./LayerManager";
+import { CanvasRef } from "./canvas/types";
 
 interface TemplateEditModalProps {
   open?: boolean;
