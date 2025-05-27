@@ -92,46 +92,6 @@ const TextEditor = ({
   const [fontFamily, setFontFamily] = useState(initialStyle.fontFamily || "Roboto");
   const [fontWeight, setFontWeight] = useState(initialStyle.fontWeight || "400");
   const [rotation, setRotation] = useState(initialStyle.rotation || 0);
-  const [loadedFonts, setLoadedFonts] = useState<string[]>([]);
-
-  // Load selected Google Font
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(
-      / /g,
-      "+",
-    )}:wght@${fontWeight}&display=swap`;
-    document.head.appendChild(link);
-
-    // Add to loaded fonts
-    setLoadedFonts((prev) => [...prev, fontFamily]);
-
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, [fontFamily, fontWeight]);
-
-  // Preload all fonts for the dropdown
-  useEffect(() => {
-    // Create a batch request for all fonts
-    const fontFamiliesParam = GOOGLE_FONTS.map(
-      (font) => `${font.replace(/ /g, "+")}:wght@400`,
-    ).join("|");
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${fontFamiliesParam}&display=swap`;
-    document.head.appendChild(link);
-
-    setLoadedFonts(GOOGLE_FONTS);
-
-    return () => {
-      if (document.head.contains(link)) {
-        document.head.removeChild(link);
-      }
-    };
-  }, []);
 
   // Determine if we're editing or adding new text
   const isEditing = initialText.length > 0;

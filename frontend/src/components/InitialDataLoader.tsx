@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useAuth } from "@/context/AuthContext";
+import { loadFonts, cleanupFonts } from "@/utils/fontLoader";
 
 const InitialDataLoader = () => {
   const dispatch = useDispatch();
@@ -26,6 +27,19 @@ const InitialDataLoader = () => {
   } = useGetPost({
     filters: filters,
   });
+
+  // Load fonts when the component mounts and cleanup on unmount
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Load all Google fonts
+    const fontLink = loadFonts();
+
+    // Cleanup function to remove fonts when component unmounts
+    return () => {
+      cleanupFonts();
+    };
+  }, [isAuthenticated]);
 
   // Update loading state
   useEffect(() => {

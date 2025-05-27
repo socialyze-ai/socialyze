@@ -31,7 +31,6 @@ import TextEditor from "../TextEditor";
 
 // Import hooks
 import { useCanvasItems } from "./hooks/useCanvasItems";
-import { useFontLoader } from "./hooks/useFontLoader";
 import { useCanvasCapture } from "./hooks/useCanvasCapture";
 
 // Import utils
@@ -64,9 +63,6 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     handleDragStart,
     handleResizeStart,
   } = useCanvasItems();
-
-  // Load fonts for text elements
-  useFontLoader(texts as TextItem[]);
 
   // Canvas capture functionality
   const { captureCanvasContent, getTotalBoxes } = useCanvasCapture(
