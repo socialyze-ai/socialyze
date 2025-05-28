@@ -57,8 +57,8 @@ const LayerManager = () => {
   // Calculate total layers
   const totalLayers = allItems.length;
 
-  // Layer management handlers
-  const handleSelectItem = (id: string) => {
+  const handleSelectItem = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     dispatch(setSelectedItem(id));
   };
 
@@ -220,7 +220,7 @@ const LayerManager = () => {
                     ? "border-t-2 border-blue-400"
                     : ""
                 } hover:bg-gray-100`}
-                onClick={() => handleSelectItem(item.id)}
+                onClick={(e) => handleSelectItem(item.id, e)}
               >
                 {/* Drag Handle */}
                 <div className="cursor-grab active:cursor-grabbing mr-1">

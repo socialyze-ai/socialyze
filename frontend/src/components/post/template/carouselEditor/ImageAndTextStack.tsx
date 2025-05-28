@@ -103,8 +103,8 @@ const ImageAndTextStack: React.FC = () => {
     setImageToReplace(null);
   };
 
-  // Handle item selection
-  const handleSelectItem = (id: string) => {
+  const handleSelectItem = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     dispatch(setSelectedItem(id));
   };
 
@@ -171,7 +171,7 @@ const ImageAndTextStack: React.FC = () => {
                   className={`relative group border rounded-md overflow-hidden ${
                     selectedItemId === image.id ? "border-blue-500" : "border-gray-200"
                   }`}
-                  onClick={() => handleSelectItem(image.id)}
+                  onClick={(e) => handleSelectItem(image.id, e)}
                 >
                   <img
                     src={image.src}
@@ -271,7 +271,7 @@ const ImageAndTextStack: React.FC = () => {
                     color: text.style.color,
                     fontFamily: text.style.fontFamily || "inherit",
                   }}
-                  onClick={() => handleSelectItem(text.id)}
+                  onClick={(e) => handleSelectItem(text.id, e)}
                 >
                   <div className="text-xs truncate max-w-[100px]">
                     {text.content.length > 10
