@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import {
@@ -10,6 +10,9 @@ import {
   updateTextSize,
   updateTextStyle,
 } from "@/redux/slices/template.slice";
+import { estimateTextDimensions, calculateOptimalFontSize } from "../utils";
+import { TextItem, TextStyle } from "../types";
+import debounce from "lodash/debounce";
 
 export const useCanvasItems = () => {
   const dispatch = useDispatch();
@@ -27,6 +30,14 @@ export const useCanvasItems = () => {
   const [itemDragPositions, setItemDragPositions] = useState<
     Record<string, { x: number; y: number }>
   >({});
+
+  // Local resize state for smoother visual feedback
+  const [localResizeState, setLocalResizeState] = useState<{
+    itemId: string | null;
+    size: { width: number; height: number };
+    fontSize: number;
+  }>({ itemId: null, size: { width: 0, height: 0 }, fontSize: 0 });
+
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Keep track of previous image and text counts to detect new additions
@@ -39,6 +50,30 @@ export const useCanvasItems = () => {
   }>({
     type: null,
   });
+
+  // Create debounced update functions for better performance
+  const debouncedResizeUpdate = useMemo(
+    () =>
+      debounce((itemId: string, size: any, fontSize: number, originalStyle: TextStyle) => {
+        dispatch(updateTextSize({ id: itemId, size }));
+        dispatch(
+          updateTextStyle({
+            id: itemId,
+            style: {
+              fontSize,
+              color: originalStyle.color,
+              fontFamily: originalStyle.fontFamily,
+              fontWeight: originalStyle.fontWeight,
+              fontStyle: originalStyle.fontStyle,
+              lineHeight: originalStyle.lineHeight,
+              textAlign: originalStyle.textAlign,
+              rotation: originalStyle.rotation,
+            },
+          }),
+        );
+      }, 16), // 60fps rate
+    [dispatch],
+  );
 
   // Handle item selection with useCallback
   const handleSelectItem = useCallback(
@@ -86,8 +121,23 @@ export const useCanvasItems = () => {
         x: e.clientX,
         y: e.clientY,
       });
+
+      // Initialize local resize state
+      if (selectedItemId) {
+        const selectedText = texts.find((txt) => txt.id === selectedItemId);
+        if (selectedText) {
+          setLocalResizeState({
+            itemId: selectedItemId,
+            size: {
+              width: typeof size.width === "number" ? size.width : parseInt(String(size.width)),
+              height: typeof size.height === "number" ? size.height : parseInt(String(size.height)),
+            },
+            fontSize: selectedText.style.fontSize,
+          });
+        }
+      }
     },
-    [],
+    [selectedItemId, texts],
   );
 
   // Handle mouse move for dragging and resizing
@@ -152,50 +202,45 @@ export const useCanvasItems = () => {
             );
           }
         } else if (selectedText) {
-          // Handle text resizing
+          // Handle text resizing with improved algorithm
           const deltaX = e.clientX - dragStart.x;
           const deltaY = e.clientY - dragStart.y;
 
           // Calculate new width and height
-          const newWidth = Math.max(
-            50,
-            typeof resizeStart.width === "number" ? resizeStart.width + deltaX : 100 + deltaX,
-          );
-          const newHeight = Math.max(
-            20,
-            typeof resizeStart.height === "number" ? resizeStart.height + deltaY : 50 + deltaY,
-          );
+          const newWidth =
+            typeof resizeStart.width === "number" ? resizeStart.width + deltaX : 100 + deltaX;
 
-          // Update text size
-          dispatch(
-            updateTextSize({
-              id: selectedItemId,
-              size: {
-                width: newWidth as number,
-                height: newHeight as number,
-              },
-            }),
-          );
+          const newHeight =
+            typeof resizeStart.height === "number" ? resizeStart.height + deltaY : 50 + deltaY;
 
-          // Optionally adjust font size based on width change
-          const fontSizeAdjustment = deltaX * 0.05; // Subtle adjustment based on width change
-          if (Math.abs(fontSizeAdjustment) > 0.5) {
-            // Only adjust if change is significant
-            const currentFontSize = selectedText.style.fontSize;
-            const newFontSize = Math.max(8, Math.min(72, currentFontSize + fontSizeAdjustment));
+          // Prevent negative dimensions (but don't enforce minimum size)
+          const finalWidth = Math.max(5, newWidth);
+          const finalHeight = Math.max(5, newHeight);
 
-            // Update font size if it changed
-            if (newFontSize !== currentFontSize) {
-              dispatch(
-                updateTextStyle({
-                  id: selectedItemId,
-                  style: {
-                    ...selectedText.style,
-                    fontSize: newFontSize,
-                  },
-                }),
-              );
-            }
+          // Update local resize state for smooth feedback
+          if (localResizeState.itemId === selectedItemId) {
+            // Calculate optimal font size based on new dimensions
+            const optimalFontSize = calculateOptimalFontSize(
+              selectedText.content,
+              finalWidth,
+              finalHeight,
+              selectedText.style.fontFamily || "Arial",
+            );
+
+            // Update local state immediately for smooth visual feedback
+            setLocalResizeState({
+              itemId: selectedItemId,
+              size: { width: finalWidth, height: finalHeight },
+              fontSize: optimalFontSize,
+            });
+
+            // Update Redux store with debounced function to avoid performance issues
+            debouncedResizeUpdate(
+              selectedItemId,
+              { width: finalWidth, height: finalHeight },
+              optimalFontSize,
+              selectedText.style,
+            );
           }
         }
       }
@@ -224,6 +269,31 @@ export const useCanvasItems = () => {
         }
       }
 
+      // Final text resize update on mouse up to ensure latest state is saved
+      if (isResizing && localResizeState.itemId) {
+        const { itemId, size, fontSize } = localResizeState;
+        const selectedText = texts.find((txt) => txt.id === itemId);
+
+        if (selectedText) {
+          // Force immediate update on mouse up to ensure resize changes are applied
+          dispatch(updateTextSize({ id: itemId, size }));
+
+          // Keep all the original style properties, only update fontSize
+          dispatch(
+            updateTextStyle({
+              id: itemId,
+              style: {
+                ...selectedText.style,
+                fontSize,
+              },
+            }),
+          );
+        }
+
+        // Reset local resize state
+        setLocalResizeState({ itemId: null, size: { width: 0, height: 0 }, fontSize: 0 });
+      }
+
       setIsDragging(false);
       setIsResizing(false);
     };
@@ -247,6 +317,9 @@ export const useCanvasItems = () => {
     texts,
     dispatch,
     itemDragPositions,
+    localResizeState,
+    debouncedResizeUpdate,
+    calculateOptimalFontSize,
   ]);
 
   // Update item drag positions when items change in Redux store
@@ -367,5 +440,6 @@ export const useCanvasItems = () => {
     handleDragStart,
     handleResizeStart,
     itemDragPositions,
+    localResizeState, 
   };
 };

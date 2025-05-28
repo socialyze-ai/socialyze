@@ -63,6 +63,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     handleDragStart,
     handleResizeStart,
     itemDragPositions,
+    localResizeState,
   } = useCanvasItems();
 
   // Canvas capture functionality
@@ -314,6 +315,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 onResizeStart={handleResizeStart}
                 onEditText={handleEditText}
                 onRemoveItem={handleDeleteItem}
+                localResizeState={localResizeState}
               />
             );
           }
@@ -334,6 +336,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     handleEditText,
     itemDragPositions,
     isDragging,
+    localResizeState,
   ]);
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm(aspectRatio, canvasCount);
