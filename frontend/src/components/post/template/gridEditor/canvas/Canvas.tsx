@@ -57,6 +57,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
     handleDragStart,
     handleResizeStart,
     itemDragPositions,
+    localResizeState,
   } = useGridItems();
 
   // Canvas capture functionality
@@ -319,6 +320,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
                 onResizeStart={handleResizeStart}
                 onEditText={handleEditText}
                 onRemoveItem={handleDeleteItem}
+                localResizeState={localResizeState}
               />
             );
           }
@@ -339,6 +341,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
     handleEditText,
     itemDragPositions,
     isDragging,
+    localResizeState,
   ]);
 
   const { widthMm, heightMm } = getGridDimensionsInMm(columns, rows);

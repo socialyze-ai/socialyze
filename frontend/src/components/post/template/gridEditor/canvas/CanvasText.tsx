@@ -12,6 +12,11 @@ interface CanvasTextProps {
   onResizeStart: (e: React.MouseEvent, size: { width: number; height: number }) => void;
   onEditText: (id: string, e: React.MouseEvent) => void;
   onRemoveItem: (id: string, e: React.MouseEvent) => void;
+  localResizeState?: {
+    itemId: string | null;
+    size: { width: number; height: number };
+    fontSize: number;
+  };
 }
 
 const CanvasText: React.FC<CanvasTextProps> = ({
@@ -23,8 +28,26 @@ const CanvasText: React.FC<CanvasTextProps> = ({
   onResizeStart,
   onEditText,
   onRemoveItem,
+  localResizeState,
 }) => {
   const rotation = txt.style.rotation || 0;
+
+  // Check if this text is currently being resized
+  const isResizing = localResizeState?.itemId === txt.id;
+
+  // Use local resize state dimensions and font size during active resize
+  const displaySize = isResizing
+    ? {
+        width: `${localResizeState.size.width}px`,
+        height: `${localResizeState.size.height}px`,
+      }
+    : {
+        width: typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
+        height: typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
+      };
+
+  // Use local resize state font size during active resize
+  const displayFontSize = isResizing ? localResizeState.fontSize : txt.style.fontSize;
 
   return (
     <div
@@ -34,8 +57,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({
       style={{
         left: `${txt.position.x}px`,
         top: `${txt.position.y}px`,
-        width: typeof textSize.width === "number" ? `${textSize.width}px` : textSize.width,
-        height: typeof textSize.height === "number" ? `${textSize.height}px` : textSize.height,
+        width: displaySize.width,
+        height: displaySize.height,
         zIndex: txt.zIndex,
         transform: `rotate(${rotation}deg) translateZ(0)`,
         transformOrigin: "center center",
@@ -46,23 +69,32 @@ const CanvasText: React.FC<CanvasTextProps> = ({
       onMouseDown={(e) => onDragStart(e, txt.position, txt.id)}
     >
       <div
+        className="w-full h-full flex items-center justify-center"
         style={{
-          fontSize: `${txt.style.fontSize}px`,
-          color: txt.style.color,
-          fontFamily: txt.style.fontFamily || "inherit",
-          fontWeight: txt.style.fontWeight || "normal",
-          fontStyle: txt.style.fontStyle || "normal",
-          lineHeight: txt.style.lineHeight || "normal",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          textAlign: (txt.style.textAlign as TextAlign) || "left",
-          width: "100%",
-          height: "100%",
-          overflowWrap: "break-word",
-          pointerEvents: "none",
+          display: "flex",
+          alignItems: txt.style.textAlign === "center" ? "center" : "flex-start",
+          justifyContent: getJustifyContent(txt.style.textAlign),
         }}
       >
-        {txt.content}
+        <div
+          style={{
+            fontSize: `${displayFontSize}px`,
+            color: txt.style.color,
+            fontFamily: txt.style.fontFamily || "inherit",
+            fontWeight: txt.style.fontWeight || "normal",
+            fontStyle: txt.style.fontStyle || "normal",
+            lineHeight: txt.style.lineHeight || "normal",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            textAlign: txt.style.textAlign || "left",
+            width: "100%",
+            maxHeight: "100%",
+            overflowWrap: "break-word",
+            pointerEvents: "none",
+          }}
+        >
+          {txt.content}
+        </div>
       </div>
 
       {/* Control buttons */}
@@ -72,7 +104,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({
           <Button
             variant="secondary"
             size="icon"
-            className="h-5 w-5 rounded-full mr-1"
+            className="h-5 w-5 rounded-full mr-1 z-10"
             onClick={(e) => onEditText(txt.id, e)}
           >
             <Pencil className="h-3 w-3" />
@@ -82,7 +114,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({
           <Button
             variant="destructive"
             size="icon"
-            className="h-5 w-5 rounded-full"
+            className="h-5 w-5 rounded-full z-10"
             onClick={(e) => onRemoveItem(txt.id, e)}
           >
             <X className="h-3 w-3" />
@@ -93,11 +125,21 @@ const CanvasText: React.FC<CanvasTextProps> = ({
       {/* Resize handle - only visible when selected */}
       {isSelected && (
         <div
-          className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center"
+          className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize flex items-center justify-center z-10"
           onMouseDown={(e) => {
-            // Ensure we have numeric values for width and height
-            const width = typeof txt.size?.width === "number" ? txt.size.width : 100;
-            const height = typeof txt.size?.height === "number" ? txt.size.height : 50;
+            // Get current size (either from localResizeState during resize or from txt.size)
+            const width = isResizing
+              ? localResizeState.size.width
+              : typeof txt.size?.width === "number"
+              ? txt.size.width
+              : 100;
+
+            const height = isResizing
+              ? localResizeState.size.height
+              : typeof txt.size?.height === "number"
+              ? txt.size.height
+              : 50;
+
             onResizeStart(e, { width, height });
           }}
         >
@@ -106,6 +148,21 @@ const CanvasText: React.FC<CanvasTextProps> = ({
       )}
     </div>
   );
+};
+
+// Helper function to convert text alignment to flexbox justify content
+const getJustifyContent = (textAlign: TextAlign): string => {
+  switch (textAlign) {
+    case "center":
+      return "center";
+    case "right":
+      return "flex-end";
+    case "justify":
+      return "space-between";
+    case "left":
+    default:
+      return "flex-start";
+  }
 };
 
 export default React.memo<CanvasTextProps>(CanvasText, (prevProps, nextProps) => {
@@ -118,6 +175,10 @@ export default React.memo<CanvasTextProps>(CanvasText, (prevProps, nextProps) =>
     prevProps.textSize.height === nextProps.textSize.height &&
     prevProps.txt.style.fontSize === nextProps.txt.style.fontSize &&
     prevProps.txt.style.color === nextProps.txt.style.color &&
-    prevProps.txt.style.rotation === nextProps.txt.style.rotation
+    prevProps.txt.style.rotation === nextProps.txt.style.rotation &&
+    prevProps.localResizeState?.itemId === nextProps.localResizeState?.itemId &&
+    prevProps.localResizeState?.size.width === nextProps.localResizeState?.size.width &&
+    prevProps.localResizeState?.size.height === nextProps.localResizeState?.size.height &&
+    prevProps.localResizeState?.fontSize === nextProps.localResizeState?.fontSize
   );
 });
