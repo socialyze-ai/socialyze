@@ -11,6 +11,7 @@ import {
   updateTextStyle,
 } from "@/redux/slices/template.slice";
 import { TextItem, TextStyle } from "../types";
+import { calculateOptimalFontSize } from "../utils";
 import debounce from "lodash/debounce";
 
 export const useGridItems = () => {
@@ -133,37 +134,6 @@ export const useGridItems = () => {
     [selectedItemId, texts],
   );
 
-  // Calculate optimal font size based on container dimensions
-  const calculateOptimalFontSize = useCallback(
-    (text: string, containerWidth: number, containerHeight: number, currentFontSize: number) => {
-      // Minimum and maximum constraints
-      const minFontSize = 4;
-      const maxFontSize = 1000;
-
-      // Calculate scale factor based on text length and container size
-      const contentLength = text.length;
-      const lines = text.split("\n").length;
-
-      // Estimate area available per character
-      const areaPerChar = (containerWidth * containerHeight) / Math.max(1, contentLength);
-
-      // Calculate base size from available area
-      let newFontSize = Math.sqrt(areaPerChar) * 0.8;
-
-      // Adjust for multi-line text
-      if (lines > 1) {
-        newFontSize = newFontSize * (1 / Math.sqrt(lines)) * 1.2;
-      }
-
-      // Adjust based on current font size for smoother transitions
-      newFontSize = (newFontSize + currentFontSize) / 2;
-
-      // Ensure font size is within bounds
-      return Math.max(minFontSize, Math.min(maxFontSize, newFontSize));
-    },
-    [],
-  );
-
   // Handle mouse move for dragging and resizing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -248,7 +218,7 @@ export const useGridItems = () => {
               selectedText.content,
               finalWidth,
               finalHeight,
-              selectedText.style.fontSize,
+              selectedText.style.fontFamily || "Arial",
             );
 
             // Update local state immediately for smooth visual feedback
@@ -343,7 +313,6 @@ export const useGridItems = () => {
     itemDragPositions,
     localResizeState,
     debouncedResizeUpdate,
-    calculateOptimalFontSize,
   ]);
 
   // Update item drag positions when items change in Redux store

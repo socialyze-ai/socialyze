@@ -365,6 +365,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
               position: "relative",
               backgroundColor,
               userSelect: "none",
+              willChange: "transform", 
             }}
             onClick={handleCanvasClick}
           >

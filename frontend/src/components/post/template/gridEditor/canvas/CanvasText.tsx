@@ -63,7 +63,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({
         transform: `rotate(${rotation}deg) translateZ(0)`,
         transformOrigin: "center center",
         userSelect: "none",
-        willChange: "transform",
+        willChange: "transform, contents",
       }}
       onClick={(e) => onSelectItem(txt.id, e)}
       onMouseDown={(e) => onDragStart(e, txt.position, txt.id)}
@@ -91,6 +91,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({
             maxHeight: "100%",
             overflowWrap: "break-word",
             pointerEvents: "none",
+            WebkitFontSmoothing: "antialiased",
+            textRendering: "optimizeLegibility",
           }}
         >
           {txt.content}
@@ -176,9 +178,12 @@ export default React.memo<CanvasTextProps>(CanvasText, (prevProps, nextProps) =>
     prevProps.txt.style.fontSize === nextProps.txt.style.fontSize &&
     prevProps.txt.style.color === nextProps.txt.style.color &&
     prevProps.txt.style.rotation === nextProps.txt.style.rotation &&
+    prevProps.txt.style.fontFamily === nextProps.txt.style.fontFamily &&
     prevProps.localResizeState?.itemId === nextProps.localResizeState?.itemId &&
-    prevProps.localResizeState?.size.width === nextProps.localResizeState?.size.width &&
-    prevProps.localResizeState?.size.height === nextProps.localResizeState?.size.height &&
-    prevProps.localResizeState?.fontSize === nextProps.localResizeState?.fontSize
+    (prevProps.localResizeState === null ||
+      nextProps.localResizeState === null ||
+      (prevProps.localResizeState?.size.width === nextProps.localResizeState?.size.width &&
+        prevProps.localResizeState?.size.height === nextProps.localResizeState?.size.height &&
+        prevProps.localResizeState?.fontSize === nextProps.localResizeState?.fontSize))
   );
 });
