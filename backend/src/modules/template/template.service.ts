@@ -57,6 +57,7 @@ export class TemplateService {
   ) {
     return this.postTemplateModel.create({
       ...createPostTemplateDto,
+      type: 'custom',
       user: new Types.ObjectId(userId),
     });
   }
@@ -64,7 +65,10 @@ export class TemplateService {
   async createPostCategoryTemplates(
     createPostCategoryTemplateDto: CreatePostCategoryTemplateDto,
   ) {
-    return this.postCategoryModel.create(createPostCategoryTemplateDto);
+    return this.postCategoryModel.create({
+      type: 'default',
+      ...createPostCategoryTemplateDto,
+    });
   }
 
   async getPostCategoryTemplates(
