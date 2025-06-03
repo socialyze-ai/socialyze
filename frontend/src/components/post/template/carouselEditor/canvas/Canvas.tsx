@@ -64,6 +64,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     handleResizeStart,
     itemDragPositions,
     localResizeState,
+    localImageResizeState,
   } = useCanvasItems();
 
   // Canvas capture functionality
@@ -273,12 +274,16 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 ? itemDragPositions[img.id]
                 : img.position;
 
+            // Create a unique key that includes position to force re-render when needed
+            const itemKey = `img-${img.id}-${position.x.toFixed(0)}-${position.y.toFixed(0)}`;
+
             return (
               <CanvasImage
-                key={img.id}
+                key={itemKey}
                 img={{ ...img, position }}
                 isSelected={isSelected}
                 isHovered={isHovered}
+                localImageResizeState={localImageResizeState}
                 onSelectItem={handleSelectItem}
                 onDragStart={(e, pos) => handleDragStart(e, pos, img.id)}
                 onResizeStart={handleResizeStart}
@@ -304,9 +309,12 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
               txt.size ||
               estimateTextDimensions(txt.content, txt.style.fontSize, txt.style.fontFamily);
 
+            // Create a unique key that includes position to force re-render when needed
+            const itemKey = `txt-${txt.id}-${position.x.toFixed(0)}-${position.y.toFixed(0)}`;
+
             return (
               <CanvasText
-                key={txt.id}
+                key={itemKey}
                 txt={{ ...txt, position }}
                 isSelected={isSelected}
                 textSize={textSize}
@@ -337,6 +345,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     itemDragPositions,
     isDragging,
     localResizeState,
+    localImageResizeState,
   ]);
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm(aspectRatio, canvasCount);
@@ -361,6 +370,10 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
               position: "relative",
               backgroundColor,
               userSelect: "none",
+              willChange: "transform",
+              perspective: "1000px", // Add perspective for 3D transforms
+              WebkitFontSmoothing: "antialiased", // Improve text rendering
+              backfaceVisibility: "hidden", // Prevent flickering
             }}
             onClick={handleCanvasClick}
           >
@@ -369,6 +382,10 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
               className={`absolute top-0 left-0 w-full h-full ${
                 selectedItemId ? "overflow-visible" : "overflow-hidden"
               }`}
+              style={{
+                willChange: "contents",
+                transformStyle: "preserve-3d",
+              }}
             >
               {/* Reference lines */}
               <ReferenceLines canvasCount={canvasCount} canvasWidth={canvasWidth} />

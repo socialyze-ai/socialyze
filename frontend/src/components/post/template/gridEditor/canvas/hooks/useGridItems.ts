@@ -31,12 +31,21 @@ export const useGridItems = () => {
     Record<string, { x: number; y: number }>
   >({});
 
+  // Track which kind of element we're interacting with
+  const [draggedItemType, setDraggedItemType] = useState<"image" | "text" | null>(null);
+
   // Local resize state for smoother visual feedback
   const [localResizeState, setLocalResizeState] = useState<{
     itemId: string | null;
     size: { width: number; height: number };
     fontSize: number;
   }>({ itemId: null, size: { width: 0, height: 0 }, fontSize: 0 });
+
+  // Local image resize state for smooth image resizing
+  const [localImageResizeState, setLocalImageResizeState] = useState<{
+    itemId: string | null;
+    size: { width: number; height: number };
+  }>({ itemId: null, size: { width: 0, height: 0 } });
 
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -69,6 +78,29 @@ export const useGridItems = () => {
     [dispatch],
   );
 
+  // Create debounced image resize update with lower frequency to improve performance
+  const debouncedImageResizeUpdate = useMemo(
+    () =>
+      debounce((itemId: string, size: any) => {
+        dispatch(updateImageSize({ id: itemId, size }));
+      }, 100), // Less frequent Redux updates (100ms) for better performance
+    [dispatch],
+  );
+
+  // Create debounced drag update with optimal frequency
+  const debouncedDragUpdate = useMemo(
+    () =>
+      debounce((itemId: string, position: { x: number; y: number }, itemType: "image" | "text") => {
+        // Update the Redux store based on item type
+        if (itemType === "image") {
+          dispatch(updateImagePosition({ id: itemId, position }));
+        } else {
+          dispatch(updateTextPosition({ id: itemId, position }));
+        }
+      }, 50), // 50ms for better performance during dragging
+    [dispatch],
+  );
+
   // Handle item selection with useCallback
   const handleSelectItem = useCallback(
     (id: string, e: React.MouseEvent) => {
@@ -93,7 +125,14 @@ export const useGridItems = () => {
         dispatch(setSelectedItem(itemId));
       }
 
+      // Set flag for dragging
       setIsDragging(true);
+
+      // Determine item type
+      const isImage = images.some((img) => img.id === itemId);
+      setDraggedItemType(isImage ? "image" : "text");
+
+      // Store the initial mouse position relative to the element
       setDragStart({
         x: e.clientX - position.x,
         y: e.clientY - position.y,
@@ -105,7 +144,7 @@ export const useGridItems = () => {
         [itemId]: position,
       }));
     },
-    [selectedItemId, dispatch],
+    [selectedItemId, dispatch, images],
   );
 
   // Start resizing an item with useCallback
@@ -125,6 +164,8 @@ export const useGridItems = () => {
       // Initialize local resize state
       if (selectedItemId) {
         const selectedText = texts.find((txt) => txt.id === selectedItemId);
+        const selectedImage = images.find((img) => img.id === selectedItemId);
+
         if (selectedText) {
           setLocalResizeState({
             itemId: selectedItemId,
@@ -134,10 +175,18 @@ export const useGridItems = () => {
             },
             fontSize: selectedText.style.fontSize,
           });
+        } else if (selectedImage) {
+          setLocalImageResizeState({
+            itemId: selectedItemId,
+            size: {
+              width: typeof size.width === "number" ? size.width : parseInt(String(size.width)),
+              height: typeof size.height === "number" ? size.height : parseInt(String(size.height)),
+            },
+          });
         }
       }
     },
-    [selectedItemId, texts],
+    [selectedItemId, texts, images],
   );
 
   // Handle mouse move for dragging and resizing
@@ -148,8 +197,8 @@ export const useGridItems = () => {
       if (isDragging) {
         // Update local position immediately for smooth visual feedback
         const newPosition = {
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
+          x: Math.round(e.clientX - dragStart.x), // Round to avoid subpixel rendering
+          y: Math.round(e.clientY - dragStart.y),
         };
 
         // Update only the selected item's drag position
@@ -158,19 +207,8 @@ export const useGridItems = () => {
           [selectedItemId]: newPosition,
         }));
 
-        // Throttle Redux updates
-        if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
-        dragTimeoutRef.current = setTimeout(() => {
-          // Only dispatch to Redux every 16ms (60fps)
-          const selectedImage = images.find((img) => img.id === selectedItemId);
-          const selectedText = texts.find((txt) => txt.id === selectedItemId);
-
-          if (selectedImage) {
-            dispatch(updateImagePosition({ id: selectedItemId, position: newPosition }));
-          } else if (selectedText) {
-            dispatch(updateTextPosition({ id: selectedItemId, position: newPosition }));
-          }
-        }, 16);
+        // Throttle Redux updates using our debounced function
+        debouncedDragUpdate(selectedItemId, newPosition, draggedItemType || "text");
       }
 
       if (isResizing) {
@@ -184,22 +222,34 @@ export const useGridItems = () => {
           // Determine if we want to maintain aspect ratio
           const maintainAspectRatio = true; // Can be made into a user toggle option
 
+          let finalWidth, finalHeight;
+
           if (maintainAspectRatio) {
             const aspectRatioValue = selectedImage.size.height / selectedImage.size.width;
-            let newWidth = Math.max(20, resizeStart.width + deltaX);
-            let newHeight = Math.max(20, newWidth * aspectRatioValue);
-
-            dispatch(
-              updateImageSize({ id: selectedItemId, size: { width: newWidth, height: newHeight } }),
-            );
+            finalWidth = Math.max(20, resizeStart.width + deltaX);
+            finalHeight = Math.max(20, finalWidth * aspectRatioValue);
           } else {
             // Free-form resize (not maintaining aspect ratio)
-            const newWidth = Math.max(20, resizeStart.width + deltaX);
-            const newHeight = Math.max(20, resizeStart.height + deltaY);
+            finalWidth = Math.max(20, resizeStart.width + deltaX);
+            finalHeight = Math.max(20, resizeStart.height + deltaY);
+          }
 
-            dispatch(
-              updateImageSize({ id: selectedItemId, size: { width: newWidth, height: newHeight } }),
-            );
+          // Update local image resize state for smooth visual feedback
+          // This runs on every mouse movement for smooth UI updates
+          if (selectedItemId) {
+            setLocalImageResizeState({
+              itemId: selectedItemId,
+              size: {
+                width: Math.round(finalWidth), // Round to avoid subpixel rendering issues
+                height: Math.round(finalHeight),
+              },
+            });
+
+            // Debounce the Redux update (less frequent)
+            debouncedImageResizeUpdate(selectedItemId, {
+              width: Math.round(finalWidth),
+              height: Math.round(finalHeight),
+            });
           }
         } else if (selectedText) {
           // Handle text resizing with improved algorithm
@@ -249,23 +299,29 @@ export const useGridItems = () => {
     const handleMouseUp = () => {
       if (isDragging) {
         // On mouse up, ensure the final position is correctly updated in Redux
-        const selectedImage = images.find((img) => img.id === selectedItemId);
-        const selectedText = texts.find((txt) => txt.id === selectedItemId);
-
-        if (selectedImage && selectedItemId && itemDragPositions[selectedItemId]) {
-          dispatch(
-            updateImagePosition({
-              id: selectedItemId,
-              position: itemDragPositions[selectedItemId],
-            }),
-          );
-        } else if (selectedText && selectedItemId && itemDragPositions[selectedItemId]) {
-          dispatch(
-            updateTextPosition({
-              id: selectedItemId,
-              position: itemDragPositions[selectedItemId],
-            }),
-          );
+        if (selectedItemId && itemDragPositions[selectedItemId]) {
+          const position = itemDragPositions[selectedItemId];
+          if (draggedItemType === "image") {
+            dispatch(
+              updateImagePosition({
+                id: selectedItemId,
+                position: {
+                  x: Math.round(position.x), // Round for crisp rendering
+                  y: Math.round(position.y),
+                },
+              }),
+            );
+          } else {
+            dispatch(
+              updateTextPosition({
+                id: selectedItemId,
+                position: {
+                  x: Math.round(position.x),
+                  y: Math.round(position.y),
+                },
+              }),
+            );
+          }
         }
       }
 
@@ -294,8 +350,20 @@ export const useGridItems = () => {
         setLocalResizeState({ itemId: null, size: { width: 0, height: 0 }, fontSize: 0 });
       }
 
+      // Final image resize update on mouse up
+      if (isResizing && localImageResizeState.itemId) {
+        const { itemId, size } = localImageResizeState;
+
+        // Force immediate update on mouse up to ensure resize changes are applied
+        dispatch(updateImageSize({ id: itemId, size }));
+
+        // Reset local image resize state
+        setLocalImageResizeState({ itemId: null, size: { width: 0, height: 0 } });
+      }
+
       setIsDragging(false);
       setIsResizing(false);
+      setDraggedItemType(null);
     };
 
     if (isDragging || isResizing) {
@@ -318,7 +386,11 @@ export const useGridItems = () => {
     dispatch,
     itemDragPositions,
     localResizeState,
+    localImageResizeState,
     debouncedResizeUpdate,
+    debouncedImageResizeUpdate,
+    draggedItemType,
+    debouncedDragUpdate,
   ]);
 
   // Update item drag positions when items change in Redux store
@@ -440,5 +512,6 @@ export const useGridItems = () => {
     handleResizeStart,
     itemDragPositions,
     localResizeState,
+    localImageResizeState,
   };
 };
