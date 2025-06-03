@@ -93,6 +93,12 @@ export const useCanvasItems = () => {
   const handleDragStart = useCallback(
     (e: React.MouseEvent, position: { x: number; y: number }, itemId: string) => {
       e.stopPropagation();
+
+      // If the item being dragged is not the currently selected item, select it
+      if (selectedItemId !== itemId) {
+        dispatch(setSelectedItem(itemId));
+      }
+
       setIsDragging(true);
       setDragStart({
         x: e.clientX - position.x,
@@ -105,7 +111,7 @@ export const useCanvasItems = () => {
         [itemId]: position,
       }));
     },
-    [],
+    [selectedItemId, dispatch],
   );
 
   // Start resizing an item with useCallback
@@ -440,6 +446,6 @@ export const useCanvasItems = () => {
     handleDragStart,
     handleResizeStart,
     itemDragPositions,
-    localResizeState, 
+    localResizeState,
   };
 };
