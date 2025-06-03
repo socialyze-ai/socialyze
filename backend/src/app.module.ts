@@ -12,6 +12,7 @@ import { MediaModule } from './modules/media/media.module';
 import { AiModule } from './modules/ai/ai.module';
 import { LabelModule } from './modules/label/label.module';
 import { PostModule } from './modules/post/post.module';
+import { TemplateModule } from './modules/template/template.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PostModule } from './modules/post/post.module';
     LabelModule,
     AiModule,
     PostModule,
+    TemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
