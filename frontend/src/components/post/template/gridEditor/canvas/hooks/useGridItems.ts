@@ -368,6 +368,22 @@ export const useGridItems = () => {
     }
   }, [selectedItemId, images, texts]);
 
+  // Add document click handler to deselect when clicking outside
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      // Check if the click target is not an image or text element
+      const target = e.target as HTMLElement;
+      if (!target.closest(".absolute")) {
+        dispatch(setSelectedItem(null));
+      }
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [dispatch]);
+
   // Auto-select newly added items and ensure they are at top layer
   useEffect(() => {
     // Check for new image
