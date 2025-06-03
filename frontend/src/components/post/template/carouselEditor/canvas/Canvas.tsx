@@ -246,6 +246,19 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     [dispatch],
   );
 
+  // Handle text auto-resize
+  const handleUpdateSize = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      dispatch(
+        updateTextSize({
+          id,
+          size,
+        }),
+      );
+    },
+    [dispatch],
+  );
+
   // Memoize sorted items array
   const sortedItems = useMemo(() => {
     // Combine images and texts into a single array
@@ -324,6 +337,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
                 onEditText={handleEditText}
                 onRemoveItem={handleDeleteItem}
                 localResizeState={localResizeState}
+                onUpdateSize={handleUpdateSize}
               />
             );
           }
@@ -346,6 +360,7 @@ const Canvas = forwardRef<CanvasRef, {}>((props, ref) => {
     isDragging,
     localResizeState,
     localImageResizeState,
+    handleUpdateSize,
   ]);
 
   const { widthMm, heightMm } = getCanvasDimensionsInMm(aspectRatio, canvasCount);

@@ -240,6 +240,19 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
     [dispatch],
   );
 
+  // Handle text auto-resize
+  const handleUpdateSize = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      dispatch(
+        updateTextSize({
+          id,
+          size,
+        }),
+      );
+    },
+    [dispatch],
+  );
+
   // Memoize sorted items array
   const sortedItems = useMemo(() => {
     // Combine images and texts into a single array
@@ -329,6 +342,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
                 onEditText={handleEditText}
                 onRemoveItem={handleDeleteItem}
                 localResizeState={localResizeState}
+                onUpdateSize={handleUpdateSize}
               />
             );
           }
@@ -351,6 +365,7 @@ const Canvas = forwardRef<CanvasRef, { columns: number; rows: number }>((props, 
     isDragging,
     localResizeState,
     localImageResizeState,
+    handleUpdateSize,
   ]);
 
   const { widthMm, heightMm } = getGridDimensionsInMm(columns, rows);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, X } from "lucide-react";
 import { CanvasTextItem, TextAlign } from "./types";
@@ -12,6 +12,7 @@ interface CanvasTextProps {
   onResizeStart: (e: React.MouseEvent, size: { width: number; height: number }) => void;
   onEditText: (id: string, e: React.MouseEvent) => void;
   onRemoveItem: (id: string, e: React.MouseEvent) => void;
+  onUpdateSize?: (id: string, size: { width: number; height: number }) => void;
   localResizeState?: {
     itemId: string | null;
     size: { width: number; height: number };
@@ -28,9 +29,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({
   onResizeStart,
   onEditText,
   onRemoveItem,
+  onUpdateSize,
   localResizeState,
 }) => {
   const rotation = txt.style.rotation || 0;
+  const textContentRef = useRef<HTMLDivElement>(null);
 
   // Check if this text is currently being resized
   const isResizing = localResizeState?.itemId === txt.id;
@@ -48,6 +51,37 @@ const CanvasText: React.FC<CanvasTextProps> = ({
 
   // Use local resize state font size during active resize
   const displayFontSize = isResizing ? localResizeState.fontSize : txt.style.fontSize;
+
+  // Auto-resize effect - measure text content and update size
+  useEffect(() => {
+    if (textContentRef.current && onUpdateSize && !isResizing) {
+      // Allow a small delay for the text to render with correct styles
+      const timer = setTimeout(() => {
+        const textElement = textContentRef.current;
+        if (textElement) {
+          // Get the actual content size plus some padding
+          const contentWidth = Math.ceil(textElement.scrollWidth) + 20; // Add some padding
+          const contentHeight = Math.ceil(textElement.scrollHeight) + 10; // Add some padding
+
+          // If current size is significantly different from content size, update it
+          const currentWidth = typeof txt.size?.width === "number" ? txt.size.width : 100;
+          const currentHeight = typeof txt.size?.height === "number" ? txt.size.height : 50;
+
+          if (
+            Math.abs(contentWidth - currentWidth) > 5 ||
+            Math.abs(contentHeight - currentHeight) > 5
+          ) {
+            onUpdateSize(txt.id, {
+              width: contentWidth,
+              height: contentHeight,
+            });
+          }
+        }
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [txt.content, txt.style.fontSize, txt.style.fontFamily, txt.style.fontWeight]);
 
   return (
     <div
@@ -77,6 +111,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({
         }}
       >
         <div
+          ref={textContentRef}
           style={{
             fontSize: `${displayFontSize}px`,
             color: txt.style.color,
@@ -179,6 +214,7 @@ export default React.memo<CanvasTextProps>(CanvasText, (prevProps, nextProps) =>
     prevProps.localResizeState?.itemId === nextProps.localResizeState?.itemId &&
     prevProps.localResizeState?.size.width === nextProps.localResizeState?.size.width &&
     prevProps.localResizeState?.size.height === nextProps.localResizeState?.size.height &&
-    prevProps.localResizeState?.fontSize === nextProps.localResizeState?.fontSize
+    prevProps.localResizeState?.fontSize === nextProps.localResizeState?.fontSize &&
+    prevProps.onUpdateSize === nextProps.onUpdateSize
   );
 });
