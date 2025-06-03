@@ -12,28 +12,35 @@ import GridTemplate from "./gridEditor/GridTemplate";
 import GridTemplateEditModal from "./gridEditor/TemplateEditModal";
 import CarouselTemplateEditModal from "./carouselEditor/TemplateEditModal";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
 
 const linkedinSuggestions = ["Wisdom", "Advice", "Growth", "Content Marketing"];
-const instagramAndFacebookSuggestions = ["Grid", "Carousal", "Traveling", "Motivating"];
+const instagramSuggestions = ["Grid", "Carousal", "Traveling", "Motivating"];
+const facebookSuggestions = ["Carousal", "Traveling", "Motivating"];
 const xSuggestions = ["Storytelling", "News"];
 
 const TemplatePanel = () => {
   const dispatch = useDispatch();
   const [activeSuggestion, setActiveSuggestion] = useState({
-    facebook: instagramAndFacebookSuggestions[0],
-    instagram: instagramAndFacebookSuggestions[0],
+    facebook: facebookSuggestions[0],
+    instagram: instagramSuggestions[0],
     linkedin: linkedinSuggestions[0],
     x: xSuggestions[0],
   });
   const [activeTab, setActiveTab] = useState("facebook");
 
+  // Set Facebook as default tab and dispatch when component mounts
+  useEffect(() => {
+    setActiveTab("facebook");
+    dispatch(setSocialPlatform("facebook"));
+  }, [dispatch]);
+
   const handleClose = () => {
     dispatch(setIsTemplateSectionOpen(false));
     setActiveSuggestion({
-      facebook: instagramAndFacebookSuggestions[0],
-      instagram: instagramAndFacebookSuggestions[0],
+      facebook: facebookSuggestions[0],
+      instagram: instagramSuggestions[0],
       linkedin: linkedinSuggestions[0],
       x: xSuggestions[0],
     });
@@ -47,7 +54,7 @@ const TemplatePanel = () => {
   };
 
   const renderTemplateComponent = (tab, suggestion) => {
-    if ((tab === "facebook" || tab === "instagram") && suggestion === "Grid") {
+    if (tab === "instagram" && suggestion === "Grid") {
       return <GridTemplate socialPlatform={tab} />;
     } else if ((tab === "facebook" || tab === "instagram") && suggestion === "Carousal") {
       return <CarouselTemplate socialPlatform={tab} />;
@@ -91,7 +98,7 @@ const TemplatePanel = () => {
             {activeTab === "facebook" && (
               <TabsContent value="facebook" className="h-full flex flex-col gap-2">
                 <div className="flex flex-wrap gap-1">
-                  {instagramAndFacebookSuggestions?.map((sug, index) => {
+                  {facebookSuggestions?.map((sug, index) => {
                     return (
                       <Badge
                         key={cn(sug + "-" + index)}
@@ -112,7 +119,7 @@ const TemplatePanel = () => {
             {activeTab === "instagram" && (
               <TabsContent value="instagram" className="h-full flex flex-col gap-2">
                 <div className="flex flex-wrap gap-1">
-                  {instagramAndFacebookSuggestions?.map((sug, index) => {
+                  {instagramSuggestions?.map((sug, index) => {
                     return (
                       <Badge
                         key={cn(sug + "-" + index)}
