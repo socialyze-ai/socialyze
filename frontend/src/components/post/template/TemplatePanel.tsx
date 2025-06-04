@@ -107,6 +107,10 @@ const TemplatePanel = () => {
     );
   };
 
+  const resetCategoryForm = () => {
+    setNewCategory({ type: "default", name: "" });
+  };
+
   const handleClose = () => {
     dispatch(setIsTemplateSectionOpen(false));
   };
@@ -134,7 +138,7 @@ const TemplatePanel = () => {
         onSuccess: () => {
           toast.success("Category added successfully");
           setIsAddCategoryOpen(false);
-          setNewCategory({ type: "default", name: "" });
+          resetCategoryForm();
           // Refresh categories
           fetchCategories(activeTab);
         },
@@ -289,7 +293,15 @@ const TemplatePanel = () => {
         )}
 
       {/* Add Category Modal */}
-      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+      <Dialog
+        open={isAddCategoryOpen}
+        onOpenChange={(open) => {
+          setIsAddCategoryOpen(open);
+          if (!open) {
+            resetCategoryForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
