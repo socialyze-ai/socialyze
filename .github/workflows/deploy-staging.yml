@@ -22,6 +22,7 @@ jobs:
           cd ~/socialyze
           git pull origin next
           cd backend
+          rm -rf node_modules package-lock.json
           npm ci
           npm run build
           pm2 restart socialyze-backend || pm2 start dist/index.js --name socialyze-backend
