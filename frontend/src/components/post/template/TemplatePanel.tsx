@@ -28,6 +28,7 @@ import {
   useGetPostCategoryTemplates,
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
+import { isUserAdmin } from "@/api/apiHooks/utils";
 
 // Keep special template cases
 const SPECIAL_TEMPLATES = {
@@ -191,15 +192,18 @@ const TemplatePanel = () => {
             {category.name}
           </Badge>
         ))}
-        <Button
-          className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200 w-5 h-5 rounded-full"
-          onClick={() => {
-            setIsAddCategoryOpen(true);
-          }}
-          size="icon"
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
+
+        {isUserAdmin() && (
+          <Button
+            className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200 w-5 h-5 rounded-full"
+            onClick={() => {
+              setIsAddCategoryOpen(true);
+            }}
+            size="icon"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     );
   };

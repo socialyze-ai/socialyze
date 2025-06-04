@@ -204,3 +204,7 @@ export const smartRequest = async <T>(
 export const getToken = (): string => {
   return localStorage.getItem("socialyze_token") || "";
 };
+
+export const isUserAdmin = (): boolean => {
+  return JSON.parse(localStorage.getItem("socialyze_user") || "{}").role === "admin";
+};
