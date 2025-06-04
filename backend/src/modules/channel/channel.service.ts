@@ -7,6 +7,7 @@ import { FacebookService } from '../service/facebook.service';
 import { OAuthSession } from 'src/schema/oauthsession.schema';
 import { InstagramService } from '../service/instagram.service';
 import { XService } from '../service/x.service';
+import { LinkedinService } from '../service/linkedin.service';
 
 @Injectable()
 export class ChannelService {
@@ -17,6 +18,7 @@ export class ChannelService {
     private readonly facebookService: FacebookService,
     private readonly instagramService: InstagramService,
     private readonly xService: XService,
+    private readonly linkedinService: LinkedinService,
   ) {}
 
   async getChannels(userId: string): Promise<Channel[]> {
@@ -44,6 +46,8 @@ export class ChannelService {
       authUrl = await this.instagramService.getAuthUrl(userId);
     } else if (handle === 'x') {
       authUrl = await this.xService.getAuthUrl(userId);
+    } else if (handle === 'linkedin') {
+      authUrl = await this.linkedinService.getAuthUrl(userId);
     }
 
     return authUrl;
@@ -73,6 +77,8 @@ export class ChannelService {
       } else if (oauthSession.handle === 'x') {
         authCode = authCode + ':' + oauthSession.secret;
         response = await this.xService.authenticate(userId, authCode);
+      } else if (oauthSession.handle === 'linkedin') {
+        response = await this.linkedinService.authenticate(userId, authCode);
       }
 
       if (response.success) {
@@ -84,7 +90,7 @@ export class ChannelService {
 
       return response;
     } catch (error) {
-      console.error('Facebook connect error:', error);
+      console.error('Authenticate error:', error);
       return { success: false, message: error.message };
     }
   }

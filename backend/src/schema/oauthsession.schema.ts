@@ -18,7 +18,7 @@ export class OAuthSession {
   @Prop()
   code?: string;
 
-  @Prop({ required: true, enum: ['instagram', 'facebook', 'linkedIn', 'x'] })
+  @Prop({ required: true, enum: ['instagram', 'facebook', 'linkedin', 'x'] })
   handle: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

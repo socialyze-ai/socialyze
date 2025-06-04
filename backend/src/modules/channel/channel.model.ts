@@ -1,10 +1,10 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { SocialMediaHandle } from 'src/types/socialMediaHandle.enum';
+import { SocialMediaHandleEnum } from 'src/enums/enums';
 
 @Schema({ timestamps: true })
 export class Channel {
-  @Prop({ required: true, enum: SocialMediaHandle })
+  @Prop({ required: true, enum: SocialMediaHandleEnum })
   handle: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -18,6 +18,9 @@ export class Channel {
 
   @Prop({ required: true })
   refreshtoken: string;
+
+  @Prop()
+  idToken: string;
 
   @Prop({ required: true })
   channelId: string;

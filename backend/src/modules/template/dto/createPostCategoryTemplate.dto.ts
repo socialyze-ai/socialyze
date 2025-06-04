@@ -1,20 +1,14 @@
 import { IsEnum, IsString, IsOptional } from 'class-validator';
+import { SocialMediaHandleEnum } from 'src/enums/enums';
 
 export enum PostCategoryType {
   CUSTOM = 'custom',
   DEFAULT = 'default',
 }
 
-export enum SocialHandle {
-  FB = 'facebook',
-  INSTA = 'instagram',
-  LINKED = 'linkedin',
-  X = 'x',
-}
-
 export class CreatePostCategoryTemplateDto {
-  @IsEnum(SocialHandle)
-  handle: SocialHandle;
+  @IsEnum(SocialMediaHandleEnum)
+  handle: SocialMediaHandleEnum;
 
   @IsEnum(PostCategoryType)
   type: PostCategoryType;

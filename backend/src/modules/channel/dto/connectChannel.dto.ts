@@ -1,12 +1,12 @@
 import { IsNotEmpty, IsEnum, IsString } from 'class-validator';
-import { SocialMediaHandle } from 'src/types/socialMediaHandle.enum';
+import { SocialMediaHandleEnum } from 'src/enums/enums';
 
 export class ConnectChannelDto {
-  @IsEnum(SocialMediaHandle, {
+  @IsEnum(SocialMediaHandleEnum, {
     message: 'handle must be a valid social media platform',
   })
   @IsNotEmpty()
-  handle: SocialMediaHandle;
+  handle: SocialMediaHandleEnum;
 
   @IsString()
   @IsNotEmpty()

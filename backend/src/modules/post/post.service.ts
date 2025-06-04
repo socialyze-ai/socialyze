@@ -16,6 +16,7 @@ import { GetPostsRequestDto } from './dto/getPostsRequest.dto';
 import { GetPostResponseDto } from './dto/getPostsResponse.dto';
 import axios from 'axios';
 import { GetPostsForCalendarRequestDto } from './dto/getPostsForCalendarRequest.dto';
+import { LinkedinService } from '../service/linkedin.service';
 
 @Injectable()
 export class PostService {
@@ -25,6 +26,7 @@ export class PostService {
     private readonly facebookService: FacebookService,
     private readonly instagramService: InstagramService,
     private readonly xService: XService,
+    private readonly linkedinService: LinkedinService,
   ) {}
 
   async createPosts(postDtos: PostDto[], userId: string) {
@@ -45,6 +47,13 @@ export class PostService {
           await post.save();
           continue;
         }
+
+        console.log('Scheduler URL:', process.env.SCHEDULER_URL);
+        console.log(
+          'SCHEDULER_ACCESS_TOKEN:',
+          process.env.SCHEDULER_ACCESS_TOKEN,
+        );
+        console.log('BACKEND_URL:', process.env.BACKEND_URL);
 
         if (post.postType === 'postnow') {
           post.scheduledTime = new Date();
@@ -106,6 +115,7 @@ export class PostService {
       }
 
       const handle = post.handle;
+      console.log('Heree');
 
       let response: { success?: boolean; postId?: string; postUrl?: string } =
         {};
@@ -115,6 +125,8 @@ export class PostService {
         response = await this.instagramService.publish(post);
       } else if (handle === 'x') {
         response = await this.xService.publish(post);
+      } else if (handle === 'linkedin') {
+        response = await this.linkedinService.publish(post);
       }
 
       if (response.success) {

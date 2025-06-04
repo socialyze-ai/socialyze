@@ -118,6 +118,8 @@ export class XService {
 
       const [accessToken, accessSecret] = channel.accesstoken.split(':');
 
+      console.log('AppKey exists:', process.env.X_API_KEY);
+      console.log('AppSecret exists:', process.env.X_API_SECRET);
       const client = new TwitterApi({
         appKey: process.env.X_API_KEY!,
         appSecret: process.env.X_API_SECRET!,
@@ -129,9 +131,12 @@ export class XService {
         data: { username },
       } = await client.v2.me({ 'user.fields': 'username' });
 
+      console.log('username', username);
+
       // Prepare media uploads
       let media_ids: string[] = [];
       if (post.media && post.media.length > 0) {
+        console.log('here2');
         const uploadResults = await Promise.all(
           post.media.map(async (url) => {
             const response = await axios.get(url, {
@@ -139,6 +144,7 @@ export class XService {
             });
             const buffer = Buffer.from(response.data);
             const mimeType = lookup(url) || '';
+            console.log('here3');
 
             let mediaBuffer = buffer;
 
@@ -152,6 +158,7 @@ export class XService {
                 .gif()
                 .toBuffer();
             }
+            console.log('here4');
 
             const mediaId = await client.v1.uploadMedia(mediaBuffer, {
               mimeType,
@@ -168,6 +175,8 @@ export class XService {
         | [string, string]
         | [string, string, string]
         | [string, string, string, string];
+
+      console.log('here');
 
       const tweetRes = await client.v2.tweet({
         text: post.text,

@@ -1,8 +1,8 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Post {
+export class Post extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Channel', required: true })
   channelId: Types.ObjectId;
 

@@ -11,6 +11,7 @@ import {
 } from 'src/schema/oauthsession.schema';
 import { InstagramService } from '../service/instagram.service';
 import { XService } from '../service/x.service';
+import { LinkedinService } from '../service/linkedin.service';
 
 @Module({
   imports: [
@@ -21,6 +22,12 @@ import { XService } from '../service/x.service';
     ServiceModule,
   ],
   controllers: [ChannelController],
-  providers: [ChannelService, FacebookService, InstagramService, XService],
+  providers: [
+    ChannelService,
+    FacebookService,
+    InstagramService,
+    XService,
+    LinkedinService,
+  ],
 })
 export class ChannelModule {}

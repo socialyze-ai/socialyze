@@ -12,6 +12,7 @@ import {
   OAuthSession,
   OAuthSessionSchema,
 } from 'src/schema/oauthsession.schema';
+import { LinkedinService } from '../service/linkedin.service';
 
 @Module({
   imports: [
@@ -23,6 +24,12 @@ import {
     ServiceModule,
   ],
   controllers: [PostController],
-  providers: [PostService, FacebookService, InstagramService, XService],
+  providers: [
+    PostService,
+    FacebookService,
+    InstagramService,
+    XService,
+    LinkedinService,
+  ],
 })
 export class PostModule {}

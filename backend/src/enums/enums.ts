@@ -1,5 +1,5 @@
 export enum SocialMediaHandleEnum {
-  FACEBOOK = 'facenook',
+  FACEBOOK = 'facebook',
   INSTAGRAM = 'instagram',
   LINKEDIN = 'linkedin',
   X = 'x',
