@@ -28,6 +28,8 @@ import { ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { useCreatePostTemplatesDefault } from "@/api/apiHooks/useTemplate";
+import { toast } from "sonner";
 
 // Generic PopoverButton component
 const PopoverButton = ({
@@ -69,6 +71,8 @@ const CanvasOptions = ({
   setRows,
   handleMediaChange,
   handleAddText,
+  activeCategoryId,
+  templateData,
 }: {
   handleTemplateSaveAndUse: (isSave: boolean) => void;
   isLoading: boolean;
@@ -78,9 +82,38 @@ const CanvasOptions = ({
   setRows: (rows: number) => void;
   handleMediaChange: (media: Media[]) => void;
   handleAddText: () => void;
+  activeCategoryId: string;
+  templateData: any;
 }) => {
   const dispatch = useDispatch();
   const { aspectRatio, backgroundColor } = useSelector((state: RootState) => state.template);
+  const { mutate: createTemplate, isPending } = useCreatePostTemplatesDefault();
+
+  const handleSaveOrUse = (isSave: boolean) => {
+    if (!activeCategoryId) {
+      toast.error("No category selected. Please select a category first.");
+      return;
+    }
+
+    // Use the template data from the parent component
+    createTemplate(
+      {
+        type: "default",
+        postCategory: activeCategoryId,
+        body: templateData,
+      },
+      {
+        onSuccess: (data) => {
+          toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
+          // Call the original handler after API success
+          handleTemplateSaveAndUse(isSave);
+        },
+        onError: (error: any) => {
+          toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+        },
+      },
+    );
+  };
 
   return (
     <div className="flex gap-2 w-full justify-between h-fit">
@@ -152,11 +185,11 @@ const CanvasOptions = ({
           <TooltipTrigger>
             <Button
               variant="ghost"
-              onClick={() => handleTemplateSaveAndUse(true)}
-              disabled={isLoading}
+              onClick={() => handleSaveOrUse(true)}
+              disabled={isLoading || isPending || !activeCategoryId}
               className="shadow"
             >
-              {isLoading ? (
+              {isLoading || isPending ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Save className="h-5 w-5" />
@@ -171,11 +204,11 @@ const CanvasOptions = ({
           <TooltipTrigger>
             <Button
               variant="ghost"
-              onClick={() => handleTemplateSaveAndUse(false)}
-              disabled={isLoading}
+              onClick={() => handleSaveOrUse(false)}
+              disabled={isLoading || isPending || !activeCategoryId}
               className=" bg-blue-600 text-white shadow"
             >
-              {isLoading ? (
+              {isLoading || isPending ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Check className="h-5 w-5" />

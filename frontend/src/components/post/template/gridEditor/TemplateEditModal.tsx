@@ -31,6 +31,7 @@ import { CanvasRef } from "./canvas/types";
 import Canvas from "./canvas/Canvas";
 import LayerManager from "./LayerManager";
 import ImageAndTextStack from "./ImageAndTextStack";
+import { useGetPostCategoryTemplates } from "@/api/apiHooks/useTemplate";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -64,8 +65,11 @@ const TemplateEditModal = ({
   const [showCloseAlert, setShowCloseAlert] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("Grid");
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
+  const { mutate: getCategories } = useGetPostCategoryTemplates();
 
   console.log("isLoading Grid", isLoading);
 
@@ -75,6 +79,32 @@ const TemplateEditModal = ({
       setDialogOpen(open);
     }
   }, [open]);
+
+  // Load categories for the current platform when opened
+  useEffect(() => {
+    if (dialogOpen && socialPlatform) {
+      fetchCategories(socialPlatform);
+    }
+  }, [dialogOpen, socialPlatform]);
+
+  const fetchCategories = (handle: string) => {
+    getCategories(
+      {
+        handle,
+        type: "default",
+      },
+      {
+        onSuccess: (data: any) => {
+          setCategories(data || []);
+          // Always use "Grid" as the category for grid templates
+          setActiveCategoryId("Grid");
+        },
+        onError: (error) => {
+          toast.error("Failed to fetch categories: " + error.message);
+        },
+      },
+    );
+  };
 
   // Process initialTemplateData if provided
   useEffect(() => {
@@ -508,7 +538,27 @@ const TemplateEditModal = ({
     }
   };
 
-  const handleTemplateSaveAndUse = async (isSave: boolean) => {
+  // Update the handleTemplateSaveAndUse function to include template data
+  const getTemplateData = () => {
+    // Ensure sections are recalculated before getting the data
+    dispatch(recalculateSectionAssignments());
+
+    const templateData = {
+      canvasCount,
+      aspectRatio,
+      backgroundColor,
+      gridSize: {
+        columns,
+        rows,
+      },
+      images,
+      texts,
+      socialPlatform,
+    };
+    return templateData;
+  };
+
+  const handleTemplateSaveAndUse = async (isSave: boolean = false) => {
     // Validate that we have content to process
     if (images.length === 0 && texts.length === 0) {
       const errorMsg = "Cannot process empty template. Please add images or text.";
@@ -544,7 +594,10 @@ const TemplateEditModal = ({
             canvasCount,
             aspectRatio,
             backgroundColor,
-            gridSize: { columns, rows },
+            gridSize: {
+              columns,
+              rows,
+            },
             images,
             texts,
             outputUrls,
@@ -652,13 +705,15 @@ const TemplateEditModal = ({
               <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                  isLoading={isLoading}
+                  isLoading={isLoading || isUploading}
                   columns={columns}
                   setColumns={setColumns}
                   rows={rows}
                   setRows={setRows}
                   handleMediaChange={handleMediaChange}
                   handleAddText={handleAddText}
+                  activeCategoryId={activeCategoryId}
+                  templateData={getTemplateData()}
                 />
 
                 <LayerManager />

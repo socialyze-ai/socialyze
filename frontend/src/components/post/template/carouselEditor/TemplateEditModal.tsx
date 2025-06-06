@@ -33,6 +33,7 @@ import { Loader2 } from "lucide-react";
 import ImageAndTextStack from "./ImageAndTextStack";
 import LayerManager from "./LayerManager";
 import { CanvasRef } from "./canvas/types";
+import { useGetPostCategoryTemplates } from "@/api/apiHooks/useTemplate";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -65,8 +66,11 @@ const TemplateEditModal = ({
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("");
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
+  const { mutate: getCategories } = useGetPostCategoryTemplates();
 
   console.log("isLoading Carousel", isLoading);
 
@@ -156,6 +160,44 @@ const TemplateEditModal = ({
   useEffect(() => {
     dispatch(recalculateSectionAssignments());
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
+
+  // Load categories for the current platform when opened
+  useEffect(() => {
+    if (dialogOpen && socialPlatform) {
+      fetchCategories(socialPlatform);
+    }
+  }, [dialogOpen, socialPlatform]);
+
+  const fetchCategories = (handle: string) => {
+    getCategories(
+      {
+        handle,
+        type: "default",
+      },
+      {
+        onSuccess: (data: any) => {
+          setCategories(data || []);
+
+          // Set simple category name based on platform
+          if (handle === "instagram") {
+            // For Instagram, prefer Grid
+            setActiveCategoryId("Grid");
+          } else if (handle === "facebook") {
+            // For Facebook, prefer Carousel
+            setActiveCategoryId("Carousel");
+          } else if (handle === "twitter" || handle === "x") {
+            setActiveCategoryId("Carousel");
+          } else {
+            // Default to Carousel for other platforms
+            setActiveCategoryId("Carousel");
+          }
+        },
+        onError: (error) => {
+          toast.error("Failed to fetch categories: " + error.message);
+        },
+      },
+    );
+  };
 
   const handleOpenChange = (open: boolean) => {
     // Reset processing error when opening
@@ -481,6 +523,22 @@ const TemplateEditModal = ({
     }
   };
 
+  // Get template data to be saved
+  const getTemplateData = () => {
+    // Ensure sections are recalculated before getting the data
+    dispatch(recalculateSectionAssignments());
+
+    const templateData = {
+      canvasCount,
+      aspectRatio,
+      backgroundColor,
+      images,
+      texts,
+      socialPlatform,
+    };
+    return templateData;
+  };
+
   const handleTemplateSaveAndUse = async (isSave: boolean = false) => {
     // Validate that we have content to process
     if (images.length === 0 && texts.length === 0) {
@@ -629,9 +687,16 @@ const TemplateEditModal = ({
               <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                  isLoading={isLoading}
+                  isLoading={isLoading || isUploading}
                   handleMediaChange={handleMediaChange}
                   handleAddText={handleAddText}
+                  templateData={getTemplateData()}
+                  activeCategoryId={activeCategoryId}
+                  onSuccessCallback={() => {
+                    if (onOpenChange) {
+                      onOpenChange(false);
+                    }
+                  }}
                 />
 
                 <Preview ref={previewRef} />

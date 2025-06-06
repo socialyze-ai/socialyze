@@ -1,6 +1,6 @@
 import PostTemplatePreview from "../../PostTemplatePreview";
 import { Badge } from "@/components/ui/badge";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   setImages,
   setText,
@@ -11,6 +11,7 @@ import {
 } from "@/redux/slices/template.slice";
 import TemplateEditModal from "./TemplateEditModal";
 import { useState } from "react";
+import TemplatePreview from "../TemplatePreview";
 
 const dummyData = [
   {
@@ -453,24 +454,20 @@ const CarouselTemplate = ({ socialPlatform }: CarouselTemplateProps = {}) => {
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2 bg-gray-50">
       {dummyData.map((data, index) => (
-        <div key={index} className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl">
-          <div className="flex justify-between">
-            <p>{data?.name}</p>
+        <div key={index} className="relative h-fit w-full">
+          <Badge
+            variant="outline"
+            className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
+            onClick={() => handleUseTemplate(data, index)}
+          >
+            Use Template
+          </Badge>
 
-            <Badge
-              variant="outline"
-              className="cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-              onClick={() => handleUseTemplate(data, index)}
-            >
-              Use Template
-            </Badge>
-          </div>
-
-          <PostTemplatePreview
+          <TemplatePreview
             content={""}
             channel={{ type: "default" } as any}
             mediaUrls={data?.outputUrls}
-            isTemplate
+            templateType="carousel"
           />
         </div>
       ))}
