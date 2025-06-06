@@ -28,8 +28,12 @@ import { ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { useCreatePostTemplatesDefault } from "@/api/apiHooks/useTemplate";
+import {
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
+import { isUserAdmin } from "@/api/apiHooks/utils";
 
 // Generic PopoverButton component
 const PopoverButton = ({
@@ -87,7 +91,9 @@ const CanvasOptions = ({
 }) => {
   const dispatch = useDispatch();
   const { aspectRatio, backgroundColor } = useSelector((state: RootState) => state.template);
-  const { mutate: createTemplate, isPending } = useCreatePostTemplatesDefault();
+  const { mutate: createTemplate, isPending: isPendingDefault } = useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
 
   const handleSaveOrUse = (isSave: boolean) => {
     if (!activeCategoryId) {
@@ -95,24 +101,44 @@ const CanvasOptions = ({
       return;
     }
 
-    // Use the template data from the parent component
-    createTemplate(
-      {
-        type: "default",
-        postCategory: activeCategoryId,
-        body: templateData,
-      },
-      {
-        onSuccess: (data) => {
-          toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
-          // Call the original handler after API success
-          handleTemplateSaveAndUse(isSave);
+    if (isUserAdmin()) {
+      // Use the template data from the parent component
+      createTemplate(
+        {
+          type: "default",
+          postCategory: activeCategoryId,
+          body: templateData,
         },
-        onError: (error: any) => {
-          toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+        {
+          onSuccess: (data) => {
+            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
+            // Call the original handler after API success
+            handleTemplateSaveAndUse(isSave);
+          },
+          onError: (error: any) => {
+            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          },
         },
-      },
-    );
+      );
+    } else {
+      createTemplateCustom(
+        {
+          type: "custom",
+          postCategory: activeCategoryId,
+          body: templateData,
+        },
+        {
+          onSuccess: (data) => {
+            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
+            // Call the original handler after API success
+            handleTemplateSaveAndUse(isSave);
+          },
+          onError: (error: any) => {
+            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          },
+        },
+      );
+    }
   };
 
   return (
@@ -186,10 +212,10 @@ const CanvasOptions = ({
             <Button
               variant="ghost"
               onClick={() => handleSaveOrUse(true)}
-              disabled={isLoading || isPending || !activeCategoryId}
+              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
               className="shadow"
             >
-              {isLoading || isPending ? (
+              {isLoading || isPendingDefault || isPendingCustom ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Save className="h-5 w-5" />
@@ -205,10 +231,10 @@ const CanvasOptions = ({
             <Button
               variant="ghost"
               onClick={() => handleSaveOrUse(false)}
-              disabled={isLoading || isPending || !activeCategoryId}
+              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
               className=" bg-blue-600 text-white shadow"
             >
-              {isLoading || isPending ? (
+              {isLoading || isPendingDefault || isPendingCustom ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Check className="h-5 w-5" />
