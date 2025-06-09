@@ -225,7 +225,10 @@ const TemplateEditModal = ({
     setShowCloseAlert(false);
     setDialogOpen(false);
     setIsLoading(false);
-    dispatch(resetTemplate());
+
+    dispatch(setImages([]));
+    dispatch(setText([]));
+
     if (onOpenChange) {
       onOpenChange(false);
     }
