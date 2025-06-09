@@ -115,6 +115,7 @@ const TemplatePanel = () => {
 
   const handleClose = () => {
     dispatch(setIsTemplateSectionOpen(false));
+    dispatch(setSocialPlatform(null));
   };
 
   const handleSuggestionClick = (suggestion, tab) => {

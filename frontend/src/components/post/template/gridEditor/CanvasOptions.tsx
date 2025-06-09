@@ -142,8 +142,8 @@ const CanvasOptions = ({
   };
 
   return (
-    <div className="flex gap-2 w-full justify-between h-fit">
-      <div className="flex items-center gap-2 w-fit bg-white p-2 rounded-lg shadow">
+    <div className="flex gap-2 w-full justify-between h-fit p-2 bg-white rounded-lg shadow">
+      <div className="flex items-center gap-2 w-fit">
         <PopoverButton icon={<Grid2x2Plus className="h-5 w-5" />} label="Grid">
           <div className="w-48">
             <p className="text-sm font-medium mb-2">Rows: {rows}</p>
@@ -206,7 +206,7 @@ const CanvasOptions = ({
         </Tooltip>
       </div>
 
-      <div className="flex justify-end gap-2 w-fit bg-white p-2 rounded-lg shadow">
+      <div className="flex justify-end gap-2 w-fit">
         <Tooltip>
           <TooltipTrigger>
             <Button
