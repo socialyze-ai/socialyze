@@ -12,6 +12,7 @@ import {
 } from "@/redux/slices/template.slice";
 import TemplateEditModal from "./TemplateEditModal";
 import { useState } from "react";
+import TemplatePreview from "../TemplatePreview";
 
 const dummyData = [
   {
@@ -847,27 +848,19 @@ const GridTemplate = ({ socialPlatform }: GridTemplateProps = {}) => {
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2">
       {dummyData.map((data, index) => (
-        <div
-          key={index}
-          className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl bg-gray-50"
-        >
-          <div className="flex justify-between">
-            <p>{data?.name}</p>
-
-            <Badge
-              variant="outline"
-              className="cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-              onClick={() => handleUseTemplate(data, index)}
-            >
-              Use Template
-            </Badge>
-          </div>
-
-          <PostTemplatePreview
+        <div key={index} className="relative h-fit w-full">
+          <Badge
+            variant="outline"
+            className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
+            onClick={() => handleUseTemplate(data, index)}
+          >
+            Use Template
+          </Badge>
+          <TemplatePreview
             content={""}
             channel={{ type: "default" } as any}
             mediaUrls={data?.outputUrls}
-            isTemplate
+            templateType="grid"
           />
         </div>
       ))}

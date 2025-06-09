@@ -28,6 +28,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ui/color-picker";
 import MediaUploader, { Media } from "../../MediaUploader";
+import {
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
+import { toast } from "sonner";
+import { isUserAdmin } from "@/api/apiHooks/utils";
+
+// Template data interface
+export interface TemplateData {
+  canvasCount: number;
+  aspectRatio: string;
+  backgroundColor: string;
+  images: any[];
+  texts: any[];
+  socialPlatform?: string | null;
+}
 
 // Generic PopoverButton component
 const PopoverButton = ({
@@ -60,25 +76,93 @@ const PopoverButton = ({
   );
 };
 
+interface CanvasOptionsProps {
+  handleTemplateSaveAndUse: (isSave: boolean) => void;
+  isLoading: boolean;
+  handleMediaChange?: (media: Media[]) => void;
+  handleAddText?: () => void;
+  templateData: TemplateData;
+  activeCategoryId: string;
+  onSuccessCallback?: () => void;
+}
+
 const CanvasOptions = ({
   handleTemplateSaveAndUse,
   isLoading,
   handleMediaChange,
   handleAddText,
-}: {
-  handleTemplateSaveAndUse: (isSave: boolean) => void;
-  isLoading: boolean;
-  handleMediaChange?: (media: Media[]) => void;
-  handleAddText?: () => void;
-}) => {
+  templateData,
+  activeCategoryId,
+  onSuccessCallback,
+}: CanvasOptionsProps) => {
   const dispatch = useDispatch();
   const { canvasCount, aspectRatio, backgroundColor } = useSelector(
     (state: RootState) => state.template,
   );
 
+  const { mutate: createTemplate, isPending: isPendingDefault } = useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
+
+  const handleSaveOrUse = (isSave: boolean) => {
+    if (!activeCategoryId) {
+      toast.error("No category selected. Please select a category first.");
+      return;
+    }
+
+    if (!templateData) {
+      toast.error("Template data is not available.");
+      return;
+    }
+
+    if (isUserAdmin()) {
+      createTemplate(
+        {
+          type: "default",
+          postCategory: activeCategoryId,
+          body: templateData,
+        },
+        {
+          onSuccess: (data) => {
+            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
+            if (onSuccessCallback) {
+              onSuccessCallback();
+            }
+            // Call the original handler after API success
+            handleTemplateSaveAndUse(isSave);
+          },
+          onError: (error: any) => {
+            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          },
+        },
+      );
+    } else {
+      createTemplateCustom(
+        {
+          type: "custom",
+          postCategory: activeCategoryId,
+          body: templateData,
+        },
+        {
+          onSuccess: (data) => {
+            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
+            if (onSuccessCallback) {
+              onSuccessCallback();
+            }
+            // Call the original handler after API success
+            handleTemplateSaveAndUse(isSave);
+          },
+          onError: (error: any) => {
+            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          },
+        },
+      );
+    }
+  };
+
   return (
-    <div className="flex gap-2 w-full justify-between h-fit">
-      <div className="flex items-center gap-2 w-fit bg-white p-2 rounded-lg shadow">
+    <div className="flex gap-2 w-full justify-between h-fit p-2 bg-white rounded-lg shadow">
+      <div className="flex items-center gap-2 w-fit">
         <PopoverButton icon={<BetweenVerticalEnd className="h-5 w-5" />} label="Sections">
           <div className="w-48">
             <p className="text-sm font-medium mb-2">Sections: {canvasCount}</p>
@@ -141,16 +225,16 @@ const CanvasOptions = ({
         </Tooltip>
       </div>
 
-      <div className="flex justify-end gap-2 w-fit bg-white p-2 rounded-lg shadow">
+      <div className="flex justify-end gap-2 w-fit">
         <Tooltip>
           <TooltipTrigger>
             <Button
               variant="ghost"
-              onClick={() => handleTemplateSaveAndUse(true)}
-              disabled={isLoading}
+              onClick={() => handleSaveOrUse(true)}
+              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
               className="shadow"
             >
-              {isLoading ? (
+              {isLoading || isPendingDefault || isPendingCustom ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Save className="h-5 w-5" />
@@ -165,11 +249,11 @@ const CanvasOptions = ({
           <TooltipTrigger>
             <Button
               variant="ghost"
-              onClick={() => handleTemplateSaveAndUse(false)}
-              disabled={isLoading}
+              onClick={() => handleSaveOrUse(false)}
+              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
               className="bg-blue-600 text-white shadow"
             >
-              {isLoading ? (
+              {isLoading || isPendingDefault || isPendingCustom ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Check className="h-5 w-5" />

@@ -4,9 +4,9 @@ import { setSelectedTemplate } from "@/redux/slices/templateGeneration.slice";
 
 import { Badge } from "@/components/ui/badge";
 import { useDispatch } from "react-redux";
-import PostTemplatePreview from "../../PostTemplatePreview";
+import TemplatePreview from "@/components/post/template/TemplatePreview";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
-
+import PostTemplatePreview, { SocialChannel } from "@/components/post/PostTemplatePreview";
 const previewData = [
   {
     name: "H1 Template",
@@ -81,21 +81,14 @@ const TemplateCards = ({ socialPlatform }: { socialPlatform: string }) => {
     <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
       {previewData.map((data, index) => {
         return (
-          <div
-            key={index}
-            className="h-full w-full border p-2 flex flex-col gap-2 rounded-xl bg-gray-50"
-          >
-            <div className="flex justify-between">
-              <p>{data?.name}</p>
-
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-                onClick={() => handleUseTemplate(data)}
-              >
-                Use Template
-              </Badge>
-            </div>
+          <div key={index} className="relative h-fit w-full">
+            <Badge
+              variant="outline"
+              className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
+              onClick={() => handleUseTemplate(data)}
+            >
+              Use Template
+            </Badge>
 
             <PostTemplatePreview
               content={data?.content}

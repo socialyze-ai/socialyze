@@ -1,3 +1,5 @@
+// Old canvas
+
 import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Trash2, X, Pencil, Plus } from "lucide-react";

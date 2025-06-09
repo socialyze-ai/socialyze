@@ -21,6 +21,7 @@ interface ExtendedTextStyle extends Record<string, any> {
   fontStyle?: CSSProperties["fontStyle"];
   lineHeight?: CSSProperties["lineHeight"];
   fontFamily?: string;
+  rotation?: number;
 }
 
 // Add PreviewRef interface for external access to preview functions
@@ -40,43 +41,6 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const previewBoxRef = useRef<HTMLDivElement>(null);
   const canvasContentRef = useRef<HTMLDivElement>(null);
-
-  // Load Google Fonts for all text items
-  useEffect(() => {
-    // Create a set to avoid duplicate font loading
-    const fontsToLoad = new Set<string>();
-
-    // Collect all unique font family and weight combinations
-    texts.forEach((text) => {
-      if (text.style.fontFamily && text.style.fontWeight) {
-        fontsToLoad.add(`${text.style.fontFamily}:wght@${text.style.fontWeight}`);
-      } else if (text.style.fontFamily) {
-        fontsToLoad.add(`${text.style.fontFamily}:wght@400`);
-      }
-    });
-
-    // Load each font
-    const fontLinks: HTMLLinkElement[] = [];
-    fontsToLoad.forEach((fontString) => {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = `https://fonts.googleapis.com/css2?family=${fontString.replace(
-        / /g,
-        "+",
-      )}&display=swap`;
-      document.head.appendChild(link);
-      fontLinks.push(link);
-    });
-
-    // Clean up function to remove all font links
-    return () => {
-      fontLinks.forEach((link) => {
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-      });
-    };
-  }, [texts]);
 
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
@@ -169,6 +133,30 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
       };
     };
 
+    // Combine images and texts into a single array
+    const allItems = [
+      ...images.map((img) => ({ ...img, type: "image" as const })),
+      ...texts.map((txt) => ({ ...txt, type: "text" as const })),
+    ];
+
+    // Sort items by z-index (lowest first, so higher z-index items render on top)
+    const sortedItems = [...allItems].sort((a, b) => a.zIndex - b.zIndex);
+
+    // Filter items that are visible in the current box
+    const visibleItems = sortedItems.filter((item) => {
+      const itemLeft = item.position.x;
+      const itemRight =
+        itemLeft +
+        (item.type === "image"
+          ? item.size.width
+          : typeof item.size?.width === "number"
+          ? item.size.width
+          : item.content.length * item.style.fontSize * 0.6);
+
+      // If the item is completely outside the current box, don't render it
+      return !(itemRight < boxStartX || itemLeft > boxEndX);
+    });
+
     return (
       <div
         ref={canvasContentRef}
@@ -180,104 +168,82 @@ const Preview = forwardRef<PreviewRef, {}>((props, ref) => {
           overflow: "hidden",
         }}
       >
-        {/* Render all images that are at least partially visible in the current box */}
-        {images.map((img) => {
-          // Check if image is at least partially visible in current box
-          const imgLeft = img.position.x;
-          const imgRight = img.position.x + img.size.width;
+        {visibleItems.map((item) => {
+          const positionStyle = getAdjustedPosition(item.position);
 
-          // If the image is completely outside the current box, don't render it
-          if (imgRight < boxStartX || imgLeft > boxEndX) {
-            return null;
-          }
+          if (item.type === "image") {
+            // Calculate the scaled dimensions
+            const scaledWidth = item.size.width * scaleFactor;
+            const scaledHeight = item.size.height * scaleFactor;
 
-          const positionStyle = getAdjustedPosition(img.position);
-
-          // Calculate the scaled dimensions
-          const scaledWidth = img.size.width * scaleFactor;
-          const scaledHeight = img.size.height * scaleFactor;
-
-          return (
-            <div
-              key={`preview-${img.id}`}
-              className="absolute"
-              style={{
-                ...positionStyle,
-                width: `${scaledWidth}px`,
-                height: `${scaledHeight}px`,
-              }}
-            >
-              <img src={img.src} alt="Preview" className="w-full h-full object-cover" />
-            </div>
-          );
-        })}
-
-        {/* Render all texts, including those that might overlap box boundaries */}
-        {texts.map((txt) => {
-          // Include text that might be partially visible or spans across boxes
-          // Calculate what part of the text is visible in this box
-          const txtPositionStyle = getAdjustedPosition(txt.position);
-
-          // Calculate the scaled font size
-          const scaledFontSize = txt.style.fontSize * scaleFactor;
-
-          // Treat txt.style as an extended style object
-          const style = txt.style as ExtendedTextStyle;
-
-          // Get text size if defined, otherwise calculate based on content
-          const textSize = txt.size || {
-            width: txt.content.length * scaledFontSize * 0.6, // Approximate width based on content
-            height: scaledFontSize * 1.2, // Approximate height based on font size
-          };
-
-          // Scale the text size
-          const scaledWidth =
-            typeof textSize.width === "number" ? textSize.width * scaleFactor : textSize.width;
-          const scaledHeight =
-            typeof textSize.height === "number" ? textSize.height * scaleFactor : textSize.height;
-
-          // Check if text is at least partially visible in this box
-          const textLeft = txt.position.x;
-          const textRight =
-            textLeft +
-            (typeof textSize.width === "number"
-              ? textSize.width
-              : txt.content.length * txt.style.fontSize * 0.6);
-
-          if (textRight < boxStartX || textLeft > boxEndX) {
-            return null;
-          }
-
-          return (
-            <div
-              key={`preview-${txt.id}`}
-              className="absolute"
-              style={{
-                ...txtPositionStyle,
-                width: typeof scaledWidth === "number" ? `${scaledWidth}px` : scaledWidth,
-                height: typeof scaledHeight === "number" ? `${scaledHeight}px` : scaledHeight,
-              }}
-            >
+            return (
               <div
+                key={`preview-${item.id}`}
+                className="absolute"
                 style={{
-                  fontSize: `${scaledFontSize}px`,
-                  color: style.color,
-                  fontFamily: style.fontFamily || "inherit",
-                  wordWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                  textAlign: style.textAlign || "left",
-                  fontWeight: style.fontWeight || "normal",
-                  fontStyle: style.fontStyle || "normal",
-                  lineHeight: style.lineHeight || "normal",
-                  width: "100%",
-                  height: "100%",
-                  overflowWrap: "break-word",
+                  ...positionStyle,
+                  width: `${scaledWidth}px`,
+                  height: `${scaledHeight}px`,
+                  zIndex: item.zIndex,
                 }}
               >
-                {txt.content}
+                <img src={item.src} alt="Preview" className="w-full h-full object-cover" />
               </div>
-            </div>
-          );
+            );
+          } else {
+            // Text item
+            // Calculate the scaled font size
+            const scaledFontSize = item.style.fontSize * scaleFactor;
+
+            // Treat txt.style as an extended style object
+            const style = item.style as ExtendedTextStyle;
+
+            // Get text size if defined, otherwise calculate based on content
+            const textSize = item.size || {
+              width: item.content.length * scaledFontSize * 0.6, // Approximate width based on content
+              height: scaledFontSize * 1.2, // Approximate height based on font size
+            };
+
+            // Scale the text size
+            const scaledWidth =
+              typeof textSize.width === "number" ? textSize.width * scaleFactor : textSize.width;
+            const scaledHeight =
+              typeof textSize.height === "number" ? textSize.height * scaleFactor : textSize.height;
+
+            return (
+              <div
+                key={`preview-${item.id}`}
+                className="absolute"
+                style={{
+                  ...positionStyle,
+                  width: typeof scaledWidth === "number" ? `${scaledWidth}px` : scaledWidth,
+                  height: typeof scaledHeight === "number" ? `${scaledHeight}px` : scaledHeight,
+                  zIndex: item.zIndex,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: `${scaledFontSize}px`,
+                    color: style.color,
+                    fontFamily: style.fontFamily || "inherit",
+                    wordWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    textAlign: style.textAlign || "left",
+                    fontWeight: style.fontWeight || "normal",
+                    fontStyle: style.fontStyle || "normal",
+                    lineHeight: style.lineHeight || "normal",
+                    width: "100%",
+                    height: "100%",
+                    overflowWrap: "break-word",
+                    transform: style.rotation ? `rotate(${style.rotation}deg)` : "none",
+                    transformOrigin: "center center",
+                  }}
+                >
+                  {item.content}
+                </div>
+              </div>
+            );
+          }
         })}
       </div>
     );

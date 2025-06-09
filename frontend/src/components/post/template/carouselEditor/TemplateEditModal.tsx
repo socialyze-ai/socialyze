@@ -15,9 +15,11 @@ import {
   recalculateSectionAssignments,
   setSocialPlatform,
   resetTemplate,
+  removeItem,
+  normalizeZIndices,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
-import Canvas, { CanvasRef } from "./Canvas";
+import Canvas from "./canvas/Canvas";
 import TextEditor from "./TextEditor";
 import Preview, { PreviewRef } from "./Preview";
 import { apiService } from "./apiService";
@@ -26,10 +28,12 @@ import { useUploadMultipleMedia } from "@/api/apiHooks/useMedia";
 import { toast } from "sonner";
 import { setIsTemplateSectionOpen, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import CanvasOptions from "./CanvasOptions";
-import ContentAndMediaManager from "./ContentAndMediaManager";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Loader2 } from "lucide-react";
-import ImageGallery from "./ImageGallery";
+import ImageAndTextStack from "./ImageAndTextStack";
+import LayerManager from "./LayerManager";
+import { CanvasRef } from "./canvas/types";
+import { useGetPostCategoryTemplates } from "@/api/apiHooks/useTemplate";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -62,8 +66,11 @@ const TemplateEditModal = ({
   const [dialogOpen, setDialogOpen] = useState(open || false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("");
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
+  const { mutate: getCategories } = useGetPostCategoryTemplates();
 
   console.log("isLoading Carousel", isLoading);
 
@@ -154,6 +161,44 @@ const TemplateEditModal = ({
     dispatch(recalculateSectionAssignments());
   }, [canvasCount, aspectRatio, images, texts, dispatch]);
 
+  // Load categories for the current platform when opened
+  useEffect(() => {
+    if (dialogOpen && socialPlatform) {
+      fetchCategories(socialPlatform);
+    }
+  }, [dialogOpen, socialPlatform]);
+
+  const fetchCategories = (handle: string) => {
+    getCategories(
+      {
+        handle,
+        type: "default",
+      },
+      {
+        onSuccess: (data: any) => {
+          setCategories(data || []);
+
+          // Set simple category name based on platform
+          if (handle === "instagram") {
+            // For Instagram, prefer Grid
+            setActiveCategoryId("Grid");
+          } else if (handle === "facebook") {
+            // For Facebook, prefer Carousel
+            setActiveCategoryId("Carousel");
+          } else if (handle === "twitter" || handle === "x") {
+            setActiveCategoryId("Carousel");
+          } else {
+            // Default to Carousel for other platforms
+            setActiveCategoryId("Carousel");
+          }
+        },
+        onError: (error) => {
+          toast.error("Failed to fetch categories: " + error.message);
+        },
+      },
+    );
+  };
+
   const handleOpenChange = (open: boolean) => {
     // Reset processing error when opening
     if (open) {
@@ -180,7 +225,10 @@ const TemplateEditModal = ({
     setShowCloseAlert(false);
     setDialogOpen(false);
     setIsLoading(false);
-    dispatch(resetTemplate());
+
+    dispatch(setImages([]));
+    dispatch(setText([]));
+
     if (onOpenChange) {
       onOpenChange(false);
     }
@@ -267,9 +315,13 @@ const TemplateEditModal = ({
         position,
         size: { width: newWidth, height: newHeight },
         canvasIndex: 0, // This will be updated by recalculateSectionAssignments
+        zIndex: 1, // Add default zIndex
       };
 
       dispatch(setImages([...images, templateImage]));
+
+      // Normalize z-indices after adding new image
+      dispatch(normalizeZIndices());
     };
 
     // Set crossOrigin to anonymous to handle CORS issues
@@ -345,8 +397,14 @@ const TemplateEditModal = ({
       style: style || { fontSize: 16, color: "#000000" },
       size: { width, height },
       canvasIndex: 0, // Will be updated by recalculateSectionAssignments
+      zIndex: 1,
     };
+
     dispatch(setText([...texts, newText]));
+
+    // Normalize z-indices after adding new text
+    dispatch(normalizeZIndices());
+
     setShowTextEditor(false);
   };
 
@@ -466,6 +524,22 @@ const TemplateEditModal = ({
       toast.error(errorMsg, { position: "top-center" });
       setIsLoading(false);
     }
+  };
+
+  // Get template data to be saved
+  const getTemplateData = () => {
+    // Ensure sections are recalculated before getting the data
+    dispatch(recalculateSectionAssignments());
+
+    const templateData = {
+      canvasCount,
+      aspectRatio,
+      backgroundColor,
+      images,
+      texts,
+      socialPlatform,
+    };
+    return templateData;
   };
 
   const handleTemplateSaveAndUse = async (isSave: boolean = false) => {
@@ -607,7 +681,7 @@ const TemplateEditModal = ({
             <div className="grid grid-cols-10 gap-2 w-full h-full">
               <div className="col-span-7 h-full flex flex-col gap-2">
                 <div className="h-fit w-full">
-                  <ImageGallery />
+                  <ImageAndTextStack />
                 </div>
 
                 <Canvas ref={canvasRef} />
@@ -616,12 +690,21 @@ const TemplateEditModal = ({
               <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                  isLoading={isLoading}
+                  isLoading={isLoading || isUploading}
                   handleMediaChange={handleMediaChange}
                   handleAddText={handleAddText}
+                  templateData={getTemplateData()}
+                  activeCategoryId={activeCategoryId}
+                  onSuccessCallback={() => {
+                    if (onOpenChange) {
+                      onOpenChange(false);
+                    }
+                  }}
                 />
 
                 <Preview ref={previewRef} />
+
+                <LayerManager />
               </div>
             </div>
           </div>
