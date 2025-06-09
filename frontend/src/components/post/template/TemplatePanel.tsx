@@ -29,6 +29,7 @@ import {
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
+import FontLoader from "@/components/FontLoader";
 
 // Keep special template cases
 const SPECIAL_TEMPLATES = {
@@ -222,137 +223,139 @@ const TemplatePanel = () => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col border-gray-200">
-      <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
-        <div className="flex items-center">
-          <span className="text-blue-600 font-medium flex items-center text-sm">
-            <Book className="h-4 w-4 mr-1" /> Templates
-          </span>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
+    <FontLoader loadOnMount={true} withEvents={true}>
+      <Card className="w-full h-full flex flex-col border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0 border-b">
+          <div className="flex items-center">
+            <span className="text-blue-600 font-medium flex items-center text-sm">
+              <Book className="h-4 w-4 mr-1" /> Templates
+            </span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
 
-      <TemplateGenerationModal />
+        <TemplateGenerationModal />
 
-      <CardContent className="h-full w-full p-0">
-        <Tabs
-          defaultValue="facebook"
-          className="flex flex-col justify-center"
-          onValueChange={(value) => {
-            setActiveTab(value);
-            dispatch(setSocialPlatform(value));
+        <CardContent className="h-full w-full p-0">
+          <Tabs
+            defaultValue="facebook"
+            className="flex flex-col justify-center"
+            onValueChange={(value) => {
+              setActiveTab(value);
+              dispatch(setSocialPlatform(value));
+            }}
+          >
+            <TabsList className="flex gap-1 overflow-x-auto">
+              <TabsTrigger value="facebook">Facebook</TabsTrigger>
+              <TabsTrigger value="instagram">Instagram</TabsTrigger>
+              <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
+              <TabsTrigger value="x">X</TabsTrigger>
+            </TabsList>
+
+            <div className="h-full pb-2 px-2">
+              {activeTab === "facebook" && (
+                <TabsContent value="facebook" className="h-full flex flex-col gap-2">
+                  {renderCategoryBadges("facebook")}
+                  {renderTemplateComponent("facebook", activeSuggestion.facebook)}
+                </TabsContent>
+              )}
+
+              {activeTab === "instagram" && (
+                <TabsContent value="instagram" className="h-full flex flex-col gap-2">
+                  {renderCategoryBadges("instagram")}
+                  {renderTemplateComponent("instagram", activeSuggestion.instagram)}
+                </TabsContent>
+              )}
+
+              {activeTab === "linkedin" && (
+                <TabsContent value="linkedin" className="h-full flex flex-col gap-2">
+                  {renderCategoryBadges("linkedin")}
+                  <TemplateCards socialPlatform="linkedin" />
+                </TabsContent>
+              )}
+
+              {activeTab === "x" && (
+                <TabsContent value="x" className="h-full flex flex-col gap-2">
+                  {renderCategoryBadges("x")}
+                  <TemplateCards socialPlatform="x" />
+                </TabsContent>
+              )}
+            </div>
+          </Tabs>
+        </CardContent>
+
+        {(activeTab === "facebook" || activeTab === "instagram") &&
+          (activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ||
+            activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel) && (
+            <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
+              {activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ? (
+                <GridTemplateEditModal socialPlatform={activeTab} />
+              ) : (
+                <CarouselTemplateEditModal socialPlatform={activeTab} />
+              )}
+            </CardFooter>
+          )}
+
+        {/* Add Category Modal */}
+        <Dialog
+          open={isAddCategoryOpen}
+          onOpenChange={(open) => {
+            setIsAddCategoryOpen(open);
+            if (!open) {
+              resetCategoryForm();
+            }
           }}
         >
-          <TabsList className="flex gap-1 overflow-x-auto">
-            <TabsTrigger value="facebook">Facebook</TabsTrigger>
-            <TabsTrigger value="instagram">Instagram</TabsTrigger>
-            <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
-            <TabsTrigger value="x">X</TabsTrigger>
-          </TabsList>
-
-          <div className="h-full pb-2 px-2">
-            {activeTab === "facebook" && (
-              <TabsContent value="facebook" className="h-full flex flex-col gap-2">
-                {renderCategoryBadges("facebook")}
-                {renderTemplateComponent("facebook", activeSuggestion.facebook)}
-              </TabsContent>
-            )}
-
-            {activeTab === "instagram" && (
-              <TabsContent value="instagram" className="h-full flex flex-col gap-2">
-                {renderCategoryBadges("instagram")}
-                {renderTemplateComponent("instagram", activeSuggestion.instagram)}
-              </TabsContent>
-            )}
-
-            {activeTab === "linkedin" && (
-              <TabsContent value="linkedin" className="h-full flex flex-col gap-2">
-                {renderCategoryBadges("linkedin")}
-                <TemplateCards socialPlatform="linkedin" />
-              </TabsContent>
-            )}
-
-            {activeTab === "x" && (
-              <TabsContent value="x" className="h-full flex flex-col gap-2">
-                {renderCategoryBadges("x")}
-                <TemplateCards socialPlatform="x" />
-              </TabsContent>
-            )}
-          </div>
-        </Tabs>
-      </CardContent>
-
-      {(activeTab === "facebook" || activeTab === "instagram") &&
-        (activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ||
-          activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel) && (
-          <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">
-            {activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ? (
-              <GridTemplateEditModal socialPlatform={activeTab} />
-            ) : (
-              <CarouselTemplateEditModal socialPlatform={activeTab} />
-            )}
-          </CardFooter>
-        )}
-
-      {/* Add Category Modal */}
-      <Dialog
-        open={isAddCategoryOpen}
-        onOpenChange={(open) => {
-          setIsAddCategoryOpen(open);
-          if (!open) {
-            resetCategoryForm();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="platform" className="text-right">
-                Platform
-              </Label>
-              <Input id="platform" value={activeTab} className="col-span-3" disabled />
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="platform" className="text-right">
+                  Platform
+                </Label>
+                <Input id="platform" value={activeTab} className="col-span-3" disabled />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">
+                  Type
+                </Label>
+                <Input
+                  id="type"
+                  value={newCategory.type}
+                  className="col-span-3"
+                  onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newCategory.name}
+                  className="col-span-3"
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  placeholder="Category name"
+                  required
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Type
-              </Label>
-              <Input
-                id="type"
-                value={newCategory.type}
-                className="col-span-3"
-                onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newCategory.name}
-                className="col-span-3"
-                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                placeholder="Category name"
-                required
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddCategory} disabled={isCreating}>
-              {isCreating ? "Adding..." : "Add Category"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddCategory} disabled={isCreating}>
+                {isCreating ? "Adding..." : "Add Category"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </Card>
+    </FontLoader>
   );
 };
 
