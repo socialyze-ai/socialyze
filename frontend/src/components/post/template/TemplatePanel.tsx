@@ -179,7 +179,7 @@ const TemplatePanel = () => {
     platformCategories.forEach((cat) => displayCategories.push(cat));
 
     return (
-      <div className="flex flex-wrap gap-1 items-center">
+      <div className="flex flex-wrap gap-1.5 items-center">
         {isLoading && <div className="text-sm text-gray-500">Loading categories...</div>}
         {!isLoading && displayCategories.length === 0 && (
           <div className="text-sm text-gray-500">No categories found</div>
@@ -187,7 +187,7 @@ const TemplatePanel = () => {
         {displayCategories.map((category) => (
           <Badge
             key={category._id}
-            className="cursor-pointer"
+            className="cursor-pointer py-1 px-2"
             variant={activeSuggestion[platform] === category.name ? "default" : "outline"}
             onClick={() => handleSuggestionClick(category.name, platform)}
           >
@@ -252,7 +252,7 @@ const TemplatePanel = () => {
               <TabsTrigger value="facebook">Facebook</TabsTrigger>
               <TabsTrigger value="instagram">Instagram</TabsTrigger>
               <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
-              <TabsTrigger value="x">X</TabsTrigger>
+              {/* <TabsTrigger value="x">X</TabsTrigger> */}
             </TabsList>
 
             <div className="h-full pb-2 px-2">
@@ -277,12 +277,12 @@ const TemplatePanel = () => {
                 </TabsContent>
               )}
 
-              {activeTab === "x" && (
+              {/* {activeTab === "x" && (
                 <TabsContent value="x" className="h-full flex flex-col gap-2">
                   {renderCategoryBadges("x")}
                   <TemplateCards socialPlatform="x" />
                 </TabsContent>
-              )}
+              )} */}
             </div>
           </Tabs>
         </CardContent>
@@ -320,7 +320,7 @@ const TemplatePanel = () => {
                 </Label>
                 <Input id="platform" value={activeTab} className="col-span-3" disabled />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
+              {/* <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">
                   Type
                 </Label>
@@ -330,7 +330,7 @@ const TemplatePanel = () => {
                   className="col-span-3"
                   onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}
                 />
-              </div>
+              </div> */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
                   Name
