@@ -13,13 +13,14 @@ interface PostTemplatePreviewProps {
   mediaUrls?: string[];
   className?: string;
   isTemplate?: boolean; // New prop for smaller template view
+  handle?: string;
 }
 
 // Extend the original SocialChannel type but make id and connected optional
 export type SocialChannel = Omit<OriginalSocialChannel, "id" | "connected" | "type"> & {
   id?: string;
   connected?: boolean;
-  type: "facebook" | "twitter" | "instagram" | "linkedin" | "x" | "default";
+  handle: "facebook" | "twitter" | "instagram" | "linkedin" | "x" | "default";
 };
 
 interface MediaGridProps {
@@ -195,10 +196,11 @@ const MediaGrid: React.FC<MediaGridProps> = ({
 
 const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   content,
-  channel = { name: "", type: "default", profileImage: "" } as SocialChannel,
+  channel = { name: "", handle: "default", profileImage: "" } as SocialChannel,
   mediaUrls = [],
   className,
   isTemplate = false, // Default to normal size
+  handle,
 }) => {
   const { scheduledDate } = useSelector(selectPostCreation);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -517,7 +519,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   );
 
   const renderPreviewByType = () => {
-    switch (channel.type) {
+    switch (handle) {
       case "x":
         return renderTwitterPreview();
       case "facebook":
