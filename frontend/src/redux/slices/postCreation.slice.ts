@@ -447,6 +447,10 @@ const postCreationSlice = createSlice({
         });
       }
     },
+
+    setSelectedChannels: (state, action: PayloadAction<string[]>) => {
+      state.selectedChannels = action.payload;
+    },
   },
 });
 
@@ -487,6 +491,7 @@ export const {
   removeHashtagGroup,
   insertHashtagsFromGroup,
   setContentSyncState,
+  setSelectedChannels,
 } = postCreationSlice.actions;
 
 export default postCreationSlice.reducer;
