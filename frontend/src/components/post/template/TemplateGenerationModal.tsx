@@ -13,12 +13,12 @@ import {
   resetTemplateGeneration,
 } from "@/redux/slices/templateGeneration.slice";
 import PostTemplatePreview from "../PostTemplatePreview";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, LayoutTemplate } from "lucide-react";
 import { setContent, setMediaUrls } from "@/redux/slices/postCreation.slice";
 import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 const TemplateGenerationModal = () => {
   const dispatch = useDispatch();
@@ -26,8 +26,8 @@ const TemplateGenerationModal = () => {
     useSelector((state: RootState) => state.templateGeneration);
 
   const [generatedPostData, setGeneratedPostData] = useState<any>(null);
-  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("prompt");
 
   useEffect(() => {
     if (generatedContent && selectedTemplate) {
@@ -35,6 +35,8 @@ const TemplateGenerationModal = () => {
         ...selectedTemplate,
         content: generatedContent,
       });
+      // Automatically switch to preview tab when content is generated
+      setActiveTab("preview");
     }
   }, [generatedContent, selectedTemplate]);
 
@@ -114,99 +116,107 @@ const TemplateGenerationModal = () => {
   return (
     <>
       <Dialog open={isModalOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-6xl h-5/6 flex flex-col">
+        <DialogContent className="max-w-6xl h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Generate Post from Template: {selectedTemplate?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5 text-primary" />
+              Generate Post from Template: {selectedTemplate?.name}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-1 gap-4 h-full overflow-hidden">
-            {/* Left Side */}
-            <div className="w-1/2 h-full flex flex-col gap-2 overflow-y-auto p-1">
-              <Popover open={isPreviewExpanded} onOpenChange={setIsPreviewExpanded}>
-                <PopoverTrigger asChild className={cn(isPreviewExpanded && "ring-2 ring-blue-500")}>
-                  <div className="h-fit w-full flex justify-between items-center border rounded-md p-2 cursor-pointer relative">
-                    <p>{selectedTemplate?.name}</p>
+            {/* Left Side - Controls */}
+            <div className="w-1/2 h-full flex flex-col gap-3 overflow-y-auto pr-2">
+              <Card className="flex-1">
+                <CardContent className="p-4">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid grid-cols-2 mb-4">
+                      <TabsTrigger value="prompt">Prompt</TabsTrigger>
+                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                    </TabsList>
 
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        isPreviewExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-fit p-0 flex justify-center items-center rounded-xl"
-                  align="center"
-                >
-                  <PostTemplatePreview
-                    content={selectedTemplate?.content}
-                    channel={selectedTemplate?.channel}
-                    mediaUrls={selectedTemplate?.mediaUrls}
-                    isTemplate
-                  />
-                </PopoverContent>
-              </Popover>
+                    <TabsContent value="prompt" className="h-full">
+                      <div className="flex flex-col gap-3">
+                        <Textarea
+                          placeholder="Enter a prompt to generate content based on this template..."
+                          className="min-h-[150px] resize-y"
+                          value={prompt}
+                          onChange={handlePromptChange}
+                        />
 
-              <div className="h-full flex flex-col gap-2">
-                <Textarea
-                  placeholder="Enter a prompt to generate content based on this template..."
-                  className="min-h-[100px] resize-y"
-                  value={prompt}
-                  onChange={handlePromptChange}
-                />
+                        <div className="flex flex-wrap gap-2">
+                          <p className="text-sm text-muted-foreground w-full">Suggestions:</p>
+                          {suggestions.map((suggestion, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-secondary"
+                              onClick={() => handleSuggestionClick(suggestion)}
+                            >
+                              {suggestion}
+                            </Badge>
+                          ))}
+                        </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <p className="text-sm text-gray-500 w-full">Suggestions:</p>
-                  {suggestions.map((suggestion, index) => (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className="cursor-pointer"
-                      onClick={() => handleSuggestionClick(suggestion)}
+                        <Button
+                          onClick={handleGenerate}
+                          disabled={!prompt || isGenerating}
+                          className="mt-2 w-fit self-end"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            "Generate Post"
+                          )}
+                        </Button>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent
+                      value="preview"
+                      className="h-full w-full flex justify-center items-center"
                     >
-                      {suggestion}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <Button
-                onClick={handleGenerate}
-                disabled={!prompt || isGenerating}
-                className="mt-2 w-fit self-end"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Post"
-                )}
-              </Button>
+                      <div className="flex flex-col gap-3">
+                        <PostTemplatePreview
+                          content={selectedTemplate.text}
+                          channel={selectedTemplate.channel}
+                          mediaUrls={selectedTemplate.media}
+                          isTemplate
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Right Side */}
-            <div className="h-full w-1/2 border rounded-md p-1">
-              <div className="h-full flex flex-col justify-between overflow-y-auto">
-                <div className="p-4">
-                  <h3 className="font-medium mb-2">Generated Post Preview</h3>
+            {/* Right Side - Preview */}
+            <div className="w-1/2 h-full border rounded-md shadow-sm bg-card hidden md:block">
+              <div className="h-full flex flex-col justify-between">
+                <div className="p-4 flex-1 overflow-y-auto">
+                  <h3 className="font-medium text-lg mb-4 text-card-foreground">
+                    Generated Post Preview
+                  </h3>
                   {generatedPostData ? (
                     <PostTemplatePreview
-                      content={generatedPostData.content}
+                      content={generatedPostData.text}
                       channel={generatedPostData.channel}
                       mediaUrls={generatedPostData.mediaUrls}
                       isTemplate
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] border rounded-md">
-                      <p className="text-gray-400">
+                    <div className="flex items-center justify-center h-[300px] border rounded-md bg-muted/20">
+                      <p className="text-muted-foreground">
                         {isGenerating ? "Generating post..." : "Generated post will appear here"}
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="w-full justify-end border-t p-2 flex gap-2">
+                <div className="w-full border-t p-4 flex gap-2 justify-end bg-card">
                   <Button variant="outline" onClick={handleClose}>
                     Cancel
                   </Button>
