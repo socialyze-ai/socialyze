@@ -179,7 +179,7 @@ const TemplatePanel = () => {
     platformCategories.forEach((cat) => displayCategories.push(cat));
 
     return (
-      <div className="flex flex-wrap gap-1.5 items-center">
+      <div className="flex flex-wrap gap-2 items-center my-1.5">
         {isLoading && <div className="text-sm text-gray-500">Loading categories...</div>}
         {!isLoading && displayCategories.length === 0 && (
           <div className="text-sm text-gray-500">No categories found</div>
@@ -197,13 +197,13 @@ const TemplatePanel = () => {
 
         {isUserAdmin() && (
           <Button
-            className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200 w-5 h-5 rounded-full"
+            className="cursor-pointer bg-white hover:bg-gray-200 text-gray-700 border-gray-200 w-6 h-6 rounded-full shadow-sm"
             onClick={() => {
               setIsAddCategoryOpen(true);
             }}
             size="icon"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-5 w-5" />
           </Button>
         )}
       </div>

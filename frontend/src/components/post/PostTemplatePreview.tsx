@@ -257,7 +257,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
       >
         <div className={`flex ${classes.padding} items-start`}>
           <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-            <AvatarImage src={channel?.profileImage} />
+            <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
             <AvatarFallback className="capitalize font-semibold text-xl">
               {channel?.name ? channel.name.charAt(0) : "?"}
             </AvatarFallback>
@@ -315,7 +315,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-                <AvatarImage src={channel?.profileImage} />
+                <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
                   {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
@@ -372,7 +372,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center">
             <Avatar className={`rounded-full mr-2 ${classes.avatarSize}`}>
-              <AvatarImage src={channel?.profileImage} />
+              <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
               <AvatarFallback className="capitalize font-semibold text-xl">
                 {channel?.name ? channel.name.charAt(0) : "?"}
               </AvatarFallback>
@@ -451,7 +451,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-                <AvatarImage src={channel?.profileImage} />
+                <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
                   {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
@@ -498,7 +498,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
     <div className={`bg-white border border-gray-200 rounded-lg p-4 max-w-md ${classes.container}`}>
       <div className="flex items-center space-x-3 mb-2">
         <Avatar className={`rounded-full ${classes.avatarSize}`}>
-          <AvatarImage src={channel?.profileImage} />
+          <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
           <AvatarFallback className="capitalize font-semibold text-xl">
             {channel?.name ? channel.name.charAt(0) : "?"}
           </AvatarFallback>
