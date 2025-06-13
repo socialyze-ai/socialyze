@@ -132,7 +132,7 @@ const TemplateGenerationModal = () => {
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid grid-cols-2 mb-4">
                       <TabsTrigger value="prompt">Prompt</TabsTrigger>
-                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                      <TabsTrigger value="selectedTemplate">Selected Template</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="prompt" className="h-full">
@@ -176,7 +176,7 @@ const TemplateGenerationModal = () => {
                     </TabsContent>
 
                     <TabsContent
-                      value="preview"
+                      value="selectedTemplate"
                       className="h-full w-full flex justify-center items-center"
                     >
                       <div className="flex flex-col gap-3">
