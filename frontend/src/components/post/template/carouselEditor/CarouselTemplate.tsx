@@ -395,16 +395,17 @@ const dummyData = [
 
 interface CarouselTemplateProps {
   socialPlatform?: string;
+  templates: any;
 }
 
-const CarouselTemplate = ({ socialPlatform }: CarouselTemplateProps = {}) => {
+const CarouselTemplate = ({ socialPlatform, templates }: CarouselTemplateProps) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
 
   const handleUseTemplate = (data: any, index: number) => {
     // Extract template data
-    const { template } = data;
+    const template = data;
 
     // Set template data in Redux store
     dispatch(setAspectRatio(template.aspectRatio));
@@ -453,12 +454,12 @@ const CarouselTemplate = ({ socialPlatform }: CarouselTemplateProps = {}) => {
 
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2 bg-gray-50">
-      {dummyData.map((data, index) => (
+      {templates.map((data, index) => (
         <div key={index} className="relative h-fit w-full">
           <Badge
             variant="outline"
             className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-            onClick={() => handleUseTemplate(data, index)}
+            onClick={() => handleUseTemplate(data?.body, index)}
           >
             Use Template
           </Badge>
@@ -466,7 +467,7 @@ const CarouselTemplate = ({ socialPlatform }: CarouselTemplateProps = {}) => {
           <TemplatePreview
             content={""}
             channel={{ type: "default" } as any}
-            mediaUrls={data?.outputUrls}
+            mediaUrls={data?.body?.outputUrls}
             templateType="carousel"
           />
         </div>

@@ -308,10 +308,13 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
           onSuccess: () => {
             toast.success("Post template created");
             dispatch(setIsCreateNewTemplate(false));
+
+            resetForm();
           },
           onError: () => {
             toast.error("Failed to create post template");
             dispatch(setIsCreateNewTemplate(false));
+            resetForm();
           },
         },
       );
@@ -680,7 +683,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                   Cancel
                 </Button>
 
-                <Button variant="default" size="sm" onClick={handlePostNow}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handlePostNow}
+                  disabled={selectedChannels.length === 0 || !activeChannel}
+                >
                   Save Template
                 </Button>
               </div>

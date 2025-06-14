@@ -42,6 +42,7 @@ export interface TemplateState {
   };
   socialPlatform: string | null;
   nextZIndex: number; // Track the next available z-index
+  outputUrls: string[];
 }
 
 const initialState: TemplateState = {
@@ -57,6 +58,7 @@ const initialState: TemplateState = {
   },
   socialPlatform: null,
   nextZIndex: 1, // Start z-index at 1
+  outputUrls: [],
 };
 
 const templateSlice = createSlice({
@@ -386,6 +388,9 @@ const templateSlice = createSlice({
       // Update nextZIndex
       state.nextZIndex = allItems.length + 1;
     },
+    setOutputUrls: (state, action: PayloadAction<string[]>) => {
+      state.outputUrls = action.payload;
+    },
   },
 });
 
@@ -414,6 +419,7 @@ export const {
   moveBackward,
   normalizeZIndices,
   reorderLayers,
+  setOutputUrls,
 } = templateSlice.actions;
 
 export default templateSlice.reducer;
