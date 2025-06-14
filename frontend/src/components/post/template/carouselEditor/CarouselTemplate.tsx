@@ -418,34 +418,60 @@ const CarouselTemplate = ({ socialPlatform, templates }: CarouselTemplateProps) 
     }
 
     // Extract and set images with deduplication
-    const allImages = [];
-    const seenImageIds = new Set();
-
-    for (const section of template.sections) {
-      for (const image of section.images) {
-        // Only add image if we haven't seen its ID before
-        if (!seenImageIds.has(image.id)) {
-          // Remove clipping info which is calculated dynamically
-          const { clipping, ...imageWithoutClipping } = image;
-          allImages.push(imageWithoutClipping);
-          seenImageIds.add(image.id);
-        }
-      }
-    }
+    const allImages = template.images || [];
     dispatch(setImages(allImages));
 
     // Extract and set texts
-    const allTexts = [];
-    for (const section of template.sections) {
-      if (section.texts) {
-        for (const text of section.texts) {
-          // Remove clipping info which is calculated dynamically
-          const { clipping, ...textWithoutClipping } = text;
-          allTexts.push(textWithoutClipping);
-        }
-      }
-    }
+    const allTexts = template.texts || [];
     dispatch(setText(allTexts));
+
+    // Construct sections based on images and texts
+    const sections = [];
+    for (let i = 0; i < template.canvasCount; i++) {
+      const sectionImages = allImages.filter((img) => img.canvasIndex === i);
+      const sectionTexts = allTexts.filter((text) => text.canvasIndex === i);
+
+      sections.push({
+        index: i,
+        images: sectionImages.map((img) => {
+          // Add clipping info based on position in carousel
+          const clipping = {};
+          if (i === 0 && img.position.x < 0) {
+            clipping["start"] = true;
+            clipping["clipAmount"] = Math.abs(img.position.x);
+          }
+          if (i === template.canvasCount - 1) {
+            const rightEdge = img.position.x + img.size.width;
+            const canvasWidth = 384; // Assuming standard canvas width
+            if (rightEdge > canvasWidth) {
+              clipping["end"] = true;
+              clipping["clipAmount"] = rightEdge - canvasWidth;
+            }
+          }
+          return { ...img, clipping };
+        }),
+        texts: sectionTexts.map((text) => {
+          // Add clipping info based on position in carousel
+          const clipping = {};
+          if (i === 0 && text.position.x < 0) {
+            clipping["start"] = true;
+            clipping["clipAmount"] = Math.abs(text.position.x);
+          }
+          if (i === template.canvasCount - 1) {
+            const rightEdge = text.position.x + text.size.width;
+            const canvasWidth = 384; // Assuming standard canvas width
+            if (rightEdge > canvasWidth) {
+              clipping["end"] = true;
+              clipping["clipAmount"] = rightEdge - canvasWidth;
+            }
+          }
+          return { ...text, clipping };
+        }),
+      });
+    }
+
+    // Store the constructed sections in the template object
+    template.sections = sections;
 
     // Set selected template index and open modal
     setSelectedTemplateIndex(index);
@@ -454,7 +480,7 @@ const CarouselTemplate = ({ socialPlatform, templates }: CarouselTemplateProps) 
 
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2 bg-gray-50">
-      {templates.map((data, index) => (
+      {(templates || []).map((data, index) => (
         <div key={index} className="relative h-fit w-full">
           <Badge
             variant="outline"
