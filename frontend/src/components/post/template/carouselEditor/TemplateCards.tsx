@@ -7,6 +7,9 @@ import { useDispatch } from "react-redux";
 import TemplatePreview from "@/components/post/template/TemplatePreview";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
 import PostTemplatePreview, { SocialChannel } from "@/components/post/PostTemplatePreview";
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { isUserAdmin } from "@/api/apiHooks/utils";
 const previewData = [
   {
     channelId: "683b93e3f26014a679ba3ea2",
@@ -82,7 +85,15 @@ const previewData = [
   },
 ];
 
-const TemplateCards = ({ socialPlatform }: { socialPlatform: string }) => {
+const TemplateCards = ({
+  socialPlatform,
+  templates,
+  handleCreateTemplate,
+}: {
+  socialPlatform: string;
+  templates: any;
+  handleCreateTemplate: () => void;
+}) => {
   const dispatch = useDispatch();
 
   const handleUseTemplate = (template: any) => {
@@ -92,31 +103,52 @@ const TemplateCards = ({ socialPlatform }: { socialPlatform: string }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
-      {previewData
-        ?.filter((data) => data?.handle === socialPlatform)
-        .map((data, index) => {
-          return (
-            <div key={index} className="relative h-fit w-full">
-              <Badge
-                variant="outline"
-                className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-                onClick={() => handleUseTemplate(data)}
-              >
-                Use Template
-              </Badge>
+    <>
+      {templates?.length === 0 ? (
+        <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
+          <p className="text-center text-sm text-gray-500">No templates found</p>
+          {isUserAdmin() && (
+            <Button variant="outline" className="w-fit mx-auto" onClick={handleCreateTemplate}>
+              Create Template
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
+          {isUserAdmin() && (
+            <Button variant="outline" className="w-fit mx-auto" onClick={handleCreateTemplate}>
+              Create Template
+            </Button>
+          )}
 
-              <PostTemplatePreview
-                content={data?.text}
-                channel={data as unknown as SocialChannel}
-                mediaUrls={data?.media}
-                handle={data?.handle}
-                isTemplate
-              />
-            </div>
-          );
-        })}
-    </div>
+          {templates
+            ?.filter((data) => data?.body[0]?.handle === socialPlatform)
+            .map((data, index) => {
+              const allContent = data?.body[0];
+
+              return (
+                <div key={index} className="relative h-fit w-full">
+                  <Badge
+                    variant="outline"
+                    className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
+                    onClick={() => handleUseTemplate(data)}
+                  >
+                    Use Template
+                  </Badge>
+
+                  <PostTemplatePreview
+                    content={allContent?.text}
+                    channel={allContent as unknown as SocialChannel}
+                    mediaUrls={allContent?.media}
+                    handle={allContent?.handle}
+                    isTemplate
+                  />
+                </div>
+              );
+            })}
+        </div>
+      )}
+    </>
   );
 };
 

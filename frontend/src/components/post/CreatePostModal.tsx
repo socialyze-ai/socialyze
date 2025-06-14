@@ -64,6 +64,7 @@ import {
   setContent,
   setContentSyncState,
   syncMediaAcrossChannels,
+  setIsCreateNewTemplate,
 } from "@/redux/slices/postCreation.slice";
 import { Media } from "./MediaUploader";
 import PostComposer from "./PostComposer";
@@ -86,6 +87,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import TemplatePanel from "./template/TemplatePanel";
 import { RootState } from "@/redux/store";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
+import { isUserAdmin } from "@/api/apiHooks/utils";
+import { useCreatePostTemplatesDefault } from "@/api/apiHooks/useTemplate";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -134,6 +137,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | undefined>(
     selectedDate ? new Date(selectedDate) : new Date(),
   );
+
+  const { mutate: createPostTemplateMutation, isPending: isCreatePostTemplatePending } =
+    useCreatePostTemplatesDefault();
 
   // Filter channels based on template social platform
   const filteredChannels = useMemo(() => {
@@ -290,6 +296,26 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     selectedChannels: string[],
   ) => {
     if (selectedChannels?.length !== finalData?.length) return;
+
+    if (isUserAdmin()) {
+      return createPostTemplateMutation(
+        {
+          body: finalData,
+          type: "default",
+          postCategory: postCreation.selectedTemplateCategory?._id,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Post template created");
+            dispatch(setIsCreateNewTemplate(false));
+          },
+          onError: () => {
+            toast.error("Failed to create post template");
+            dispatch(setIsCreateNewTemplate(false));
+          },
+        },
+      );
+    }
 
     addPostMutation(finalData, {
       onSuccess: () => {
@@ -481,7 +507,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             <DialogHeader>
               <div className="flex w-full flex-col gap-2">
                 <div className="flex w-full justify-between items-center">
-                  <DialogTitle>Create Post</DialogTitle>
+                  <DialogTitle>
+                    {postCreation.isCreateNewTemplate ? "Create Post Template" : "Create Post"}
+                  </DialogTitle>
 
                   <LabelSelector />
                 </div>
@@ -642,94 +670,110 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
               </div>
             )}
 
-            <div className="flex justify-between mt-2">
-              <Button
-                onClick={handleToggleContentSync}
-                variant="outline"
-                size="sm"
-                disabled={selectedChannels.length === 1 || !activeChannel}
-              >
-                {isCustomContent ? (
-                  <>
+            {postCreation.isCreateNewTemplate ? (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => dispatch(setIsCreateNewTemplate(false))}
+                >
+                  Cancel
+                </Button>
+
+                <Button variant="default" size="sm" onClick={handlePostNow}>
+                  Save Template
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-between mt-2">
+                <Button
+                  onClick={handleToggleContentSync}
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedChannels.length === 1 || !activeChannel}
+                >
+                  {isCustomContent ? (
+                    <>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="flex items-center gap-2">
+                            <p>Sync content</p>
+                            <Link />
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
+                            Sync content across all selected channels
+                            <br />
+                            Note: first channel content will be consider for syncing content
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </>
+                  ) : (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-2">
-                          <p>Sync content</p>
-                          <Link />
+                          <p>Unsync content</p>
+                          <Unlink />
                         </TooltipTrigger>
                         <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
-                          Sync content across all selected channels
-                          <br />
-                          Note: first channel content will be consider for syncing content
+                          Customize for each network
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </>
-                ) : (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="flex items-center gap-2">
-                        <p>Unsync content</p>
-                        <Unlink />
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
-                        Customize for each network
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </Button>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleDraftSave}
-                  variant="outline"
-                  size="sm"
-                  disabled={selectedChannels.length === 0 || !activeChannel}
-                  className="flex items-center gap-2"
-                >
-                  <Save />
-                  <p>Save</p>
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    if (isScheduleMode) {
-                      handleSchedule();
-                    } else {
-                      setIsScheduleMode(true);
-                    }
-                  }}
-                  variant={isScheduleMode ? "default" : "outline"}
-                  size="sm"
-                  disabled={selectedChannels.length === 0 || !activeChannel}
-                  className="flex items-center gap-2"
-                >
-                  {isScheduleMode ? (
-                    <>
-                      <CalendarCheck2 />
-                      <p>Schedule Post</p>
-                    </>
-                  ) : (
-                    <>
-                      <CalendarCheck2 />
-                      <p>Schedule</p>
-                    </>
                   )}
                 </Button>
 
-                {!selectedDate && !isScheduleMode && (
+                <div className="flex gap-2">
                   <Button
-                    onClick={handlePostNow}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={selectedChannels.length === 0 || !activeChannel}
+                    onClick={handleDraftSave}
+                    variant="outline"
                     size="sm"
+                    disabled={selectedChannels.length === 0 || !activeChannel}
+                    className="flex items-center gap-2"
                   >
-                    Post
+                    <Save />
+                    <p>Save</p>
                   </Button>
-                )}
+
+                  <Button
+                    onClick={() => {
+                      if (isScheduleMode) {
+                        handleSchedule();
+                      } else {
+                        setIsScheduleMode(true);
+                      }
+                    }}
+                    variant={isScheduleMode ? "default" : "outline"}
+                    size="sm"
+                    disabled={selectedChannels.length === 0 || !activeChannel}
+                    className="flex items-center gap-2"
+                  >
+                    {isScheduleMode ? (
+                      <>
+                        <CalendarCheck2 />
+                        <p>Schedule Post</p>
+                      </>
+                    ) : (
+                      <>
+                        <CalendarCheck2 />
+                        <p>Schedule</p>
+                      </>
+                    )}
+                  </Button>
+
+                  {!selectedDate && !isScheduleMode && (
+                    <Button
+                      onClick={handlePostNow}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={selectedChannels.length === 0 || !activeChannel}
+                      size="sm"
+                    >
+                      Post
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Preview Section */}

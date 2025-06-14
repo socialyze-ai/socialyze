@@ -50,6 +50,10 @@ export interface PostCreationState {
   // Modal states
   isAIAssistantOpen: boolean;
   isTemplateSectionOpen: boolean;
+  isCreateNewTemplate: boolean;
+
+  // Template states
+  selectedTemplateCategory: any;
 }
 
 const initialState: PostCreationState = {
@@ -69,6 +73,8 @@ const initialState: PostCreationState = {
   isAIAssistantOpen: false,
   isTemplateSectionOpen: false,
   hashtagGroups: [],
+  isCreateNewTemplate: false,
+  selectedTemplateCategory: null,
 };
 
 const postCreationSlice = createSlice({
@@ -451,6 +457,14 @@ const postCreationSlice = createSlice({
     setSelectedChannels: (state, action: PayloadAction<string[]>) => {
       state.selectedChannels = action.payload;
     },
+
+    setIsCreateNewTemplate: (state, action: PayloadAction<boolean>) => {
+      state.isCreateNewTemplate = action.payload;
+    },
+
+    setSelectedTemplateCategory: (state, action: PayloadAction<any>) => {
+      state.selectedTemplateCategory = action.payload;
+    },
   },
 });
 
@@ -492,6 +506,8 @@ export const {
   insertHashtagsFromGroup,
   setContentSyncState,
   setSelectedChannels,
+  setIsCreateNewTemplate,
+  setSelectedTemplateCategory,
 } = postCreationSlice.actions;
 
 export default postCreationSlice.reducer;

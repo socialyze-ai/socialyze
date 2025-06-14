@@ -1,10 +1,14 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Book, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
+import {
+  setIsCreateNewTemplate,
+  setIsTemplateSectionOpen,
+  setSelectedTemplateCategory,
+} from "@/redux/slices/postCreation.slice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import TemplateGenerationModal from "./TemplateGenerationModal";
 import TemplateCards from "./carouselEditor/TemplateCards";
 import CarouselTemplate from "./carouselEditor/CarouselTemplate";
@@ -26,10 +30,13 @@ import { Label } from "@/components/ui/label";
 import {
   useCreatePostCategoryTemplates,
   useGetPostCategoryTemplates,
+  useGetPostTemplatesCustom,
+  useGetPostTemplatesDefault,
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
 import FontLoader from "@/components/FontLoader";
+import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 
 // Keep special template cases
 const SPECIAL_TEMPLATES = {
@@ -39,6 +46,7 @@ const SPECIAL_TEMPLATES = {
 
 const TemplatePanel = () => {
   const dispatch = useDispatch();
+  const postCreation = useSelector(selectPostCreation);
   const [activeTab, setActiveTab] = useState("facebook");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ type: "default", name: "" });
@@ -54,6 +62,17 @@ const TemplatePanel = () => {
     linkedin: "",
     x: "",
   });
+
+  const { data: postTemplatesDefault, isPending: isLoadingDefault } = useGetPostTemplatesDefault({
+    postCategory: postCreation.selectedTemplateCategory?._id,
+  });
+
+  const { data: postTemplatesCustom, isPending: isLoadingCustom } = useGetPostTemplatesCustom({
+    postCategory: postCreation.selectedTemplateCategory?._id,
+  });
+
+  console.log("postTemplatesDefault", postTemplatesDefault);
+  console.log("postTemplatesCustom", postTemplatesCustom);
 
   const { mutate: createCategory, isPending: isCreating } = useCreatePostCategoryTemplates();
   const { mutate: getCategories, isPending: isLoading } = useGetPostCategoryTemplates();
@@ -119,9 +138,11 @@ const TemplatePanel = () => {
   };
 
   const handleSuggestionClick = (suggestion, tab) => {
+    dispatch(setSelectedTemplateCategory(suggestion));
+
     setActiveSuggestion({
       ...activeSuggestion,
-      [tab]: suggestion,
+      [tab]: suggestion?.name,
     });
   };
 
@@ -189,7 +210,7 @@ const TemplatePanel = () => {
             key={category._id}
             className="cursor-pointer py-1 px-2"
             variant={activeSuggestion[platform] === category.name ? "default" : "outline"}
-            onClick={() => handleSuggestionClick(category.name, platform)}
+            onClick={() => handleSuggestionClick(category, platform)}
           >
             {category.name}
           </Badge>
@@ -219,7 +240,15 @@ const TemplatePanel = () => {
     ) {
       return <CarouselTemplate socialPlatform={tab} />;
     } else {
-      return <TemplateCards socialPlatform={tab} />;
+      return (
+        <TemplateCards
+          socialPlatform={tab}
+          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom}
+          handleCreateTemplate={() => {
+            dispatch(setIsCreateNewTemplate(true));
+          }}
+        />
+      );
     }
   };
 
@@ -273,7 +302,13 @@ const TemplatePanel = () => {
               {activeTab === "linkedin" && (
                 <TabsContent value="linkedin" className="h-full flex flex-col gap-2">
                   {renderCategoryBadges("linkedin")}
-                  <TemplateCards socialPlatform="linkedin" />
+                  <TemplateCards
+                    socialPlatform="linkedin"
+                    templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom}
+                    handleCreateTemplate={() => {
+                      dispatch(setIsCreateNewTemplate(true));
+                    }}
+                  />
                 </TabsContent>
               )}
 

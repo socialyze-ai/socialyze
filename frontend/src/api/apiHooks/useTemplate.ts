@@ -1,6 +1,6 @@
 import { getToken, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useCreateFontTemplates = () => {
   const createFontTemplates = async (body) => {
@@ -128,13 +128,13 @@ export const useCreatePostTemplatesCustom = () => {
   });
 };
 
-export const useGetPostTemplatesDefault = () => {
-  const getPostTemplatesDefault = async (body) => {
+export const useGetPostTemplatesDefault = (formData) => {
+  const getPostTemplatesDefault = async () => {
     const response = await makeRequest(
       BACKEND_URL + "template/getPostTemplatesDefault",
       "POST",
       getToken(),
-      body,
+      formData,
     );
 
     if (response.error || !response.data) {
@@ -144,18 +144,20 @@ export const useGetPostTemplatesDefault = () => {
     return response.data;
   };
 
-  return useMutation({
-    mutationFn: getPostTemplatesDefault,
+  return useQuery({
+    queryKey: ["postTemplatesDefault", formData],
+    queryFn: () => getPostTemplatesDefault(),
+    enabled: !!formData,
   });
 };
 
-export const useGetPostTemplatesCustom = () => {
-  const getPostTemplatesCustom = async (body) => {
+export const useGetPostTemplatesCustom = (formData) => {
+  const getPostTemplatesCustom = async () => {
     const response = await makeRequest(
       BACKEND_URL + "template/getPostTemplatesCustom",
       "POST",
       getToken(),
-      body,
+      formData,
     );
 
     if (response.error || !response.data) {
@@ -165,7 +167,9 @@ export const useGetPostTemplatesCustom = () => {
     return response.data;
   };
 
-  return useMutation({
-    mutationFn: getPostTemplatesCustom,
+  return useQuery({
+    queryKey: ["postTemplatesCustom", formData],
+    queryFn: () => getPostTemplatesCustom(),
+    enabled: !!formData,
   });
 };
