@@ -15,6 +15,7 @@ import {
   recalculateSectionAssignments,
   setGridSize,
   setSocialPlatform,
+  setOutputUrls,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import TextEditor from "./TextEditor";
@@ -67,6 +68,7 @@ const TemplateEditModal = ({
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string>("Grid");
+  const outputUrls = useSelector((state: RootState) => state.template.outputUrls);
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
   const { mutate: getCategories } = useGetPostCategoryTemplates();
@@ -554,6 +556,7 @@ const TemplateEditModal = ({
       images,
       texts,
       socialPlatform,
+      outputUrls,
     };
     return templateData;
   };
@@ -587,6 +590,8 @@ const TemplateEditModal = ({
 
         // Extract URLs for the API
         const outputUrls = uploadedImages.map((img) => img.url);
+
+        dispatch(setOutputUrls(outputUrls));
 
         try {
           // Set a timeout for the API call

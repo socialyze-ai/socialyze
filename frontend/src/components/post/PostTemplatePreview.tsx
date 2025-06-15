@@ -13,13 +13,14 @@ interface PostTemplatePreviewProps {
   mediaUrls?: string[];
   className?: string;
   isTemplate?: boolean; // New prop for smaller template view
+  handle?: string;
 }
 
 // Extend the original SocialChannel type but make id and connected optional
 export type SocialChannel = Omit<OriginalSocialChannel, "id" | "connected" | "type"> & {
   id?: string;
   connected?: boolean;
-  type: "facebook" | "twitter" | "instagram" | "linkedin" | "x" | "default";
+  handle: "facebook" | "twitter" | "instagram" | "linkedin" | "x" | "default";
 };
 
 interface MediaGridProps {
@@ -195,10 +196,11 @@ const MediaGrid: React.FC<MediaGridProps> = ({
 
 const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   content,
-  channel = { name: "", type: "default", profileImage: "" } as SocialChannel,
+  channel = { name: "", handle: "default", profileImage: "" } as SocialChannel,
   mediaUrls = [],
   className,
   isTemplate = false, // Default to normal size
+  handle,
 }) => {
   const { scheduledDate } = useSelector(selectPostCreation);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -255,7 +257,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
       >
         <div className={`flex ${classes.padding} items-start`}>
           <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-            <AvatarImage src={channel?.profileImage} />
+            <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
             <AvatarFallback className="capitalize font-semibold text-xl">
               {channel?.name ? channel.name.charAt(0) : "?"}
             </AvatarFallback>
@@ -313,7 +315,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-                <AvatarImage src={channel?.profileImage} />
+                <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
                   {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
@@ -370,7 +372,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center">
             <Avatar className={`rounded-full mr-2 ${classes.avatarSize}`}>
-              <AvatarImage src={channel?.profileImage} />
+              <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
               <AvatarFallback className="capitalize font-semibold text-xl">
                 {channel?.name ? channel.name.charAt(0) : "?"}
               </AvatarFallback>
@@ -449,7 +451,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-3 ${classes.avatarSize}`}>
-                <AvatarImage src={channel?.profileImage} />
+                <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
                 <AvatarFallback className="capitalize font-semibold text-xl">
                   {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
@@ -496,7 +498,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
     <div className={`bg-white border border-gray-200 rounded-lg p-4 max-w-md ${classes.container}`}>
       <div className="flex items-center space-x-3 mb-2">
         <Avatar className={`rounded-full ${classes.avatarSize}`}>
-          <AvatarImage src={channel?.profileImage} />
+          <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
           <AvatarFallback className="capitalize font-semibold text-xl">
             {channel?.name ? channel.name.charAt(0) : "?"}
           </AvatarFallback>
@@ -517,7 +519,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   );
 
   const renderPreviewByType = () => {
-    switch (channel.type) {
+    switch (handle) {
       case "x":
         return renderTwitterPreview();
       case "facebook":

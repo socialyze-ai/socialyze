@@ -9,6 +9,7 @@ import {
   selectPostCreation,
   setIsAIAssistantOpen,
   setIsTemplateSectionOpen,
+  setSelectedChannels,
 } from "@/redux/slices/postCreation.slice";
 import HashtagModal from "./HashtagModal";
 import { cn } from "@/lib/utils";
@@ -122,6 +123,7 @@ const PostComposer: React.FC<PostComposerProps> = ({
               if (isTemplateSectionOpen) {
                 dispatch(setSocialPlatform(null));
               }
+              dispatch(setSelectedChannels([]));
             }}
             className={cn(
               isTemplateSectionOpen && "bg-blue-600 text-white hover:bg-blue-400 hover:text-white",

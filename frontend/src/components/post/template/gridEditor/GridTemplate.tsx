@@ -788,22 +788,32 @@ const dummyData = [
 
 interface GridTemplateProps {
   socialPlatform?: string;
+  templates: any;
 }
 
-const GridTemplate = ({ socialPlatform }: GridTemplateProps = {}) => {
+const GridTemplate = ({ socialPlatform, templates }: GridTemplateProps) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
 
   const handleUseTemplate = (data: any, index: number) => {
     // Extract template data
-    const { template } = data;
+    const template = data;
 
     // Set template data in Redux store
     dispatch(setAspectRatio(template.aspectRatio));
     dispatch(setBackgroundColor(template.backgroundColor));
     dispatch(setCanvasCount(template.canvasCount));
-    dispatch(setGridSize(template.gridSize));
+
+    // Check if gridSize exists before dispatching, otherwise use default
+    const defaultGridSize = { columns: 3, rows: 3 };
+    if (template.gridSize && template.gridSize.columns && template.gridSize.rows) {
+      dispatch(setGridSize(template.gridSize));
+    } else {
+      dispatch(setGridSize(defaultGridSize));
+      // Also set it on the template for later use
+      template.gridSize = defaultGridSize;
+    }
 
     // Set social platform
     if (socialPlatform) {
@@ -811,34 +821,94 @@ const GridTemplate = ({ socialPlatform }: GridTemplateProps = {}) => {
     }
 
     // Extract and set images with deduplication
-    const allImages = [];
-    const seenImageIds = new Set();
-
-    for (const section of template.sections) {
-      for (const image of section.images) {
-        // Only add image if we haven't seen its ID before
-        if (!seenImageIds.has(image.id)) {
-          // Remove clipping info which is calculated dynamically
-          const { clipping, ...imageWithoutClipping } = image;
-          allImages.push(imageWithoutClipping);
-          seenImageIds.add(image.id);
-        }
-      }
-    }
+    const allImages = template.images || [];
     dispatch(setImages(allImages));
 
     // Extract and set texts
-    const allTexts = [];
-    for (const section of template.sections) {
-      if (section.texts) {
-        for (const text of section.texts) {
-          // Remove clipping info which is calculated dynamically
-          const { clipping, ...textWithoutClipping } = text;
-          allTexts.push(textWithoutClipping);
-        }
-      }
-    }
+    const allTexts = template.texts || [];
     dispatch(setText(allTexts));
+
+    // Construct sections based on images and texts
+    const sections = [];
+    const { columns, rows } = template.gridSize;
+    const totalCells = columns * rows;
+
+    for (let i = 0; i < totalCells; i++) {
+      const row = Math.floor(i / columns);
+      const col = i % columns;
+
+      const sectionImages = allImages.filter((img) => img.canvasIndex === i);
+      const sectionTexts = allTexts.filter((text) => text.canvasIndex === i);
+
+      sections.push({
+        index: i,
+        row,
+        col,
+        images: sectionImages.map((img) => {
+          // Add clipping info based on position in grid
+          const clipping = { x: {}, y: {} };
+          const cellWidth = 189; // Assuming standard cell width
+          const cellHeight = 189; // Assuming standard cell height
+
+          // Check for horizontal clipping
+          if (img.position.x < 0) {
+            clipping.x["start"] = true;
+            clipping.x["clipAmount"] = Math.abs(img.position.x);
+          }
+          const rightEdge = img.position.x + img.size.width;
+          if (rightEdge > cellWidth) {
+            clipping.x["end"] = true;
+            clipping.x["clipAmount"] = rightEdge - cellWidth;
+          }
+
+          // Check for vertical clipping
+          if (img.position.y < 0) {
+            clipping.y["start"] = true;
+            clipping.y["clipAmount"] = Math.abs(img.position.y);
+          }
+          const bottomEdge = img.position.y + img.size.height;
+          if (bottomEdge > cellHeight) {
+            clipping.y["end"] = true;
+            clipping.y["clipAmount"] = bottomEdge - cellHeight;
+          }
+
+          return { ...img, clipping };
+        }),
+        texts: sectionTexts.map((text) => {
+          // Add clipping info based on position in grid
+          const clipping = { x: {}, y: {} };
+          const cellWidth = 189; // Assuming standard cell width
+          const cellHeight = 189; // Assuming standard cell height
+
+          // Check for horizontal clipping
+          if (text.position.x < 0) {
+            clipping.x["start"] = true;
+            clipping.x["clipAmount"] = Math.abs(text.position.x);
+          }
+          const rightEdge = text.position.x + text.size.width;
+          if (rightEdge > cellWidth) {
+            clipping.x["end"] = true;
+            clipping.x["clipAmount"] = rightEdge - cellWidth;
+          }
+
+          // Check for vertical clipping
+          if (text.position.y < 0) {
+            clipping.y["start"] = true;
+            clipping.y["clipAmount"] = Math.abs(text.position.y);
+          }
+          const bottomEdge = text.position.y + text.size.height;
+          if (bottomEdge > cellHeight) {
+            clipping.y["end"] = true;
+            clipping.y["clipAmount"] = bottomEdge - cellHeight;
+          }
+
+          return { ...text, clipping };
+        }),
+      });
+    }
+
+    // Store the constructed sections in the template object
+    template.sections = sections;
 
     // Set selected template index and open modal
     setSelectedTemplateIndex(index);
@@ -847,19 +917,19 @@ const GridTemplate = ({ socialPlatform }: GridTemplateProps = {}) => {
 
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2">
-      {dummyData.map((data, index) => (
+      {(templates || []).map((data, index) => (
         <div key={index} className="relative h-fit w-full">
           <Badge
             variant="outline"
             className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-            onClick={() => handleUseTemplate(data, index)}
+            onClick={() => handleUseTemplate(data?.body, index)}
           >
             Use Template
           </Badge>
           <TemplatePreview
             content={""}
             channel={{ type: "default" } as any}
-            mediaUrls={data?.outputUrls}
+            mediaUrls={data?.body?.outputUrls}
             templateType="grid"
           />
         </div>

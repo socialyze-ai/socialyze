@@ -157,7 +157,7 @@ const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => 
 
   return (
     <div
-      className="mt-3 relative group"
+      className="mt-3 relative group h-52 w-full"
       onMouseEnter={() => setShowNavigation(true)}
       onMouseLeave={() => setShowNavigation(false)}
     >
@@ -239,7 +239,7 @@ const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => 
 
 const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   content,
-  channel = { name: "", type: "default", profileImage: "" } as SocialChannel,
+  channel = { name: "", type: "default", profileImage: "", handle: "default" } as SocialChannel,
   mediaUrls = [],
   templateType,
   className,
@@ -270,11 +270,12 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <Avatar className={`rounded-full mr-2 ${classes.avatarSize}`}>
-                <AvatarImage src={channel?.profileImage} />
+                <AvatarImage src={"https://randomuser.me/api/portraits/men/1.jpg"} />
                 <AvatarFallback className="capitalize font-semibold text-sm">
                   {channel?.name ? channel.name.charAt(0) : "?"}
                 </AvatarFallback>
               </Avatar>
+
               <div>
                 <div className={classes.headingSize}>{channel?.name || "Channel"}</div>
                 <div className={`text-gray-500 ${classes.metaText}`}>{formatDate(new Date())}</div>

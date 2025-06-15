@@ -1,10 +1,14 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Book, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setIsTemplateSectionOpen } from "@/redux/slices/postCreation.slice";
+import {
+  setIsCreateNewTemplate,
+  setIsTemplateSectionOpen,
+  setSelectedTemplateCategory,
+} from "@/redux/slices/postCreation.slice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import TemplateGenerationModal from "./TemplateGenerationModal";
 import TemplateCards from "./carouselEditor/TemplateCards";
 import CarouselTemplate from "./carouselEditor/CarouselTemplate";
@@ -26,10 +30,13 @@ import { Label } from "@/components/ui/label";
 import {
   useCreatePostCategoryTemplates,
   useGetPostCategoryTemplates,
+  useGetPostTemplatesCustom,
+  useGetPostTemplatesDefault,
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
 import FontLoader from "@/components/FontLoader";
+import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 
 // Keep special template cases
 const SPECIAL_TEMPLATES = {
@@ -39,6 +46,7 @@ const SPECIAL_TEMPLATES = {
 
 const TemplatePanel = () => {
   const dispatch = useDispatch();
+  const postCreation = useSelector(selectPostCreation);
   const [activeTab, setActiveTab] = useState("facebook");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ type: "default", name: "" });
@@ -54,6 +62,22 @@ const TemplatePanel = () => {
     linkedin: "",
     x: "",
   });
+
+  const { data: postTemplatesDefault, isPending: isLoadingDefault } = useGetPostTemplatesDefault({
+    postCategory:
+      postCreation.selectedTemplateCategory?.name === SPECIAL_TEMPLATES.grid
+        ? SPECIAL_TEMPLATES.grid
+        : postCreation.selectedTemplateCategory?.name === SPECIAL_TEMPLATES.carousel
+        ? SPECIAL_TEMPLATES.carousel
+        : postCreation.selectedTemplateCategory?._id,
+  });
+
+  const { data: postTemplatesCustom, isPending: isLoadingCustom } = useGetPostTemplatesCustom({
+    postCategory: postCreation.selectedTemplateCategory?._id,
+  });
+
+  console.log("postTemplatesDefault", postTemplatesDefault);
+  console.log("postTemplatesCustom", postTemplatesCustom);
 
   const { mutate: createCategory, isPending: isCreating } = useCreatePostCategoryTemplates();
   const { mutate: getCategories, isPending: isLoading } = useGetPostCategoryTemplates();
@@ -119,9 +143,11 @@ const TemplatePanel = () => {
   };
 
   const handleSuggestionClick = (suggestion, tab) => {
+    dispatch(setSelectedTemplateCategory(suggestion));
+
     setActiveSuggestion({
       ...activeSuggestion,
-      [tab]: suggestion,
+      [tab]: suggestion?.name,
     });
   };
 
@@ -179,7 +205,7 @@ const TemplatePanel = () => {
     platformCategories.forEach((cat) => displayCategories.push(cat));
 
     return (
-      <div className="flex flex-wrap gap-1 items-center">
+      <div className="flex flex-wrap gap-2 items-center my-1.5">
         {isLoading && <div className="text-sm text-gray-500">Loading categories...</div>}
         {!isLoading && displayCategories.length === 0 && (
           <div className="text-sm text-gray-500">No categories found</div>
@@ -187,9 +213,9 @@ const TemplatePanel = () => {
         {displayCategories.map((category) => (
           <Badge
             key={category._id}
-            className="cursor-pointer"
+            className="cursor-pointer py-1 px-2"
             variant={activeSuggestion[platform] === category.name ? "default" : "outline"}
-            onClick={() => handleSuggestionClick(category.name, platform)}
+            onClick={() => handleSuggestionClick(category, platform)}
           >
             {category.name}
           </Badge>
@@ -197,13 +223,13 @@ const TemplatePanel = () => {
 
         {isUserAdmin() && (
           <Button
-            className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200 w-5 h-5 rounded-full"
+            className="cursor-pointer bg-white hover:bg-gray-200 text-gray-700 border-gray-200 w-6 h-6 rounded-full shadow-sm"
             onClick={() => {
               setIsAddCategoryOpen(true);
             }}
             size="icon"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-5 w-5" />
           </Button>
         )}
       </div>
@@ -212,14 +238,32 @@ const TemplatePanel = () => {
 
   const renderTemplateComponent = (tab, suggestion) => {
     if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.grid) {
-      return <GridTemplate socialPlatform={tab} />;
+      return (
+        <GridTemplate
+          socialPlatform={tab}
+          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
+        />
+      );
     } else if (
       (tab === "facebook" || tab === "instagram") &&
       suggestion === SPECIAL_TEMPLATES.carousel
     ) {
-      return <CarouselTemplate socialPlatform={tab} />;
+      return (
+        <CarouselTemplate
+          socialPlatform={tab}
+          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
+        />
+      );
     } else {
-      return <TemplateCards socialPlatform={tab} />;
+      return (
+        <TemplateCards
+          socialPlatform={tab}
+          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
+          handleCreateTemplate={() => {
+            dispatch(setIsCreateNewTemplate(true));
+          }}
+        />
+      );
     }
   };
 
@@ -252,7 +296,7 @@ const TemplatePanel = () => {
               <TabsTrigger value="facebook">Facebook</TabsTrigger>
               <TabsTrigger value="instagram">Instagram</TabsTrigger>
               <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
-              <TabsTrigger value="x">X</TabsTrigger>
+              {/* <TabsTrigger value="x">X</TabsTrigger> */}
             </TabsList>
 
             <div className="h-full pb-2 px-2">
@@ -273,16 +317,22 @@ const TemplatePanel = () => {
               {activeTab === "linkedin" && (
                 <TabsContent value="linkedin" className="h-full flex flex-col gap-2">
                   {renderCategoryBadges("linkedin")}
-                  <TemplateCards socialPlatform="linkedin" />
+                  <TemplateCards
+                    socialPlatform="linkedin"
+                    templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom}
+                    handleCreateTemplate={() => {
+                      dispatch(setIsCreateNewTemplate(true));
+                    }}
+                  />
                 </TabsContent>
               )}
 
-              {activeTab === "x" && (
+              {/* {activeTab === "x" && (
                 <TabsContent value="x" className="h-full flex flex-col gap-2">
                   {renderCategoryBadges("x")}
                   <TemplateCards socialPlatform="x" />
                 </TabsContent>
-              )}
+              )} */}
             </div>
           </Tabs>
         </CardContent>
@@ -320,7 +370,7 @@ const TemplatePanel = () => {
                 </Label>
                 <Input id="platform" value={activeTab} className="col-span-3" disabled />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
+              {/* <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">
                   Type
                 </Label>
@@ -330,7 +380,7 @@ const TemplatePanel = () => {
                   className="col-span-3"
                   onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}
                 />
-              </div>
+              </div> */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
                   Name

@@ -17,6 +17,7 @@ import {
   resetTemplate,
   removeItem,
   normalizeZIndices,
+  setOutputUrls,
 } from "@/redux/slices/template.slice";
 import { RootState } from "@/redux/store";
 import Canvas from "./canvas/Canvas";
@@ -58,6 +59,7 @@ const TemplateEditModal = ({
   const { canvasCount, aspectRatio, backgroundColor, images, texts } = useSelector(
     (state: RootState) => state.template,
   );
+  const outputUrls = useSelector((state: RootState) => state.template.outputUrls);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<PreviewRef>(null);
@@ -538,7 +540,9 @@ const TemplateEditModal = ({
       images,
       texts,
       socialPlatform,
+      outputUrls,
     };
+
     return templateData;
   };
 
@@ -571,6 +575,8 @@ const TemplateEditModal = ({
 
         // Extract URLs for the API
         const outputUrls = uploadedImages.map((img) => img.url);
+
+        dispatch(setOutputUrls(outputUrls));
 
         try {
           // Set a timeout for the API call
