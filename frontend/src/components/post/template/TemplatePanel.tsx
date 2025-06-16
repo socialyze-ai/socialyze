@@ -237,28 +237,20 @@ const TemplatePanel = () => {
   };
 
   const renderTemplateComponent = (tab, suggestion) => {
+    const templateData = isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || [];
+
     if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.grid) {
-      return (
-        <GridTemplate
-          socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
-        />
-      );
+      return <GridTemplate socialPlatform={tab} templates={templateData} />;
     } else if (
       (tab === "facebook" || tab === "instagram") &&
       suggestion === SPECIAL_TEMPLATES.carousel
     ) {
-      return (
-        <CarouselTemplate
-          socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
-        />
-      );
+      return <CarouselTemplate socialPlatform={tab} templates={templateData} />;
     } else {
       return (
         <TemplateCards
           socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
+          templates={templateData}
           handleCreateTemplate={() => {
             dispatch(setIsCreateNewTemplate(true));
           }}
