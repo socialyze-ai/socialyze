@@ -116,26 +116,30 @@ const CanvasOptions = ({
     }
 
     if (isUserAdmin()) {
-      createTemplate(
-        {
-          type: "default",
-          postCategory: activeCategoryId,
-          body: templateData,
-        },
-        {
-          onSuccess: (data) => {
-            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
-            if (onSuccessCallback) {
-              onSuccessCallback();
-            }
-            // Call the original handler after API success
-            handleTemplateSaveAndUse(isSave);
+      if (isSave) {
+        createTemplate(
+          {
+            type: "default",
+            postCategory: activeCategoryId,
+            body: templateData,
           },
-          onError: (error: any) => {
-            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          {
+            onSuccess: () => {
+              toast.success("Template saved successfully");
+              if (onSuccessCallback) {
+                onSuccessCallback();
+              }
+              handleTemplateSaveAndUse(isSave);
+            },
+            onError: (error: any) => {
+              toast.error(error.message || "Failed to save template");
+            },
           },
-        },
-      );
+        );
+      } else {
+        toast.success("Template applied successfully");
+        handleTemplateSaveAndUse(isSave);
+      }
     } else {
       createTemplateCustom(
         {

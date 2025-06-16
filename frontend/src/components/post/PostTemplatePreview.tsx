@@ -206,7 +206,7 @@ const PostTemplatePreview: React.FC<PostTemplatePreviewProps> = ({
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   // Always call useSelector unconditionally, then determine which media to use
   const globalMediaUrls = useSelector(selectPostCreation).mediaUrls;
-  const mediaToUse = mediaUrls.length > 0 ? mediaUrls : globalMediaUrls;
+  const mediaToUse = mediaUrls.length > 0 && mediaUrls;
 
   // Dynamic classes based on isTemplate prop
   const getTemplateClasses = () => {

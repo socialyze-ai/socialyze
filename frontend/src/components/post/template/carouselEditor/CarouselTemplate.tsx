@@ -483,7 +483,7 @@ const CarouselTemplate = ({ socialPlatform, templates }: CarouselTemplateProps) 
   }
 
   return (
-    <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2 bg-gray-50">
+    <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2">
       {templates.length === 0 ? (
         <div className="flex-1 flex justify-center items-center">
           <p className="text-sm text-muted-foreground">No templates found</p>
