@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { v4 as uuidv4 } from "uuid";
 
 const TemplateGenerationModal = () => {
   const dispatch = useDispatch();
@@ -30,10 +31,10 @@ const TemplateGenerationModal = () => {
   const [activeTab, setActiveTab] = useState<string>("prompt");
 
   useEffect(() => {
-    if (generatedContent && selectedTemplate) {
+    if (generatedContent && selectedTemplate?.body?.[0]) {
       setGeneratedPostData({
-        ...selectedTemplate,
-        content: generatedContent,
+        ...selectedTemplate.body[0],
+        text: generatedContent,
       });
       // Automatically switch to preview tab when content is generated
       setActiveTab("preview");
@@ -79,13 +80,6 @@ const TemplateGenerationModal = () => {
         dispatch(setIsGenerating(false));
       }, 1500);
 
-      // Actual API call would be something like:
-      // const response = await fetch("/api/generate-post", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ prompt, template: selectedTemplate }),
-      // });
-      // const data = await response.json();
       // dispatch(setGeneratedContent(data.content));
     } catch (error) {
       console.error("Failed to generate content:", error);
@@ -97,11 +91,19 @@ const TemplateGenerationModal = () => {
     if (!generatedPostData) return;
 
     // Set the generated post content to the post creation form
-    dispatch(setContent(generatedPostData.content));
+    dispatch(setContent(generatedPostData.text));
 
     // Set the media if available
-    if (generatedPostData.mediaUrls && generatedPostData.mediaUrls.length > 0) {
-      dispatch(setMediaUrls(generatedPostData.mediaUrls));
+    if (generatedPostData.media && generatedPostData.media.length > 0) {
+      const mediaUrls = generatedPostData.media.map((media: any) => {
+        return {
+          id: uuidv4(),
+          type: "image",
+          url: media,
+        };
+      });
+
+      dispatch(setMediaUrls(mediaUrls));
     }
 
     // Close the modal and reset state
@@ -113,6 +115,8 @@ const TemplateGenerationModal = () => {
 
   if (!selectedTemplate) return null;
 
+  const template = selectedTemplate?.body[0];
+
   return (
     <>
       <Dialog open={isModalOpen} onOpenChange={handleClose}>
@@ -120,7 +124,7 @@ const TemplateGenerationModal = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LayoutTemplate className="h-5 w-5 text-primary" />
-              Generate Post from Template: {selectedTemplate?.name}
+              Generate Post from Template: {template?.name}
             </DialogTitle>
           </DialogHeader>
 
@@ -179,11 +183,11 @@ const TemplateGenerationModal = () => {
                       value="selectedTemplate"
                       className="h-full w-full flex justify-center items-center"
                     >
-                      <div className="flex flex-col gap-3">
+                      <div className="flex-1">
                         <PostTemplatePreview
-                          content={selectedTemplate.text}
-                          channel={selectedTemplate.channel}
-                          mediaUrls={selectedTemplate.media}
+                          content={template?.text}
+                          channel={template?.handle}
+                          mediaUrls={template?.media}
                           isTemplate
                         />
                       </div>
@@ -202,9 +206,9 @@ const TemplateGenerationModal = () => {
                   </h3>
                   {generatedPostData ? (
                     <PostTemplatePreview
-                      content={generatedPostData.text}
-                      channel={generatedPostData.channel}
-                      mediaUrls={generatedPostData.mediaUrls}
+                      content={generatedPostData?.text}
+                      channel={generatedPostData?.handle}
+                      mediaUrls={generatedPostData?.media}
                       isTemplate
                     />
                   ) : (
