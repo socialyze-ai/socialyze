@@ -87,8 +87,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import TemplatePanel from "./template/TemplatePanel";
 import { RootState } from "@/redux/store";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
-import { isUserAdmin } from "@/api/apiHooks/utils";
-import { useCreatePostTemplatesDefault } from "@/api/apiHooks/useTemplate";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -138,13 +136,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     selectedDate ? new Date(selectedDate) : new Date(),
   );
 
-  const { mutate: createPostTemplateMutation, isPending: isCreatePostTemplatePending } =
-    useCreatePostTemplatesDefault();
-
   // Filter channels based on template social platform
   const filteredChannels = useMemo(() => {
-    console.log("templateSocialPlatform", templateSocialPlatform);
-
     if (!templateSocialPlatform) {
       return channels;
     }
@@ -297,29 +290,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   ) => {
     if (selectedChannels?.length !== finalData?.length) return;
 
-    if (isUserAdmin()) {
-      return createPostTemplateMutation(
-        {
-          body: finalData,
-          type: "default",
-          postCategory: postCreation.selectedTemplateCategory?._id,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Post template created");
-            dispatch(setIsCreateNewTemplate(false));
-
-            resetForm();
-          },
-          onError: () => {
-            toast.error("Failed to create post template");
-            dispatch(setIsCreateNewTemplate(false));
-            resetForm();
-          },
-        },
-      );
-    }
-
     addPostMutation(finalData, {
       onSuccess: () => {
         const statusText = isDraft
@@ -344,6 +314,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         navigate("/dashboard");
         dispatch(resetPostCreation());
         dispatch(reset());
+        onClose();
       },
       onError: () => {
         toast.error("Failed to add post", {
@@ -366,6 +337,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       const mediaUrls = mediaByChannel[channelId]?.map((media) => media.url) || [];
       const socialHandle = channels.find((channel) => channel.id === channelId)?.type;
 
+      console.log(
+        "postCreation.selectedTemplateCategory----",
+        postCreation.selectedTemplateCategory,
+      );
+
       const postData = {
         channelId: channelId,
         text: finalContent?.includes("<br>")
@@ -376,6 +352,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
         media: mediaUrls,
         postType: status, // "postnow" | "scheduled" | "draft"
         handle: socialHandle,
+        isGrid: postCreation.selectedTemplateCategory?.name === "Grid" ? true : false,
       };
 
       finalData.push(postData);
@@ -392,7 +369,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     });
 
     handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
-    onClose();
   };
 
   const resetForm = () => {

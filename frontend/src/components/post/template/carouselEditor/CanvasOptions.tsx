@@ -34,6 +34,7 @@ import {
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
+import { setSelectedTemplateCategory } from "@/redux/slices/postCreation.slice";
 
 // Template data interface
 export interface TemplateData {
@@ -114,6 +115,13 @@ const CanvasOptions = ({
       toast.error("Template data is not available.");
       return;
     }
+
+    dispatch(
+      setSelectedTemplateCategory({
+        _id: activeCategoryId,
+        name: "Carousel",
+      }),
+    );
 
     if (isUserAdmin()) {
       if (isSave) {

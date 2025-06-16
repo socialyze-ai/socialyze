@@ -34,6 +34,7 @@ import {
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
+import { setSelectedTemplateCategory } from "@/redux/slices/postCreation.slice";
 
 // Generic PopoverButton component
 const PopoverButton = ({
@@ -100,6 +101,13 @@ const CanvasOptions = ({
       toast.error("No category selected. Please select a category first.");
       return;
     }
+
+    dispatch(
+      setSelectedTemplateCategory({
+        _id: activeCategoryId,
+        name: "Grid",
+      }),
+    );
 
     if (isUserAdmin()) {
       if (isSave) {
