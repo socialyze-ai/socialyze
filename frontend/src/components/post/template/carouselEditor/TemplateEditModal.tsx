@@ -445,11 +445,10 @@ const TemplateEditModal = ({
           const blob = await canvasRef?.current?.captureCanvasContent(i);
 
           if (!blob) {
-            return;
-            // const errorMsg = `Failed to create image for box ${i + 1}`;
-            // setProcessingError(errorMsg);
-            // toast.error(errorMsg, { position: "top-center" });
-            // continue;
+            const errorMsg = `Failed to create image for box ${i + 1}`;
+            setProcessingError(errorMsg);
+            toast.error(errorMsg, { position: "top-center" });
+            continue;
           }
 
           // Add blob to our collection
