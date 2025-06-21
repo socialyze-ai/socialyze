@@ -915,25 +915,37 @@ const GridTemplate = ({ socialPlatform, templates }: GridTemplateProps) => {
     setIsModalOpen(true);
   };
 
+  if (!templates) {
+    return null;
+  }
+
   return (
     <div className="h-[57dvh] w-full overflow-y-auto flex flex-col gap-2">
-      {(templates || []).map((data, index) => (
-        <div key={index} className="relative h-fit w-full">
-          <Badge
-            variant="outline"
-            className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
-            onClick={() => handleUseTemplate(data?.body, index)}
-          >
-            Use Template
-          </Badge>
-          <TemplatePreview
-            content={""}
-            channel={{ type: "default" } as any}
-            mediaUrls={data?.body?.outputUrls}
-            templateType="grid"
-          />
+      {templates.length === 0 ? (
+        <div className="flex-1 flex justify-center items-center">
+          <p className="text-sm text-muted-foreground">No templates found</p>
         </div>
-      ))}
+      ) : (
+        <>
+          {(templates || []).map((data, index) => (
+            <div key={index} className="relative h-fit w-full">
+              <Badge
+                variant="outline"
+                className="absolute top-2 right-2 w-fit z-20 cursor-pointer hover:bg-blue-600 hover:text-white bg-white"
+                onClick={() => handleUseTemplate(data?.body, index)}
+              >
+                Use Template
+              </Badge>
+              <TemplatePreview
+                content={""}
+                channel={{ type: "default" } as any}
+                mediaUrls={data?.body?.outputUrls}
+                templateType="grid"
+              />
+            </div>
+          ))}
+        </>
+      )}
 
       {isModalOpen && selectedTemplateIndex !== null && (
         <TemplateEditModal

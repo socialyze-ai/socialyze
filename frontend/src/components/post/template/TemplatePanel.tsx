@@ -65,15 +65,19 @@ const TemplatePanel = () => {
 
   const { data: postTemplatesDefault, isPending: isLoadingDefault } = useGetPostTemplatesDefault({
     postCategory:
-      postCreation.selectedTemplateCategory?.name === SPECIAL_TEMPLATES.grid
+      activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid
         ? SPECIAL_TEMPLATES.grid
-        : postCreation.selectedTemplateCategory?.name === SPECIAL_TEMPLATES.carousel
+        : activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel
         ? SPECIAL_TEMPLATES.carousel
-        : postCreation.selectedTemplateCategory?._id,
+        : categories[activeTab]?.find((cat) => cat.name === activeSuggestion[activeTab])?._id,
   });
 
   const { data: postTemplatesCustom, isPending: isLoadingCustom } = useGetPostTemplatesCustom({
-    postCategory: postCreation.selectedTemplateCategory?._id,
+    postCategory:
+      activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ||
+      activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel
+        ? activeSuggestion[activeTab]
+        : categories[activeTab]?.find((cat) => cat.name === activeSuggestion[activeTab])?._id,
   });
 
   console.log("postTemplatesDefault", postTemplatesDefault);
@@ -237,28 +241,20 @@ const TemplatePanel = () => {
   };
 
   const renderTemplateComponent = (tab, suggestion) => {
+    const templateData = isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || [];
+
     if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.grid) {
-      return (
-        <GridTemplate
-          socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
-        />
-      );
+      return <GridTemplate socialPlatform={tab} templates={templateData} />;
     } else if (
       (tab === "facebook" || tab === "instagram") &&
       suggestion === SPECIAL_TEMPLATES.carousel
     ) {
-      return (
-        <CarouselTemplate
-          socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
-        />
-      );
+      return <CarouselTemplate socialPlatform={tab} templates={templateData} />;
     } else {
       return (
         <TemplateCards
           socialPlatform={tab}
-          templates={isUserAdmin() ? postTemplatesDefault : postTemplatesCustom || []}
+          templates={templateData}
           handleCreateTemplate={() => {
             dispatch(setIsCreateNewTemplate(true));
           }}

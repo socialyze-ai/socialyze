@@ -442,7 +442,7 @@ const TemplateEditModal = ({
       for (let i = 0; i < totalBoxes; i++) {
         try {
           // Use native canvas API to capture each box
-          const blob = await canvasRef.current.captureCanvasContent(i);
+          const blob = await canvasRef?.current?.captureCanvasContent(i);
 
           if (!blob) {
             const errorMsg = `Failed to create image for box ${i + 1}`;

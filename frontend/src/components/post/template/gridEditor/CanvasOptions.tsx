@@ -34,6 +34,7 @@ import {
 } from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
 import { isUserAdmin } from "@/api/apiHooks/utils";
+import { setSelectedTemplateCategory } from "@/redux/slices/postCreation.slice";
 
 // Generic PopoverButton component
 const PopoverButton = ({
@@ -101,25 +102,35 @@ const CanvasOptions = ({
       return;
     }
 
+    dispatch(
+      setSelectedTemplateCategory({
+        _id: activeCategoryId,
+        name: "Grid",
+      }),
+    );
+
     if (isUserAdmin()) {
-      // Use the template data from the parent component
-      createTemplate(
-        {
-          type: "default",
-          postCategory: activeCategoryId,
-          body: templateData,
-        },
-        {
-          onSuccess: (data) => {
-            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
-            // Call the original handler after API success
-            handleTemplateSaveAndUse(isSave);
+      if (isSave) {
+        createTemplate(
+          {
+            type: "default",
+            postCategory: activeCategoryId,
+            body: templateData,
           },
-          onError: (error: any) => {
-            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
+          {
+            onSuccess: () => {
+              toast.success("Template saved successfully");
+              handleTemplateSaveAndUse(isSave);
+            },
+            onError: (error: any) => {
+              toast.error(error.message || "Failed to save template");
+            },
           },
-        },
-      );
+        );
+      } else {
+        toast.success("Template applied successfully");
+        handleTemplateSaveAndUse(isSave);
+      }
     } else {
       createTemplateCustom(
         {

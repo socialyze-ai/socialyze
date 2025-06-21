@@ -102,10 +102,14 @@ const TemplateCards = ({
     dispatch(setSocialPlatform(socialPlatform));
   };
 
+  if (!templates) {
+    return null;
+  }
+
   return (
     <>
       {templates?.length === 0 ? (
-        <div className="flex flex-col gap-2 h-[65dvh] overflow-y-auto">
+        <div className="flex flex-col gap-2 h-[65dvh] justify-center items-center overflow-y-auto">
           <p className="text-center text-sm text-gray-500">No templates found</p>
           {isUserAdmin() && (
             <Button variant="outline" className="w-fit mx-auto" onClick={handleCreateTemplate}>
