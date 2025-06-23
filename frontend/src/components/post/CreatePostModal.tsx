@@ -87,6 +87,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import TemplatePanel from "./template/TemplatePanel";
 import { RootState } from "@/redux/store";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
+import { isUserAdmin } from "@/api/apiHooks/utils";
+import {
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -135,6 +140,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | undefined>(
     selectedDate ? new Date(selectedDate) : new Date(),
   );
+
+  const { mutate: createTemplateDefault, isPending: isPendingDefault } =
+    useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
 
   // Filter channels based on template social platform
   const filteredChannels = useMemo(() => {
@@ -289,6 +299,42 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     selectedChannels: string[],
   ) => {
     if (selectedChannels?.length !== finalData?.length) return;
+
+    if (postCreation.isCreateNewTemplate) {
+      if (isUserAdmin()) {
+        createTemplateDefault(
+          {
+            type: "default",
+            postCategory: postCreation.selectedTemplateCategory?._id,
+            body: finalData,
+          },
+          {
+            onSuccess: () => {
+              toast.success("Template saved successfully");
+            },
+            onError: (error: any) => {
+              toast.error(error.message || "Failed to save template");
+            },
+          },
+        );
+      } else {
+        createTemplateCustom(
+          {
+            type: "custom",
+            postCategory: postCreation.selectedTemplateCategory?._id,
+            body: finalData,
+          },
+          {
+            onSuccess: (data) => {
+              toast.success("Template saved successfully");
+            },
+            onError: (error: any) => {
+              toast.error(error.message || `Failed to save template`);
+            },
+          },
+        );
+      }
+    }
 
     addPostMutation(finalData, {
       onSuccess: () => {
