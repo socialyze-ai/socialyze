@@ -132,67 +132,53 @@ const TemplateGenerationModal = () => {
             {/* Left Side - Controls */}
             <div className="w-1/2 h-full flex flex-col gap-3 overflow-y-auto pr-2">
               <Card className="flex-1">
-                <CardContent className="p-4">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid grid-cols-2 mb-4">
-                      <TabsTrigger value="prompt">Prompt</TabsTrigger>
-                      <TabsTrigger value="selectedTemplate">Selected Template</TabsTrigger>
-                    </TabsList>
+                <CardContent className="p-4 h-full">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex-1">
+                      <PostTemplatePreview
+                        content={template?.text}
+                        channel={template?.handle}
+                        mediaUrls={template?.media}
+                        isTemplate
+                      />
+                    </div>
 
-                    <TabsContent value="prompt" className="h-full">
-                      <div className="flex flex-col gap-3">
-                        <Textarea
-                          placeholder="Enter a prompt to generate content based on this template..."
-                          className="min-h-[150px] resize-y"
-                          value={prompt}
-                          onChange={handlePromptChange}
-                        />
+                    <Textarea
+                      placeholder="Enter a prompt to generate content based on this template..."
+                      className="min-h-[60px] resize-y"
+                      value={prompt}
+                      onChange={handlePromptChange}
+                    />
 
-                        <div className="flex flex-wrap gap-2">
-                          <p className="text-sm text-muted-foreground w-full">Suggestions:</p>
-                          {suggestions.map((suggestion, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="cursor-pointer hover:bg-secondary"
-                              onClick={() => handleSuggestionClick(suggestion)}
-                            >
-                              {suggestion}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <Button
-                          onClick={handleGenerate}
-                          disabled={!prompt || isGenerating}
-                          className="mt-2 w-fit self-end"
+                    <div className="flex flex-wrap gap-1">
+                      <p className="text-sm text-muted-foreground w-full">Suggestions:</p>
+                      {suggestions.map((suggestion, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-secondary"
+                          onClick={() => handleSuggestionClick(suggestion)}
                         >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            "Generate Post"
-                          )}
-                        </Button>
-                      </div>
-                    </TabsContent>
+                          {suggestion}
+                        </Badge>
+                      ))}
+                    </div>
 
-                    <TabsContent
-                      value="selectedTemplate"
-                      className="h-full w-full flex justify-center items-center"
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={!prompt || isGenerating}
+                      className="mt-2 w-fit self-end"
                     >
-                      <div className="flex-1">
-                        <PostTemplatePreview
-                          content={template?.text}
-                          channel={template?.handle}
-                          mediaUrls={template?.media}
-                          isTemplate
-                        />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Post"
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
