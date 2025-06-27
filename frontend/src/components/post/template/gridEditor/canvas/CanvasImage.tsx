@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, X, Plus } from "lucide-react";
+import { Pencil, X, Plus, ImagePlus } from "lucide-react";
 import { CanvasImageItem } from "./types";
 
 interface CanvasImageProps {
@@ -84,6 +84,16 @@ const CanvasImage: React.FC<CanvasImageProps> = ({
         {/* Control buttons */}
         {isSelected && (
           <div className="absolute -top-3 -right-2 flex">
+            {/* Replace Image */}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-6 w-6 rounded-full mr-1 z-10"
+              onClick={(e) => onReplaceImage(img.id, e)}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+
             {/* Edit button */}
             <Button
               variant="secondary"
@@ -107,7 +117,7 @@ const CanvasImage: React.FC<CanvasImageProps> = ({
         )}
 
         {/* Replace image button - only visible when hovered */}
-        {isHovered && !isSelected && (
+        {/* {isHovered && !isSelected && (
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity">
             <Button
               variant="secondary"
@@ -119,7 +129,7 @@ const CanvasImage: React.FC<CanvasImageProps> = ({
               Replace Image
             </Button>
           </div>
-        )}
+        )} */}
 
         {/* Resize handle - only visible when selected */}
         {isSelected && (
