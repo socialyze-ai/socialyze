@@ -117,11 +117,8 @@ const TemplatePanel = () => {
           if (handle === "instagram") {
             // Instagram defaults to Grid
             defaultCategory = SPECIAL_TEMPLATES.grid;
-          } else if (handle === "facebook") {
-            // Facebook defaults to Carousel
-            defaultCategory = SPECIAL_TEMPLATES.carousel;
           } else if (data.length > 0) {
-            // Other platforms default to first API category
+            // Facebook and other platforms default to first API category
             defaultCategory = data[0].name;
           }
 
