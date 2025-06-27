@@ -134,9 +134,6 @@ const CanvasOptions = ({
           {
             onSuccess: () => {
               toast.success("Template saved successfully");
-              if (onSuccessCallback) {
-                onSuccessCallback();
-              }
               handleTemplateSaveAndUse(isSave);
             },
             onError: (error: any) => {
@@ -158,10 +155,6 @@ const CanvasOptions = ({
         {
           onSuccess: (data) => {
             toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
-            if (onSuccessCallback) {
-              onSuccessCallback();
-            }
-            // Call the original handler after API success
             handleTemplateSaveAndUse(isSave);
           },
           onError: (error: any) => {
