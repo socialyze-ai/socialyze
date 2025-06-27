@@ -32,7 +32,12 @@ import { CanvasRef } from "./canvas/types";
 import Canvas from "./canvas/Canvas";
 import LayerManager from "./LayerManager";
 import ImageAndTextStack from "./ImageAndTextStack";
-import { useGetPostCategoryTemplates } from "@/api/apiHooks/useTemplate";
+import {
+  useGetPostCategoryTemplates,
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
+import { isUserAdmin } from "@/api/apiHooks/utils";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -72,6 +77,10 @@ const TemplateEditModal = ({
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
   const { mutate: getCategories } = useGetPostCategoryTemplates();
+  const { mutate: createTemplateDefault, isPending: isPendingDefault } =
+    useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
 
   console.log("isLoading Grid", isLoading);
 
@@ -593,21 +602,70 @@ const TemplateEditModal = ({
 
         dispatch(setOutputUrls(outputUrls));
 
+        // Create the complete template data with outputUrls
+        const completeTemplateData = {
+          canvasCount,
+          aspectRatio,
+          backgroundColor,
+          gridSize: {
+            columns,
+            rows,
+          },
+          images,
+          texts,
+          outputUrls,
+          socialPlatform,
+        };
+
+        // If saving, create the template first before processing
+        if (isSave) {
+          const templateCreationPromise = new Promise((resolve, reject) => {
+            if (isUserAdmin()) {
+              createTemplateDefault(
+                {
+                  type: "default",
+                  postCategory: activeCategoryId,
+                  body: completeTemplateData,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success("Template saved successfully");
+                    resolve(true);
+                  },
+                  onError: (error: any) => {
+                    toast.error(error.message || "Failed to save template");
+                    reject(error);
+                  },
+                },
+              );
+            } else {
+              createTemplateCustom(
+                {
+                  type: "custom",
+                  postCategory: activeCategoryId,
+                  body: completeTemplateData,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success("Template saved successfully");
+                    resolve(true);
+                  },
+                  onError: (error: any) => {
+                    toast.error(error.message || "Failed to save template");
+                    reject(error);
+                  },
+                },
+              );
+            }
+          });
+
+          // Wait for template creation to complete
+          await templateCreationPromise;
+        }
+
         try {
           // Set a timeout for the API call
-          const apiPromise = apiService.processTemplate({
-            canvasCount,
-            aspectRatio,
-            backgroundColor,
-            gridSize: {
-              columns,
-              rows,
-            },
-            images,
-            texts,
-            outputUrls,
-            socialPlatform,
-          });
+          const apiPromise = apiService.processTemplate(completeTemplateData);
 
           // Create a timeout promise
           const timeoutPromise = new Promise((_, reject) => {
@@ -710,7 +768,7 @@ const TemplateEditModal = ({
               <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                  isLoading={isLoading || isUploading}
+                  isLoading={isLoading || isUploading || isPendingDefault || isPendingCustom}
                   columns={columns}
                   setColumns={setColumns}
                   rows={rows}
