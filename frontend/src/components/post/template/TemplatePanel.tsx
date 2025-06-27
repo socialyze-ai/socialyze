@@ -192,19 +192,12 @@ const TemplatePanel = () => {
     // Instagram has both Grid and Carousel
     if (platform === "instagram") {
       if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.grid)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.grid, _id: "grid-special" });
+        displayCategories.push({ name: SPECIAL_TEMPLATES.grid, _id: "grid" });
       }
       if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.carousel)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel-special" });
+        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel" });
       }
     }
-    // Facebook only has Carousel
-    else if (platform === "facebook") {
-      if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.carousel)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel-special" });
-      }
-    }
-    // Other platforms don't have special templates
 
     // Add API categories
     platformCategories.forEach((cat) => displayCategories.push(cat));
@@ -246,10 +239,7 @@ const TemplatePanel = () => {
 
     if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.grid) {
       return <GridTemplate socialPlatform={tab} templates={templateData} />;
-    } else if (
-      (tab === "facebook" || tab === "instagram") &&
-      suggestion === SPECIAL_TEMPLATES.carousel
-    ) {
+    } else if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.carousel) {
       return <CarouselTemplate socialPlatform={tab} templates={templateData} />;
     } else {
       return (
@@ -334,7 +324,7 @@ const TemplatePanel = () => {
           </Tabs>
         </CardContent>
 
-        {(activeTab === "facebook" || activeTab === "instagram") &&
+        {activeTab === "instagram" &&
           (activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ||
             activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel) && (
             <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">

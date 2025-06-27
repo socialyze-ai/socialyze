@@ -189,19 +189,7 @@ const TemplateEditModal = ({
         onSuccess: (data: any) => {
           setCategories(data || []);
 
-          // Set simple category name based on platform
-          if (handle === "instagram") {
-            // For Instagram, prefer Grid
-            setActiveCategoryId("Grid");
-          } else if (handle === "facebook") {
-            // For Facebook, prefer Carousel
-            setActiveCategoryId("Carousel");
-          } else if (handle === "twitter" || handle === "x") {
-            setActiveCategoryId("Carousel");
-          } else {
-            // Default to Carousel for other platforms
-            setActiveCategoryId("Carousel");
-          }
+          setActiveCategoryId("Carousel");
         },
         onError: (error) => {
           toast.error("Failed to fetch categories: " + error.message);

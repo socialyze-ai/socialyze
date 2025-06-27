@@ -727,8 +727,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger className="flex items-center gap-2">
-                            <p>Sync content</p>
-                            <Link />
+                            <p>Un-Customize</p>
                           </TooltipTrigger>
                           <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
                             Sync content across all selected channels
@@ -742,8 +741,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-2">
-                          <p>Unsync content</p>
-                          <Unlink />
+                          <p>Customize</p>
                         </TooltipTrigger>
                         <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
                           Customize for each network
