@@ -681,10 +681,8 @@ const TemplateEditModal = ({
               response.data,
             );
 
-            // Add media URLs to post creation state if not saving
-            if (!isSave) {
-              dispatch(setMediaUrls(uploadedImages));
-            }
+            // Add media URLs to post creation state
+            dispatch(setMediaUrls(uploadedImages));
 
             // Show success toast
             toast.success(

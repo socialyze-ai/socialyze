@@ -197,7 +197,7 @@ const CanvasOptions = ({
               ) : (
                 <Save className="h-5 w-5" />
               )}
-              Save
+              Save & Use
             </Button>
           </TooltipTrigger>
           <TooltipContent>Save template</TooltipContent>
