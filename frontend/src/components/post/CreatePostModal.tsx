@@ -65,6 +65,7 @@ import {
   setContentSyncState,
   syncMediaAcrossChannels,
   setIsCreateNewTemplate,
+  setIsTemplateSectionOpen,
 } from "@/redux/slices/postCreation.slice";
 import { Media } from "./MediaUploader";
 import PostComposer from "./PostComposer";
@@ -555,11 +556,26 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             </DialogHeader>
 
             {templateSocialPlatform && (
-              <div className="flex items-center gap-2 my-2 p-2 bg-blue-50 rounded-md">
-                <Info size={16} className="text-blue-500" />
-                <span className="text-sm text-blue-700">
-                  This template is designed for {templateSocialPlatform} posts only
-                </span>
+              <div className="flex items-center justify-between gap-2 my-2 p-2 bg-blue-50 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Info size={16} className="text-blue-500" />
+                  <span className="text-sm text-blue-700">
+                    This template is designed for {templateSocialPlatform} posts only
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-transparent text-red-500 hover:text-red-600"
+                  onClick={() => {
+                    dispatch(resetPostCreation());
+                    dispatch(setIsTemplateSectionOpen(false));
+                    dispatch(setSocialPlatform(null));
+                  }}
+                >
+                  Discard
+                </Button>
               </div>
             )}
 
