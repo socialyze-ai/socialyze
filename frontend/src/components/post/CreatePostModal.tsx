@@ -259,7 +259,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsScheduleMode(false);
   };
 
-  const handlePostNow = () => {
+  const handlePostNow = (isSaveTemplate: boolean = false) => {
     if (selectedChannels.length === 0) {
       toast.error("Channel selection required", {
         position: "top-center",
@@ -283,7 +283,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       return;
     }
 
-    submitPost(selectedChannels, "postnow");
+    submitPost(selectedChannels, "postnow", undefined, isSaveTemplate);
   };
 
   const handleDraftSave = () => {
@@ -297,83 +297,92 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     isDraft: boolean,
     scheduledAt: Date,
     selectedChannels: string[],
+    isSaveTemplate?: boolean,
   ) => {
     if (selectedChannels?.length !== finalData?.length) return;
 
-    if (postCreation.isCreateNewTemplate) {
-      if (isUserAdmin()) {
-        createTemplateDefault(
-          {
-            type: "default",
-            postCategory: postCreation.selectedTemplateCategory?._id,
-            body: finalData,
-          },
-          {
-            onSuccess: () => {
-              toast.success("Template saved successfully");
+    if (isSaveTemplate) {
+      if (postCreation.isCreateNewTemplate) {
+        if (isUserAdmin()) {
+          createTemplateDefault(
+            {
+              type: "default",
+              postCategory: postCreation.selectedTemplateCategory?._id,
+              body: finalData,
             },
-            onError: (error: any) => {
-              toast.error(error.message || "Failed to save template");
+            {
+              onSuccess: () => {
+                toast.success("Template saved successfully");
+                dispatch(setContent(""));
+                dispatch(setMediaUrls([]));
+              },
+              onError: (error: any) => {
+                toast.error(error.message || "Failed to save template");
+              },
             },
-          },
-        );
-      } else {
-        createTemplateCustom(
-          {
-            type: "custom",
-            postCategory: postCreation.selectedTemplateCategory?._id,
-            body: finalData,
-          },
-          {
-            onSuccess: (data) => {
-              toast.success("Template saved successfully");
+          );
+        } else {
+          createTemplateCustom(
+            {
+              type: "custom",
+              postCategory: postCreation.selectedTemplateCategory?._id,
+              body: finalData,
             },
-            onError: (error: any) => {
-              toast.error(error.message || `Failed to save template`);
+            {
+              onSuccess: (data) => {
+                toast.success("Template saved successfully");
+              },
+              onError: (error: any) => {
+                toast.error(error.message || `Failed to save template`);
+              },
             },
-          },
-        );
+          );
+        }
       }
+    } else {
+      addPostMutation(finalData, {
+        onSuccess: () => {
+          const statusText = isDraft
+            ? "saved as draft"
+            : postCreation.isScheduled
+            ? "scheduled"
+            : "sent";
+
+          toast(
+            isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
+            {
+              description:
+                postCreation.isScheduled && scheduledAt
+                  ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+                  : `Your post has been ${statusText}.`,
+              position: "top-center",
+            },
+          );
+
+          queryClient.invalidateQueries({ queryKey: ["posts"] });
+          queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+
+          dispatch(unselectAllLabels());
+
+          navigate("/dashboard");
+          dispatch(resetPostCreation());
+          dispatch(reset());
+          onClose();
+        },
+        onError: () => {
+          toast.error("Failed to add post", {
+            position: "top-center",
+          });
+        },
+      });
     }
-
-    addPostMutation(finalData, {
-      onSuccess: () => {
-        const statusText = isDraft
-          ? "saved as draft"
-          : postCreation.isScheduled
-          ? "scheduled"
-          : "sent";
-
-        toast(isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent", {
-          description:
-            postCreation.isScheduled && scheduledAt
-              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
-              : `Your post has been ${statusText}.`,
-          position: "top-center",
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
-
-        dispatch(unselectAllLabels());
-
-        navigate("/dashboard");
-        dispatch(resetPostCreation());
-        dispatch(reset());
-        onClose();
-      },
-      onError: () => {
-        toast.error("Failed to add post", {
-          position: "top-center",
-        });
-      },
-    });
   };
 
   const submitPost = (
     channelIds: string[],
     status: "postnow" | "scheduled" | "draft",
     scheduledAt?: Date,
+    isSaveTemplate?: boolean,
   ) => {
     const finalData = [];
 
@@ -414,7 +423,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       );
     });
 
-    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
+    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds, isSaveTemplate);
   };
 
   const resetForm = () => {
@@ -708,7 +717,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={handlePostNow}
+                  onClick={() => handlePostNow(true)}
                   disabled={selectedChannels.length === 0 || !activeChannel}
                 >
                   Save Template
@@ -791,7 +800,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
                   {!selectedDate && !isScheduleMode && (
                     <Button
-                      onClick={handlePostNow}
+                      onClick={() => handlePostNow(false)}
                       className="bg-blue-600 hover:bg-blue-700"
                       disabled={selectedChannels.length === 0 || !activeChannel}
                       size="sm"
