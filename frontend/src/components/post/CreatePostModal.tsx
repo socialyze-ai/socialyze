@@ -536,7 +536,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 : isLeftPanelOpen && selectedChannels.length !== 0
                 ? "w-[40%]"
                 : selectedChannels.length !== 0 && activeChannel
-                ? "w-[60%]"
+                ? "w-[55%]"
                 : "flex-1",
             )}
           >
@@ -835,7 +835,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             <div
               className={cn(
                 "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
-                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
+                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[45%] max-w-[45%]",
               )}
             >
               <div className="flex justify-between mb-2 w-full">
