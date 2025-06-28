@@ -315,6 +315,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 toast.success("Template saved successfully");
                 dispatch(setContent(""));
                 dispatch(setMediaUrls([]));
+                dispatch(setIsCreateNewTemplate(false));
               },
               onError: (error: any) => {
                 toast.error(error.message || "Failed to save template");
