@@ -113,19 +113,27 @@ const TemplatePanel = () => {
 
           // Set default selected category based on platform
           let defaultCategory = "";
+          let defaultCategoryObj = null;
 
           if (handle === "instagram") {
             // Instagram defaults to Grid
             defaultCategory = SPECIAL_TEMPLATES.grid;
+            defaultCategoryObj = { name: SPECIAL_TEMPLATES.grid, _id: "grid" };
           } else if (data.length > 0) {
             // Facebook and other platforms default to first API category
             defaultCategory = data[0].name;
+            defaultCategoryObj = data[0];
           }
 
           setActiveSuggestion((prev) => ({
             ...prev,
             [handle]: defaultCategory,
           }));
+
+          // Dispatch the default category to Redux
+          if (defaultCategoryObj) {
+            dispatch(setSelectedTemplateCategory(defaultCategoryObj));
+          }
         },
         onError: (error) => {
           toast.error(error.message || `Failed to fetch ${handle} categories`);
