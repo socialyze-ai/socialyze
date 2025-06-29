@@ -445,7 +445,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       <Dialog open={isOpen} onOpenChange={handleOpenAlert}>
         <DialogContent
           className={cn(
-            "h-[90vh] flex gap-4 bg-transparent border-none p-1 pt-2",
+            "h-[90vh] max-w-[40dvw] flex gap-4 bg-transparent border-none p-1 pt-2",
             isLeftPanelOpen && selectedChannels.length === 0
               ? "max-w-[60dvw]"
               : isLeftPanelOpen && selectedChannels.length !== 0

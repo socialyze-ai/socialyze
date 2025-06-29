@@ -28,7 +28,7 @@ export const Authenticate = () => {
         {
           onSuccess: (response) => {
             console.log(response);
-            if (response.success) {
+            if (response.data.success) {
               window.opener?.postMessage({ success: true, message: response.message }, "*");
               window.close();
             }

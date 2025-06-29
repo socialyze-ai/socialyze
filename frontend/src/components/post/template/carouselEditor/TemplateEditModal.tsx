@@ -557,6 +557,7 @@ const TemplateEditModal = ({
 
     setIsLoading(true);
     setProcessingError(null);
+    console.log("Hereee");
 
     try {
       // Ensure sections are calculated correctly before processing

@@ -89,27 +89,18 @@ const Signup = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="h-12 w-12 rounded-xl bg-buffer-blue flex items-center justify-center text-white font-bold text-2xl">
-              S
-            </div>
+            <img className="w-[100px] h-[100px]" src="/logo/logoNoBg.png" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Or{" "}
-            <Link to="/login" className="font-medium text-buffer-blue hover:text-buffer-lightBlue">
-              sign in to your existing account
-            </Link>
-          </p>
+          <h2 className="text-3xl font-extrabold text-gray-900">Create your account</h2>
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="items-center">
             <CardTitle>Sign Up</CardTitle>
-            <CardDescription>Enter your information to create an account</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex flex-col gap-5">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -203,10 +194,19 @@ const Signup = () => {
               )}
             </CardContent>
 
-            <CardFooter>
+            <CardFooter className="mt-3 flex-col gap-3">
               <Button type="submit" className="w-full" disabled={isSubmitting || loading}>
                 {isSubmitting || loading ? "Creating account..." : "Create account"}
               </Button>
+              <p className="mt-2 text-sm text-gray-600">
+                Or{" "}
+                <Link
+                  to="/login"
+                  className="font-medium text-buffer-blue hover:text-buffer-lightBlue"
+                >
+                  sign in to your existing account
+                </Link>
+              </p>
             </CardFooter>
           </form>
         </Card>

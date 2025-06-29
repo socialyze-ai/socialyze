@@ -19,10 +19,7 @@ const useOAuthHandler = () => {
         })
         .then((response) => {
           if (response.data?.success) {
-            window.opener?.postMessage(
-              { success: true, message: response.data?.message },
-              "*"
-            );
+            window.opener?.postMessage({ success: true, message: response.data?.message }, "*");
             window.close();
           }
         })
