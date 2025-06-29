@@ -1,11 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SocialChannel } from "@/redux/slices/posts.slice";
-import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, Send } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Repeat,
+  Share,
+  MoreHorizontal,
+  Send,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectPostCreation } from "@/redux/slices/postCreation.slice";
 import { formatDate } from "@/utils/dateUtils";
 import { formatContentWithHashtags } from "@/utils/formatContent";
+import InstagramProfilePreview from "./template/gridEditor/InstagramProfilePreview";
+
+// Add CSS for webkit scrollbar hiding
+const hideScrollbarCSS = `
+  .carousel-container::-webkit-scrollbar {
+    display: none;
+  }
+`;
 
 interface PostPreviewProps {
   content: string;
@@ -13,6 +30,240 @@ interface PostPreviewProps {
   mediaUrls?: string[];
   className?: string;
 }
+
+interface GridPreviewProps {
+  mediaUrls?: string[] | { url: string; type: string }[];
+  channel?: SocialChannel;
+}
+
+interface CarouselPreviewProps {
+  mediaUrls?: string[] | { url: string; type: string }[];
+}
+
+interface CarouselMediaItem {
+  url: string;
+  type: string;
+}
+
+const GridPreview: React.FC<GridPreviewProps> = ({ mediaUrls = [], channel }) => {
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+
+  if (!mediaUrls || mediaUrls.length === 0) return null;
+
+  // Standardize media format
+  const standardizedMedia = mediaUrls.map((media) =>
+    typeof media === "string"
+      ? { url: media, type: media.endsWith(".mp4") ? "video" : "image" }
+      : media,
+  );
+
+  const canvasCount = standardizedMedia.length;
+
+  // Calculate grid columns based on number of items
+  const getGridPreviewStyle = () => {
+    const columns = 3; // Instagram uses 3 columns
+    return {
+      gridTemplateColumns: `repeat(${columns}, 1fr)`,
+      aspectRatio: "1",
+    };
+  };
+
+  const renderCell = (index: number) => {
+    if (index >= standardizedMedia.length) return null;
+
+    const media = standardizedMedia[index];
+    const isVideo = media.type === "video" || media.url.endsWith(".mp4");
+
+    return (
+      <div key={index} className="aspect-square overflow-hidden bg-gray-100 relative">
+        {isVideo ? (
+          <video className="w-full h-full object-cover">
+            <source src={media.url} type="video/mp4" />
+          </video>
+        ) : (
+          <img
+            src={media.url}
+            alt={`Grid item ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="mt-3">
+      <InstagramProfilePreview
+        previewBoxRef={previewBoxRef}
+        getGridPreviewStyle={getGridPreviewStyle}
+        canvasCount={canvasCount}
+        renderCell={renderCell}
+      />
+    </div>
+  );
+};
+
+const CarouselMedia: React.FC<{ media: CarouselMediaItem; isActive: boolean }> = ({
+  media,
+  isActive,
+}) => {
+  if (media.type === "video") {
+    return (
+      <video
+        src={media.url}
+        className="w-full h-full object-cover"
+        muted
+        loop
+        playsInline
+        autoPlay={isActive}
+      />
+    );
+  }
+  return <img src={media.url} className="w-full h-full object-cover" alt="carousel media" />;
+};
+
+const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => {
+  const [showNavigation, setShowNavigation] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  if (!mediaUrls || mediaUrls.length === 0) return null;
+
+  // Standardize media format
+  const standardizedMedia = mediaUrls.map((media) =>
+    typeof media === "string"
+      ? { url: media, type: media.endsWith(".mp4") ? "video" : "image" }
+      : media,
+  );
+
+  // Add effect to handle scroll events
+  useEffect(() => {
+    const scrollContainer = carouselRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (!scrollContainer) return;
+
+      // Calculate which item is most visible
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const items = scrollContainer.querySelectorAll(".carousel-item");
+
+      let maxVisibleItem = 0;
+      let maxVisibleArea = 0;
+
+      items.forEach((item, index) => {
+        const itemRect = item.getBoundingClientRect();
+
+        // Calculate the visible area of this item
+        const xOverlap = Math.max(
+          0,
+          Math.min(itemRect.right, containerRect.right) -
+            Math.max(itemRect.left, containerRect.left),
+        );
+
+        const visibleArea = xOverlap;
+
+        if (visibleArea > maxVisibleArea) {
+          maxVisibleArea = visibleArea;
+          maxVisibleItem = index;
+        }
+      });
+
+      setActiveIndex(maxVisibleItem);
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollToIndex = (index: number) => {
+    if (!carouselRef.current) return;
+
+    // Ensure index is within bounds
+    const newIndex = Math.max(0, Math.min(index, standardizedMedia.length - 1));
+    setActiveIndex(newIndex);
+
+    const scrollContainer = carouselRef.current;
+    const items = scrollContainer.querySelectorAll(".carousel-item");
+
+    if (items[newIndex]) {
+      const scrollLeft =
+        items[newIndex].getBoundingClientRect().left -
+        scrollContainer.getBoundingClientRect().left +
+        scrollContainer.scrollLeft;
+
+      scrollContainer.scrollTo({
+        left: scrollLeft,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const handlePrevious = () => {
+    scrollToIndex(activeIndex - 1);
+  };
+
+  const handleNext = () => {
+    scrollToIndex(activeIndex + 1);
+  };
+
+  return (
+    <div
+      className="mt-3 relative group h-80 w-full"
+      onMouseEnter={() => setShowNavigation(true)}
+      onMouseLeave={() => setShowNavigation(false)}
+    >
+      {/* Navigation buttons - shown on hover */}
+      {showNavigation && standardizedMedia.length > 1 && (
+        <>
+          <button
+            className={`absolute left-1 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-90 ${
+              activeIndex === 0 ? "opacity-30 cursor-not-allowed" : ""
+            }`}
+            onClick={handlePrevious}
+            disabled={activeIndex === 0}
+          >
+            <ChevronLeft size={16} strokeWidth={3} />
+          </button>
+          <button
+            className={`absolute right-1 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-90 ${
+              activeIndex >= standardizedMedia.length - 1 ? "opacity-30 cursor-not-allowed" : ""
+            }`}
+            onClick={handleNext}
+            disabled={activeIndex >= standardizedMedia.length - 1}
+          >
+            <ChevronRight size={16} strokeWidth={3} />
+          </button>
+        </>
+      )}
+
+      <div
+        ref={carouselRef}
+        className="flex overflow-x-auto snap-x snap-mandatory carousel-container h-full"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        {standardizedMedia.map((media, index) => (
+          <div
+            key={index}
+            className="w-full h-full flex-shrink-0 carousel-item snap-start"
+            style={{ minWidth: "100%" }}
+            role="group"
+            aria-label={`Slide ${index + 1} of ${standardizedMedia.length}`}
+            aria-hidden={index !== activeIndex}
+          >
+            <CarouselMedia media={media} isActive={index === activeIndex} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const MediaGrid = ({ mediaUrls, channelType }) => {
   if (!mediaUrls || mediaUrls.length === 0) return null;
@@ -175,7 +426,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
   mediaUrls = [],
   className,
 }) => {
-  const { scheduledDate } = useSelector(selectPostCreation);
+  const { scheduledDate, selectedTemplateCategory } = useSelector(selectPostCreation);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   // Always call useSelector unconditionally, then determine which media to use
   const globalMediaUrls = useSelector(selectPostCreation).mediaUrls;
@@ -293,8 +544,23 @@ const PostPreview: React.FC<PostPreviewProps> = ({
       );
     }
 
+    // Check if selectedTemplateCategory is for grid or carousel
+    const isGridTemplate = selectedTemplateCategory?.name === "Grid";
+    const isCarouselTemplate = selectedTemplateCategory?.name === "Carousel";
+
+    // For grid template, show the full Instagram profile preview
+    if (isGridTemplate) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
+          <GridPreview mediaUrls={mediaToUse} channel={channel} />
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white border border-gray-200 rounded-md overflow-hidden max-w-md">
+        <style dangerouslySetInnerHTML={{ __html: hideScrollbarCSS }} />
+
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center">
             <Avatar className="w-10 h-10 rounded-full mr-2">
@@ -312,7 +578,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({
           </button>
         </div>
 
-        <MediaGrid mediaUrls={mediaToUse} channelType="instagram" />
+        <CarouselPreview mediaUrls={mediaToUse} />
 
         <div className="p-3">
           <div className="flex justify-between mb-2">

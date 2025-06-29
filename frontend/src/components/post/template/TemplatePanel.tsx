@@ -113,22 +113,27 @@ const TemplatePanel = () => {
 
           // Set default selected category based on platform
           let defaultCategory = "";
+          let defaultCategoryObj = null;
 
           if (handle === "instagram") {
             // Instagram defaults to Grid
             defaultCategory = SPECIAL_TEMPLATES.grid;
-          } else if (handle === "facebook") {
-            // Facebook defaults to Carousel
-            defaultCategory = SPECIAL_TEMPLATES.carousel;
+            defaultCategoryObj = { name: SPECIAL_TEMPLATES.grid, _id: "grid" };
           } else if (data.length > 0) {
-            // Other platforms default to first API category
+            // Facebook and other platforms default to first API category
             defaultCategory = data[0].name;
+            defaultCategoryObj = data[0];
           }
 
           setActiveSuggestion((prev) => ({
             ...prev,
             [handle]: defaultCategory,
           }));
+
+          // Dispatch the default category to Redux
+          if (defaultCategoryObj) {
+            dispatch(setSelectedTemplateCategory(defaultCategoryObj));
+          }
         },
         onError: (error) => {
           toast.error(error.message || `Failed to fetch ${handle} categories`);
@@ -144,6 +149,7 @@ const TemplatePanel = () => {
   const handleClose = () => {
     dispatch(setIsTemplateSectionOpen(false));
     dispatch(setSocialPlatform(null));
+    dispatch(setIsCreateNewTemplate(false));
   };
 
   const handleSuggestionClick = (suggestion, tab) => {
@@ -191,19 +197,12 @@ const TemplatePanel = () => {
     // Instagram has both Grid and Carousel
     if (platform === "instagram") {
       if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.grid)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.grid, _id: "grid-special" });
+        displayCategories.push({ name: SPECIAL_TEMPLATES.grid, _id: "grid" });
       }
       if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.carousel)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel-special" });
+        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel" });
       }
     }
-    // Facebook only has Carousel
-    else if (platform === "facebook") {
-      if (!platformCategories.some((cat) => cat.name === SPECIAL_TEMPLATES.carousel)) {
-        displayCategories.push({ name: SPECIAL_TEMPLATES.carousel, _id: "carousel-special" });
-      }
-    }
-    // Other platforms don't have special templates
 
     // Add API categories
     platformCategories.forEach((cat) => displayCategories.push(cat));
@@ -245,10 +244,7 @@ const TemplatePanel = () => {
 
     if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.grid) {
       return <GridTemplate socialPlatform={tab} templates={templateData} />;
-    } else if (
-      (tab === "facebook" || tab === "instagram") &&
-      suggestion === SPECIAL_TEMPLATES.carousel
-    ) {
+    } else if (tab === "instagram" && suggestion === SPECIAL_TEMPLATES.carousel) {
       return <CarouselTemplate socialPlatform={tab} templates={templateData} />;
     } else {
       return (
@@ -333,7 +329,7 @@ const TemplatePanel = () => {
           </Tabs>
         </CardContent>
 
-        {(activeTab === "facebook" || activeTab === "instagram") &&
+        {activeTab === "instagram" &&
           (activeSuggestion[activeTab] === SPECIAL_TEMPLATES.grid ||
             activeSuggestion[activeTab] === SPECIAL_TEMPLATES.carousel) && (
             <CardFooter className="flex gap-2 justify-end p-3 border-t border-gray-200 bg-white rounded-b">

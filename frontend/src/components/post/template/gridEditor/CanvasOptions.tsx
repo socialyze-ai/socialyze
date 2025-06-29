@@ -28,12 +28,7 @@ import { ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ui/color-picker";
-import {
-  useCreatePostTemplatesCustom,
-  useCreatePostTemplatesDefault,
-} from "@/api/apiHooks/useTemplate";
 import { toast } from "sonner";
-import { isUserAdmin } from "@/api/apiHooks/utils";
 import { setSelectedTemplateCategory } from "@/redux/slices/postCreation.slice";
 
 // Generic PopoverButton component
@@ -92,9 +87,6 @@ const CanvasOptions = ({
 }) => {
   const dispatch = useDispatch();
   const { aspectRatio, backgroundColor } = useSelector((state: RootState) => state.template);
-  const { mutate: createTemplate, isPending: isPendingDefault } = useCreatePostTemplatesDefault();
-  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
-    useCreatePostTemplatesCustom();
 
   const handleSaveOrUse = (isSave: boolean) => {
     if (!activeCategoryId) {
@@ -109,47 +101,8 @@ const CanvasOptions = ({
       }),
     );
 
-    if (isUserAdmin()) {
-      if (isSave) {
-        createTemplate(
-          {
-            type: "default",
-            postCategory: activeCategoryId,
-            body: templateData,
-          },
-          {
-            onSuccess: () => {
-              toast.success("Template saved successfully");
-              handleTemplateSaveAndUse(isSave);
-            },
-            onError: (error: any) => {
-              toast.error(error.message || "Failed to save template");
-            },
-          },
-        );
-      } else {
-        toast.success("Template applied successfully");
-        handleTemplateSaveAndUse(isSave);
-      }
-    } else {
-      createTemplateCustom(
-        {
-          type: "custom",
-          postCategory: activeCategoryId,
-          body: templateData,
-        },
-        {
-          onSuccess: (data) => {
-            toast.success(isSave ? "Template saved successfully" : "Template applied successfully");
-            // Call the original handler after API success
-            handleTemplateSaveAndUse(isSave);
-          },
-          onError: (error: any) => {
-            toast.error(error.message || `Failed to ${isSave ? "save" : "use"} template`);
-          },
-        },
-      );
-    }
+    // Pass the template creation logic to handleTemplateSaveAndUse
+    handleTemplateSaveAndUse(isSave);
   };
 
   return (
@@ -223,15 +176,15 @@ const CanvasOptions = ({
             <Button
               variant="ghost"
               onClick={() => handleSaveOrUse(true)}
-              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
+              disabled={isLoading || !activeCategoryId}
               className="shadow"
             >
-              {isLoading || isPendingDefault || isPendingCustom ? (
+              {isLoading ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Save className="h-5 w-5" />
               )}
-              Save
+              Save & Use
             </Button>
           </TooltipTrigger>
           <TooltipContent>Save template</TooltipContent>
@@ -242,10 +195,10 @@ const CanvasOptions = ({
             <Button
               variant="ghost"
               onClick={() => handleSaveOrUse(false)}
-              disabled={isLoading || isPendingDefault || isPendingCustom || !activeCategoryId}
+              disabled={isLoading || !activeCategoryId}
               className=" bg-blue-600 text-white shadow"
             >
-              {isLoading || isPendingDefault || isPendingCustom ? (
+              {isLoading ? (
                 <RefreshCcw className="h-5 w-5 animate-spin" />
               ) : (
                 <Check className="h-5 w-5" />
