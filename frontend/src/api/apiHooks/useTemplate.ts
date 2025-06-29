@@ -1,6 +1,6 @@
 import { getToken, makeRequest } from "./utils";
 import { BACKEND_URL } from "@/config/config";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useCreateFontTemplates = () => {
   const createFontTemplates = async (body) => {
@@ -87,6 +87,7 @@ export const useGetPostCategoryTemplates = () => {
 };
 
 export const useCreatePostTemplatesDefault = () => {
+  const queryClient = useQueryClient();
   const createPostTemplatesDefault = async (body) => {
     const response = await makeRequest(
       BACKEND_URL + "template/createPostTemplatesDefault",
@@ -104,10 +105,15 @@ export const useCreatePostTemplatesDefault = () => {
 
   return useMutation({
     mutationFn: createPostTemplatesDefault,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["postTemplatesDefault"] });
+      queryClient.invalidateQueries({ queryKey: ["postTemplatesCustom"] });
+    },
   });
 };
 
 export const useCreatePostTemplatesCustom = () => {
+  const queryClient = useQueryClient();
   const createPostTemplatesCustom = async (body) => {
     const response = await makeRequest(
       BACKEND_URL + "template/createPostTemplatesCustom",
@@ -125,6 +131,10 @@ export const useCreatePostTemplatesCustom = () => {
 
   return useMutation({
     mutationFn: createPostTemplatesCustom,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["postTemplatesCustom"] });
+      queryClient.invalidateQueries({ queryKey: ["postTemplatesDefault"] });
+    },
   });
 };
 

@@ -28,6 +28,11 @@ interface CarouselPreviewProps {
   mediaUrls?: string[] | { url: string; type: string }[];
 }
 
+interface CarouselMediaItem {
+  url: string;
+  type: string;
+}
+
 const GridPreview: React.FC<GridPreviewProps> = ({ mediaUrls = [] }) => {
   if (!mediaUrls || mediaUrls.length === 0) return null;
 
@@ -37,9 +42,6 @@ const GridPreview: React.FC<GridPreviewProps> = ({ mediaUrls = [] }) => {
       ? { url: media, type: media.endsWith(".mp4") ? "video" : "image" }
       : media,
   );
-
-  // Default to 3 columns
-  const columns = 3;
 
   return (
     <div className="mt-3">
@@ -66,6 +68,25 @@ const GridPreview: React.FC<GridPreviewProps> = ({ mediaUrls = [] }) => {
       </div>
     </div>
   );
+};
+
+const CarouselMedia: React.FC<{ media: CarouselMediaItem; isActive: boolean }> = ({
+  media,
+  isActive,
+}) => {
+  if (media.type === "video") {
+    return (
+      <video
+        src={media.url}
+        className="w-full h-full object-cover"
+        muted
+        loop
+        playsInline
+        autoPlay={isActive}
+      />
+    );
+  }
+  return <img src={media.url} className="w-full h-full object-cover" alt="carousel media" />;
 };
 
 const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => {
@@ -157,7 +178,7 @@ const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => 
 
   return (
     <div
-      className="mt-3 relative group h-52 w-full"
+      className="mt-3 relative group h-full w-full"
       onMouseEnter={() => setShowNavigation(true)}
       onMouseLeave={() => setShowNavigation(false)}
     >
@@ -187,51 +208,25 @@ const CarouselPreview: React.FC<CarouselPreviewProps> = ({ mediaUrls = [] }) => 
 
       <div
         ref={carouselRef}
-        className="flex overflow-x-auto snap-x snap-mandatory carousel-container"
+        className="flex overflow-x-auto snap-x snap-mandatory carousel-container h-full"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {standardizedMedia.map((media, index) => {
-          const isVideo = media.type === "video" || media.url.endsWith(".mp4");
-
-          return (
-            <div key={index} className="min-w-[100%] flex-shrink-0 snap-center carousel-item">
-              <div className="aspect-[4/5] relative rounded overflow-hidden">
-                {isVideo ? (
-                  <video className="w-full h-full object-cover">
-                    <source src={media.url} type="video/mp4" />
-                  </video>
-                ) : (
-                  <img
-                    src={media.url}
-                    alt={`Carousel item ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
-
-              {/* Pagination dots */}
-              {standardizedMedia.length > 1 && (
-                <div className="absolute bottom-2 left-0 right-0 flex justify-center z-10">
-                  {standardizedMedia.map((_, dotIndex) => (
-                    <div
-                      key={dotIndex}
-                      className={`h-1.5 w-1.5 rounded-full mx-0.5 cursor-pointer transition-all ${
-                        dotIndex === activeIndex
-                          ? "bg-white scale-125"
-                          : "bg-white/50 hover:bg-white/70"
-                      }`}
-                      onClick={() => scrollToIndex(dotIndex)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {standardizedMedia.map((media, index) => (
+          <div
+            key={index}
+            className="w-full h-full flex-shrink-0 carousel-item snap-start"
+            style={{ minWidth: "100%" }}
+            role="group"
+            aria-label={`Slide ${index + 1} of ${standardizedMedia.length}`}
+            aria-hidden={index !== activeIndex}
+          >
+            <CarouselMedia media={media} isActive={index === activeIndex} />
+          </div>
+        ))}
       </div>
     </div>
   );

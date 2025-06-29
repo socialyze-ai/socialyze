@@ -34,7 +34,12 @@ import { Loader2 } from "lucide-react";
 import ImageAndTextStack from "./ImageAndTextStack";
 import LayerManager from "./LayerManager";
 import { CanvasRef } from "./canvas/types";
-import { useGetPostCategoryTemplates } from "@/api/apiHooks/useTemplate";
+import {
+  useGetPostCategoryTemplates,
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
+import { isUserAdmin } from "@/api/apiHooks/utils";
 
 interface TemplateEditModalProps {
   open?: boolean;
@@ -73,6 +78,10 @@ const TemplateEditModal = ({
 
   const { mutate: uploadMultipleMedia, isPending: isUploading } = useUploadMultipleMedia();
   const { mutate: getCategories } = useGetPostCategoryTemplates();
+  const { mutate: createTemplateDefault, isPending: isPendingDefault } =
+    useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
 
   console.log("isLoading Carousel", isLoading);
 
@@ -180,19 +189,7 @@ const TemplateEditModal = ({
         onSuccess: (data: any) => {
           setCategories(data || []);
 
-          // Set simple category name based on platform
-          if (handle === "instagram") {
-            // For Instagram, prefer Grid
-            setActiveCategoryId("Grid");
-          } else if (handle === "facebook") {
-            // For Facebook, prefer Carousel
-            setActiveCategoryId("Carousel");
-          } else if (handle === "twitter" || handle === "x") {
-            setActiveCategoryId("Carousel");
-          } else {
-            // Default to Carousel for other platforms
-            setActiveCategoryId("Carousel");
-          }
+          setActiveCategoryId("Carousel");
         },
         onError: (error) => {
           toast.error("Failed to fetch categories: " + error.message);
@@ -579,17 +576,66 @@ const TemplateEditModal = ({
 
         dispatch(setOutputUrls(outputUrls));
 
+        // Create the complete template data with outputUrls
+        const completeTemplateData = {
+          canvasCount,
+          aspectRatio,
+          backgroundColor,
+          images,
+          texts,
+          outputUrls,
+          socialPlatform,
+        };
+
+        // If saving, create the template first before processing
+        if (isSave) {
+          const templateCreationPromise = new Promise((resolve, reject) => {
+            if (isUserAdmin()) {
+              createTemplateDefault(
+                {
+                  type: "default",
+                  postCategory: activeCategoryId,
+                  body: completeTemplateData,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success("Template saved successfully");
+                    resolve(true);
+                  },
+                  onError: (error: any) => {
+                    toast.error(error.message || "Failed to save template");
+                    reject(error);
+                  },
+                },
+              );
+            } else {
+              createTemplateCustom(
+                {
+                  type: "custom",
+                  postCategory: activeCategoryId,
+                  body: completeTemplateData,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success("Template saved successfully");
+                    resolve(true);
+                  },
+                  onError: (error: any) => {
+                    toast.error(error.message || "Failed to save template");
+                    reject(error);
+                  },
+                },
+              );
+            }
+          });
+
+          // Wait for template creation to complete
+          await templateCreationPromise;
+        }
+
         try {
           // Set a timeout for the API call
-          const apiPromise = apiService.processTemplate({
-            canvasCount,
-            aspectRatio,
-            backgroundColor,
-            images,
-            texts,
-            outputUrls,
-            socialPlatform,
-          });
+          const apiPromise = apiService.processTemplate(completeTemplateData);
 
           // Create a timeout promise
           const timeoutPromise = new Promise((_, reject) => {
@@ -605,10 +651,8 @@ const TemplateEditModal = ({
               response.data,
             );
 
-            // Add media URLs to post creation state if not saving
-            if (!isSave) {
-              dispatch(setMediaUrls(uploadedImages));
-            }
+            // Add media URLs to post creation state
+            dispatch(setMediaUrls(uploadedImages));
 
             // Show success toast
             toast.success(
@@ -697,7 +741,7 @@ const TemplateEditModal = ({
               <div className="col-span-3 h-fit space-y-2">
                 <CanvasOptions
                   handleTemplateSaveAndUse={handleTemplateSaveAndUse}
-                  isLoading={isLoading || isUploading}
+                  isLoading={isLoading || isUploading || isPendingDefault || isPendingCustom}
                   handleMediaChange={handleMediaChange}
                   handleAddText={handleAddText}
                   templateData={getTemplateData()}

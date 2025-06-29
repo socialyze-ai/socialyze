@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   selectPostCreation,
   setIsAIAssistantOpen,
+  setIsCreateNewTemplate,
   setIsTemplateSectionOpen,
   setSelectedChannels,
 } from "@/redux/slices/postCreation.slice";
@@ -48,7 +49,8 @@ const PostComposer: React.FC<PostComposerProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const dispatch = useDispatch();
-  const { mediaUrls, isAIAssistantOpen, isTemplateSectionOpen } = useSelector(selectPostCreation);
+  const { mediaUrls, isAIAssistantOpen, isTemplateSectionOpen, isCreateNewTemplate } =
+    useSelector(selectPostCreation);
 
   // Use channelMedia if provided, otherwise use global mediaUrls
   const mediaToUse = channelMedia || mediaUrls;
@@ -124,6 +126,7 @@ const PostComposer: React.FC<PostComposerProps> = ({
                 dispatch(setSocialPlatform(null));
               }
               dispatch(setSelectedChannels([]));
+              dispatch(setIsCreateNewTemplate(isCreateNewTemplate && false));
             }}
             className={cn(
               isTemplateSectionOpen && "bg-blue-600 text-white hover:bg-blue-400 hover:text-white",

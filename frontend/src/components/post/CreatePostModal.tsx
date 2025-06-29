@@ -65,6 +65,7 @@ import {
   setContentSyncState,
   syncMediaAcrossChannels,
   setIsCreateNewTemplate,
+  setIsTemplateSectionOpen,
 } from "@/redux/slices/postCreation.slice";
 import { Media } from "./MediaUploader";
 import PostComposer from "./PostComposer";
@@ -87,6 +88,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import TemplatePanel from "./template/TemplatePanel";
 import { RootState } from "@/redux/store";
 import { setSocialPlatform } from "@/redux/slices/template.slice";
+import { isUserAdmin } from "@/api/apiHooks/utils";
+import {
+  useCreatePostTemplatesCustom,
+  useCreatePostTemplatesDefault,
+} from "@/api/apiHooks/useTemplate";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -135,6 +141,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | undefined>(
     selectedDate ? new Date(selectedDate) : new Date(),
   );
+
+  const { mutate: createTemplateDefault, isPending: isPendingDefault } =
+    useCreatePostTemplatesDefault();
+  const { mutate: createTemplateCustom, isPending: isPendingCustom } =
+    useCreatePostTemplatesCustom();
 
   // Filter channels based on template social platform
   const filteredChannels = useMemo(() => {
@@ -249,7 +260,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     setIsScheduleMode(false);
   };
 
-  const handlePostNow = () => {
+  const handlePostNow = (isSaveTemplate: boolean = false) => {
     if (selectedChannels.length === 0) {
       toast.error("Channel selection required", {
         position: "top-center",
@@ -273,7 +284,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       return;
     }
 
-    submitPost(selectedChannels, "postnow");
+    submitPost(selectedChannels, "postnow", undefined, isSaveTemplate);
   };
 
   const handleDraftSave = () => {
@@ -287,47 +298,93 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
     isDraft: boolean,
     scheduledAt: Date,
     selectedChannels: string[],
+    isSaveTemplate?: boolean,
   ) => {
     if (selectedChannels?.length !== finalData?.length) return;
 
-    addPostMutation(finalData, {
-      onSuccess: () => {
-        const statusText = isDraft
-          ? "saved as draft"
-          : postCreation.isScheduled
-          ? "scheduled"
-          : "sent";
+    if (isSaveTemplate) {
+      if (postCreation.isCreateNewTemplate) {
+        if (isUserAdmin()) {
+          createTemplateDefault(
+            {
+              type: "default",
+              postCategory: postCreation.selectedTemplateCategory?._id,
+              body: finalData,
+            },
+            {
+              onSuccess: () => {
+                toast.success("Template saved successfully");
+                dispatch(setContent(""));
+                dispatch(setMediaUrls([]));
+                dispatch(setIsCreateNewTemplate(false));
+              },
+              onError: (error: any) => {
+                toast.error(error.message || "Failed to save template");
+              },
+            },
+          );
+        } else {
+          createTemplateCustom(
+            {
+              type: "custom",
+              postCategory: postCreation.selectedTemplateCategory?._id,
+              body: finalData,
+            },
+            {
+              onSuccess: (data) => {
+                toast.success("Template saved successfully");
+              },
+              onError: (error: any) => {
+                toast.error(error.message || `Failed to save template`);
+              },
+            },
+          );
+        }
+      }
+    } else {
+      addPostMutation(finalData, {
+        onSuccess: () => {
+          const statusText = isDraft
+            ? "saved as draft"
+            : postCreation.isScheduled
+            ? "scheduled"
+            : "sent";
 
-        toast(isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent", {
-          description:
-            postCreation.isScheduled && scheduledAt
-              ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
-              : `Your post has been ${statusText}.`,
-          position: "top-center",
-        });
+          toast(
+            isDraft ? "Draft saved" : postCreation.isScheduled ? "Post scheduled" : "Post sent",
+            {
+              description:
+                postCreation.isScheduled && scheduledAt
+                  ? `Your post has been scheduled for ${format(scheduledAt, "PPP p")}.`
+                  : `Your post has been ${statusText}.`,
+              position: "top-center",
+            },
+          );
 
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
+          queryClient.invalidateQueries({ queryKey: ["posts"] });
+          queryClient.invalidateQueries({ queryKey: ["calendarPosts"] });
 
-        dispatch(unselectAllLabels());
+          dispatch(unselectAllLabels());
 
-        navigate("/dashboard");
-        dispatch(resetPostCreation());
-        dispatch(reset());
-        onClose();
-      },
-      onError: () => {
-        toast.error("Failed to add post", {
-          position: "top-center",
-        });
-      },
-    });
+          navigate("/dashboard");
+          dispatch(resetPostCreation());
+          dispatch(reset());
+          onClose();
+        },
+        onError: () => {
+          toast.error("Failed to add post", {
+            position: "top-center",
+          });
+        },
+      });
+    }
   };
 
   const submitPost = (
     channelIds: string[],
     status: "postnow" | "scheduled" | "draft",
     scheduledAt?: Date,
+    isSaveTemplate?: boolean,
   ) => {
     const finalData = [];
 
@@ -368,7 +425,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
       );
     });
 
-    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds);
+    handleCreatePostApiCall(finalData, status === "draft", scheduledAt, channelIds, isSaveTemplate);
   };
 
   const resetForm = () => {
@@ -479,7 +536,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 : isLeftPanelOpen && selectedChannels.length !== 0
                 ? "w-[40%]"
                 : selectedChannels.length !== 0 && activeChannel
-                ? "w-[60%]"
+                ? "w-[55%]"
                 : "flex-1",
             )}
           >
@@ -499,11 +556,26 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             </DialogHeader>
 
             {templateSocialPlatform && (
-              <div className="flex items-center gap-2 my-2 p-2 bg-blue-50 rounded-md">
-                <Info size={16} className="text-blue-500" />
-                <span className="text-sm text-blue-700">
-                  This template is designed for {templateSocialPlatform} posts only
-                </span>
+              <div className="flex items-center justify-between gap-2 my-2 p-2 bg-blue-50 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Info size={16} className="text-blue-500" />
+                  <span className="text-sm text-blue-700">
+                    This template is designed for {templateSocialPlatform} posts only
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-transparent text-red-500 hover:text-red-600"
+                  onClick={() => {
+                    dispatch(resetPostCreation());
+                    dispatch(setIsTemplateSectionOpen(false));
+                    dispatch(setSocialPlatform(null));
+                  }}
+                >
+                  Discard
+                </Button>
               </div>
             )}
 
@@ -662,7 +734,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={handlePostNow}
+                  onClick={() => handlePostNow(true)}
                   disabled={selectedChannels.length === 0 || !activeChannel}
                 >
                   Save Template
@@ -681,8 +753,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger className="flex items-center gap-2">
-                            <p>Sync content</p>
-                            <Link />
+                            <p>Un-Customize</p>
                           </TooltipTrigger>
                           <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
                             Sync content across all selected channels
@@ -696,8 +767,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-2">
-                          <p>Unsync content</p>
-                          <Unlink />
+                          <p>Customize</p>
                         </TooltipTrigger>
                         <TooltipContent className="text-xs max-w-64 h-fit text-wrap p-2 rounded-md bg-white shadow-md">
                           Customize for each network
@@ -747,7 +817,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
 
                   {!selectedDate && !isScheduleMode && (
                     <Button
-                      onClick={handlePostNow}
+                      onClick={() => handlePostNow(false)}
                       className="bg-blue-600 hover:bg-blue-700"
                       disabled={selectedChannels.length === 0 || !activeChannel}
                       size="sm"
@@ -765,7 +835,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, sele
             <div
               className={cn(
                 "border-l pl-4 hidden md:block bg-white p-5 rounded h-full overflow-y-auto",
-                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[40%] max-w-[40%]",
+                isLeftPanelOpen ? "w-[30%] max-w-[30%]" : "w-[45%] max-w-[45%]",
               )}
             >
               <div className="flex justify-between mb-2 w-full">
